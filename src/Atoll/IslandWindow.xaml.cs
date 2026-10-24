@@ -64,10 +64,10 @@ public sealed partial class IslandWindow : Window
         ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
     }
 
-    // ponytail: primary monitor only, follow the active window's monitor later (brief section 8).
+    // Top center of the monitor holding the active window.
     void Place()
     {
-        var mon = MonitorFromPoint(default, 1); // MONITOR_DEFAULTTOPRIMARY
+        var mon = MonitorFromWindow(GetForegroundWindow(), 1); // MONITOR_DEFAULTTOPRIMARY
         var info = new MONITORINFO { Size = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
         GetMonitorInfo(mon, ref info);
         GetDpiForMonitor(mon, 0, out var dpi, out _);
@@ -87,6 +87,7 @@ public sealed partial class IslandWindow : Window
     {
         var t = ++_token;
         _expanded = true;
+        if (_hit.Equals(default(RECT))) Place(); // only while fully hidden, never jump a visible island
         HookMouse(true);
         Retarget(ExpandedGeo, OpenSpring);
         await Task.Delay(140);
@@ -203,6 +204,8 @@ public sealed partial class IslandWindow : Window
     static nint WndProc(nint hwnd, uint msg, nint wParam, nint lParam, nuint id, nuint data)
     {
         if (msg == WM_MOUSEACTIVATE) return (nint)MA_NOACTIVATE;
+        // No frame at all: WinUI keeps a 3 px dialog frame that DWM paints white at the screen's top edge.
+        if (msg == WM_NCCALCSIZE && wParam != 0) return 0;
         if (msg == WM_HOTKEY && wParam == HotkeyId)
         {
             _self.Toggle();

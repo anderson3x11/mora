@@ -8,7 +8,7 @@ static partial class Native
     public const nint WS_EX_TOPMOST = 0x8, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x40000, WS_EX_NOACTIVATE = 0x08000000;
     public const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
     public const int SW_SHOWNOACTIVATE = 4;
-    public const uint WM_MOUSEACTIVATE = 0x21, WM_HOTKEY = 0x312, MA_NOACTIVATE = 3;
+    public const uint WM_NCCALCSIZE = 0x83, WM_MOUSEACTIVATE = 0x21, WM_HOTKEY = 0x312, MA_NOACTIVATE = 3;
     public const uint MOD_ALT = 0x1, MOD_NOREPEAT = 0x4000;
     public const int WH_MOUSE_LL = 14;
     public const nint WM_LBUTTONDOWN = 0x201, WM_RBUTTONDOWN = 0x204, WM_MBUTTONDOWN = 0x207;
@@ -25,7 +25,8 @@ static partial class Native
     [LibraryImport("user32.dll")] public static partial int SetWindowRgn(nint hwnd, nint rgn, int redraw);
     [LibraryImport("user32.dll")] public static partial int RegisterHotKey(nint hwnd, int id, uint mods, uint vk);
     [LibraryImport("shcore.dll")] public static partial int GetDpiForMonitor(nint monitor, int type, out uint dpiX, out uint dpiY);
-    [LibraryImport("user32.dll")] public static partial nint MonitorFromPoint(POINT pt, uint flags);
+    [LibraryImport("user32.dll")] public static partial nint MonitorFromWindow(nint hwnd, uint flags);
+    [LibraryImport("user32.dll")] public static partial nint GetForegroundWindow();
     [LibraryImport("user32.dll", EntryPoint = "GetMonitorInfoW")] public static partial int GetMonitorInfo(nint monitor, ref MONITORINFO info);
     [LibraryImport("user32.dll", EntryPoint = "SetWindowsHookExW")] public static partial nint SetWindowsHookEx(int id, nint proc, nint module, uint thread);
     [LibraryImport("user32.dll")] public static partial int UnhookWindowsHookEx(nint hook);
