@@ -27,7 +27,7 @@ public sealed partial class IslandWindow : Window
     static Geo GeoOf(Mode m) => m switch
     {
         Mode.Compact => new(214, 32, 16, 8),
-        Mode.Expanded => new(480, 212, 32, 8),
+        Mode.Expanded => new(384, 170, 26, 8),
         _ => new(96, 24, 12, -40),
     };
 
@@ -37,6 +37,7 @@ public sealed partial class IslandWindow : Window
     readonly bool _motion = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
     readonly Stopwatch _clock = new();
     readonly Media _media;
+    readonly Settings _settings = Settings.Load();
     readonly List<Visual> _wave = [];
     readonly DispatcherQueueTimer _waveTimer;
     readonly DispatcherQueueTimer _progressTimer;
@@ -79,6 +80,7 @@ public sealed partial class IslandWindow : Window
         RegisterHotKey(_hwnd, HotkeyId, MOD_ALT | MOD_NOREPEAT, 'Q');
 
         Place();
+        SetWindowRgn(_hwnd, CreateRectRgn(0, 0, 0, 0), 1); // click-through from the start; Render only updates on change
         Render();
         ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
 
@@ -114,8 +116,10 @@ public sealed partial class IslandWindow : Window
         if (_mode == Mode.Expanded) Settle(); else SetMode(Mode.Expanded, Via.Hotkey);
     }
 
-    // Back to the resting state: the pill while media exists (paused included), otherwise hidden.
-    void Settle() => SetMode(_media.HasSession ? Mode.Compact : Mode.Hidden);
+    // The resting pill, when enabled, stays while media exists (paused included).
+    bool RestingPill => _settings.ShowCompactPill && _media.HasSession;
+
+    void Settle() => SetMode(RestingPill ? Mode.Compact : Mode.Hidden);
 
     // Growing: shape first, content fades in 140 ms later. Shrinking: content fades out first,
     // the shape follows 90 ms later, and the new content appears once it has mostly settled.
@@ -151,8 +155,8 @@ public sealed partial class IslandWindow : Window
     void OnMediaChanged()
     {
         Fill();
-        if (_mode == Mode.Hidden && _media.HasSession) SetMode(Mode.Compact);
-        else if (_mode == Mode.Compact && !_media.HasSession) SetMode(Mode.Hidden);
+        if (_mode == Mode.Hidden && RestingPill) SetMode(Mode.Compact);
+        else if (_mode == Mode.Compact && !RestingPill) SetMode(Mode.Hidden);
     }
 
     void Fill()

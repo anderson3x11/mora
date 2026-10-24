@@ -35,61 +35,61 @@
                 </Grid>
 
                 <!-- Expanded panel: media -->
-                <Grid x:Name="ExpandedLayer" Width="480" Height="212" Padding="20,18,20,14" Opacity="0"
+                <Grid x:Name="ExpandedLayer" Width="384" Height="170" Padding="16,14,16,11" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
                     <Grid.RenderTransform>
                         <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
                     </Grid.RenderTransform>
-                    <TextBlock x:Name="NothingPlaying" Text="Nothing playing right now" Foreground="{StaticResource Muted}" FontSize="13"
+                    <TextBlock x:Name="NothingPlaying" Text="Nothing playing right now" Foreground="{StaticResource Muted}" FontSize="11"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                     <Grid x:Name="MediaPane" Visibility="Collapsed">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="72" />
+                            <RowDefinition Height="58" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <Grid ColumnSpacing="14">
+                        <Grid ColumnSpacing="11">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="72" />
+                                <ColumnDefinition Width="58" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border x:Name="ExpandedArt" CornerRadius="14" Background="{StaticResource Line}">
-                                <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="28" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                            <Border x:Name="ExpandedArt" CornerRadius="11" Background="{StaticResource Line}">
+                                <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="22" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock x:Name="TitleText" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                <TextBlock x:Name="ArtistText" FontSize="13" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                <TextBlock x:Name="TitleText" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                <TextBlock x:Name="ArtistText" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                             </StackPanel>
                         </Grid>
-                        <Grid x:Name="ProgressRow" Grid.Row="1" Margin="0,10,0,0" ColumnSpacing="8">
+                        <Grid x:Name="ProgressRow" Grid.Row="1" Margin="0,8,0,0" ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="PositionText" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
-                            <Grid x:Name="SeekTrack" Grid.Column="1" Height="16" Background="Transparent" Tapped="Seek_Tapped">
+                            <TextBlock x:Name="PositionText" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                            <Grid x:Name="SeekTrack" Grid.Column="1" Height="14" Background="Transparent" Tapped="Seek_Tapped">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition x:Name="SeekDone" Width="0*" />
                                     <ColumnDefinition x:Name="SeekLeft" Width="1*" />
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.ColumnSpan="2" Height="6" CornerRadius="3" Background="{StaticResource Line}" />
-                                <Border Height="6" CornerRadius="3" Background="White" />
+                                <Border Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
+                                <Border Height="5" CornerRadius="2.5" Background="White" />
                             </Grid>
-                            <TextBlock x:Name="DurationText" Grid.Column="2" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="DurationText" Grid.Column="2" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
                         </Grid>
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid Width="44" Height="44" CornerRadius="22" Background="Transparent" Tapped="Previous_Tapped"
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped"
                                   PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                <FontIcon Glyph="&#xE892;" FontSize="20" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                <FontIcon Glyph="&#xE892;" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                             </Grid>
-                            <Grid Width="44" Height="44" CornerRadius="22" Background="Transparent" Tapped="Play_Tapped"
+                            <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Play_Tapped"
                                   PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" FontSize="24" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" FontSize="19" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                             </Grid>
-                            <Grid Width="44" Height="44" CornerRadius="22" Background="Transparent" Tapped="Next_Tapped"
+                            <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Next_Tapped"
                                   PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                <FontIcon Glyph="&#xE893;" FontSize="20" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                <FontIcon Glyph="&#xE893;" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                             </Grid>
                         </StackPanel>
                     </Grid>

@@ -26,7 +26,7 @@ form.Shown += async (_, _) =>
 {
     var fg = form.Handle;
     var outside = new Point(form.Left + form.Width / 2, form.Bottom - Px(40)); // form area below the text box
-    var play = new Point(mon.Left + mon.Width / 2, mon.Top + Px(165)); // play/pause button of the open panel
+    var play = new Point(mon.Left + mon.Width / 2, mon.Top + Px(135)); // play/pause button of the open panel
     exit = await Task.Run(() => Run(fg, outside, play, s, () => (string)form.Invoke(() => box.Text)));
     form.Close();
 };
@@ -49,6 +49,12 @@ static int Run(nint fg, Point outside, Point play, double s, Func<string> text)
         Console.WriteLine("FAIL: Atoll is not running");
         return 2;
     }
+    if (GetWindowRgnBox(island, out _) == 0) // ERROR: no region at all, the whole invisible window eats clicks
+    {
+        Console.WriteLine("FAIL: island window has no region, it blocks clicks around the pill");
+        return 1;
+    }
+
     // The island's window region follows the pill: tall when the panel is open, empty or a thin pill otherwise.
     void Expect(bool open, string step)
     {
