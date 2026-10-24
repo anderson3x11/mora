@@ -24,11 +24,18 @@ public sealed partial class IslandWindow : Window
     enum Via { None, Hotkey, Click, Hover }
     record struct Geo(double W, double H, double R, double Y);
 
-    static Geo GeoOf(Mode m) => m switch
+    enum Tab { Media, Timers, Clipboard }
+
+    Geo GeoOf(Mode m) => m switch
     {
         Mode.Compact => new(214, 32, 16, 8),
         Mode.Alert => new(304, 50, 25, 8),
-        Mode.Expanded => new(384, 170, 26, 8),
+        Mode.Expanded => new(384, _tab switch
+        {
+            Tab.Media => 170,
+            Tab.Timers => 124,
+            _ => 54 + 31 * Math.Clamp(_clipboard?.Items.Count ?? 0, 1, 4), // one 26 px row + 5 px gap per copy
+        }, 26, 8),
         _ => new(96, 24, 12, -40),
     };
 
@@ -49,6 +56,7 @@ public sealed partial class IslandWindow : Window
     bool _animating;
     Mode _mode;
     Via _via;
+    Tab _tab;
     int _token, _hoverToken, _winX, _winY;
     nint _hook, _monitor;
     RECT _hit; // physical px, window-relative
@@ -92,6 +100,10 @@ public sealed partial class IslandWindow : Window
         _progressTimer.Tick += (_, _) => UpdateProgress();
         _waveTimer = DispatcherQueue.CreateTimer();
         BuildWave();
+        ShowTab();
+        FillTimer();
+        _clipboard = new ClipboardHistory(_hwnd);
+        FillClipboard();
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
         WireAlerts();
@@ -291,6 +303,32 @@ public sealed partial class IslandWindow : Window
         if (_mode is Mode.Compact or Mode.Alert) SetMode(Mode.Expanded, Via.Click);
     }
 
+    void Tab_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        var before = GeoOf(Mode.Expanded);
+        _tab = Enum.Parse<Tab>((string)((FrameworkElement)sender).Tag);
+        ShowTab();
+        var after = GeoOf(Mode.Expanded);
+        Retarget(after, after.H > before.H ? OpenSpring : CloseSpring);
+    }
+
+    void ShowTab()
+    {
+        MediaTab.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
+        TimersTab.Visibility = _tab == Tab.Timers ? Visibility.Visible : Visibility.Collapsed;
+        ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
+        var res = ((FrameworkElement)Content).Resources;
+        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
+        {
+            bool on = (string)t.Tag == _tab.ToString();
+            t.Background = on ? (Brush)res["Raised"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            var fg = (Brush)res[on ? "Fg" : "Muted"];
+            var label = (Microsoft.UI.Xaml.Controls.StackPanel)t.Children[0];
+            ((Microsoft.UI.Xaml.Controls.FontIcon)label.Children[0]).Foreground = fg;
+            ((Microsoft.UI.Xaml.Controls.TextBlock)label.Children[1]).Foreground = fg;
+        }
+    }
+
     void Play_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.TogglePlay();
     void Next_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.Next();
     void Previous_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.Previous();
@@ -414,6 +452,11 @@ public sealed partial class IslandWindow : Window
             return 0;
         }
         if (msg == Tray.TaskbarCreated) _self._tray.Add();
+        if (msg == ClipboardHistory.WM_CLIPBOARDUPDATE)
+        {
+            _self.OnClipboardUpdate();
+            return 0;
+        }
         // No frame at all: WinUI keeps a 3 px dialog frame that DWM paints white at the screen's top edge.
         if (msg == WM_NCCALCSIZE && wParam != 0) return 0;
         if (msg == WM_HOTKEY && wParam == HotkeyId)

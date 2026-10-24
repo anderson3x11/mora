@@ -9,6 +9,17 @@
             <SolidColorBrush x:Key="Fg" Color="#F4F4F6" />
             <SolidColorBrush x:Key="Muted" Color="#9B9BA5" />
             <SolidColorBrush x:Key="Line" Color="#2C2C33" />
+            <SolidColorBrush x:Key="Raised" Color="#1C1C21" />
+            <Style x:Key="Chip" TargetType="Border">
+                <Setter Property="Background" Value="#1C1C21" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Padding" Value="11,5" />
+            </Style>
+            <Style x:Key="ChipText" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="10.5" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="#F4F4F6" />
+            </Style>
         </Grid.Resources>
 
         <Border x:Name="Pill" Background="#08080A" HorizontalAlignment="Center" VerticalAlignment="Top"
@@ -65,64 +76,118 @@
                     </Border>
                 </Grid>
 
-                <!-- Expanded panel: media -->
-                <Grid x:Name="ExpandedLayer" Width="384" Height="170" Padding="16,14,16,11" Opacity="0"
+                <!-- Expanded panel: tabs on top, one pane below. Media fits 170 high, the others 190. -->
+                <Grid x:Name="ExpandedLayer" Width="384" Height="190" Padding="14,11,14,13" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
                     <Grid.RenderTransform>
                         <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
                     </Grid.RenderTransform>
-                    <TextBlock x:Name="NothingPlaying" Text="Nothing playing right now" Foreground="{StaticResource Muted}" FontSize="11"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <Grid x:Name="MediaPane" Visibility="Collapsed">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="58" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid ColumnSpacing="11">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="58" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Border x:Name="ExpandedArt" CornerRadius="11" Background="{StaticResource Line}">
-                                <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="22" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
-                            </Border>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock x:Name="TitleText" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                <TextBlock x:Name="ArtistText" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="22" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel x:Name="Tabs" Orientation="Horizontal" Spacing="3">
+                        <Grid Tag="Media" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xEC4F;" FontSize="12" FontFamily="{StaticResource Icons}" />
+                                <TextBlock Text="Media" FontSize="10.5" FontWeight="SemiBold" />
                             </StackPanel>
                         </Grid>
-                        <Grid x:Name="ProgressRow" Grid.Row="1" Margin="0,8,0,0" ColumnSpacing="6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="PositionText" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
-                            <Grid x:Name="SeekTrack" Grid.Column="1" Height="14" Background="Transparent" Tapped="Seek_Tapped">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition x:Name="SeekDone" Width="0*" />
-                                    <ColumnDefinition x:Name="SeekLeft" Width="1*" />
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
-                                <Border Height="5" CornerRadius="2.5" Background="White" />
-                            </Grid>
-                            <TextBlock x:Name="DurationText" Grid.Column="2" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                        <Grid Tag="Timers" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE916;" FontSize="12" FontFamily="{StaticResource Icons}" />
+                                <TextBlock Text="Timers" FontSize="10.5" FontWeight="SemiBold" />
+                            </StackPanel>
                         </Grid>
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped"
-                                  PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                <FontIcon Glyph="&#xE892;" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                        <Grid Tag="Clipboard" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE77F;" FontSize="12" FontFamily="{StaticResource Icons}" />
+                                <TextBlock Text="Clipboard" FontSize="10.5" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" Margin="0,10,0,0">
+                        <!-- Media -->
+                        <Grid x:Name="MediaTab">
+                            <TextBlock x:Name="NothingPlaying" Text="Nothing playing right now" Foreground="{StaticResource Muted}" FontSize="11"
+                                       HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,40,0,0" />
+                            <Grid x:Name="MediaPane" Visibility="Collapsed">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="58" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid ColumnSpacing="11">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="ExpandedArt" CornerRadius="11" Background="{StaticResource Line}">
+                                        <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="22" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock x:Name="TitleText" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                        <TextBlock x:Name="ArtistText" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                        <Grid x:Name="ProgressRow" Margin="0,6,0,0" ColumnSpacing="6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="PositionText" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                            <Grid x:Name="SeekTrack" Grid.Column="1" Height="14" Background="Transparent" Tapped="Seek_Tapped">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition x:Name="SeekDone" Width="0*" />
+                                                    <ColumnDefinition x:Name="SeekLeft" Width="1*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
+                                                <Border Height="5" CornerRadius="2.5" Background="White" />
+                                            </Grid>
+                                            <TextBlock x:Name="DurationText" Grid.Column="2" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Grid.Row="1" Margin="0,4,0,0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                    <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped"
+                                          PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                        <FontIcon Glyph="&#xE892;" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                    </Grid>
+                                    <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Play_Tapped"
+                                          PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                        <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" FontSize="19" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                    </Grid>
+                                    <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Next_Tapped"
+                                          PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                        <FontIcon Glyph="&#xE893;" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                    </Grid>
+                                </StackPanel>
                             </Grid>
-                            <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Play_Tapped"
-                                  PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" FontSize="19" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
-                            </Grid>
-                            <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Next_Tapped"
-                                  PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                <FontIcon Glyph="&#xE893;" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                        </Grid>
+
+                        <!-- Timers -->
+                        <StackPanel x:Name="TimersTab" Visibility="Collapsed" Spacing="10">
+                            <StackPanel x:Name="TimerIdle" Spacing="10">
+                                <TextBlock Text="Start a timer. It counts down while you work." Foreground="{StaticResource Muted}" FontSize="11" />
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Border Style="{StaticResource Chip}" Tag="60" Tapped="TimerStart_Tapped"><TextBlock Text="1 min" Style="{StaticResource ChipText}" /></Border>
+                                    <Border Style="{StaticResource Chip}" Tag="300" Tapped="TimerStart_Tapped"><TextBlock Text="5 min" Style="{StaticResource ChipText}" /></Border>
+                                    <Border Style="{StaticResource Chip}" Tag="1500" Tapped="TimerStart_Tapped"><TextBlock Text="25 min focus" Style="{StaticResource ChipText}" /></Border>
+                                </StackPanel>
+                            </StackPanel>
+                            <Grid x:Name="TimerRunning" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock x:Name="TimerLabel" Foreground="{StaticResource Muted}" FontSize="11" />
+                                    <TextBlock x:Name="TimerLeft" FontFamily="{StaticResource Mono}" FontSize="30" Foreground="#FFB454" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource Chip}" Tapped="TimerAdd_Tapped"><TextBlock Text="+1 min" Style="{StaticResource ChipText}" /></Border>
+                                    <Border Style="{StaticResource Chip}" Tapped="TimerCancel_Tapped"><TextBlock Text="Cancel" Style="{StaticResource ChipText}" /></Border>
+                                </StackPanel>
                             </Grid>
                         </StackPanel>
+
+                        <!-- Clipboard -->
+                        <StackPanel x:Name="ClipboardTab" Visibility="Collapsed" Spacing="5" />
                     </Grid>
                 </Grid>
             </Grid>

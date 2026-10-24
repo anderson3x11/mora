@@ -12,29 +12,54 @@ GetDpiForMonitor(MonitorFromPoint(default, 1), 0, out var dpi, out _);
 double s = dpi / 96.0;
 int Px(double dip) => (int)(dip * s);
 
-var form = new Form
-{
-    Text = "Atoll keystroke test",
-    StartPosition = FormStartPosition.Manual,
-    Bounds = new Rectangle(mon.Left + mon.Width / 2 - Px(300), mon.Top + Px(360), Px(600), Px(300)),
-};
-var box = new TextBox { Multiline = true, Dock = DockStyle.Top, Height = Px(180) };
-form.Controls.Add(box);
-
+// Clipboard calls need a single-threaded apartment, which top-level statements do not give Main.
 int exit = 1;
-form.Shown += async (_, _) =>
+var ui = new Thread(() =>
 {
-    var fg = form.Handle;
-    var outside = new Point(form.Left + form.Width / 2, form.Bottom - Px(40)); // form area below the text box
-    var play = new Point(mon.Left + mon.Width / 2, mon.Top + Px(135)); // play/pause button of the open panel
-    exit = await Task.Run(() => Run(fg, outside, play, s, () => (string)form.Invoke(() => box.Text)));
-    form.Close();
-};
-Application.Run(form);
+    var form = new Form
+    {
+        Text = "Atoll keystroke test",
+        StartPosition = FormStartPosition.Manual,
+        Bounds = new Rectangle(mon.Left + mon.Width / 2 - Px(300), mon.Top + Px(360), Px(600), Px(300)),
+    };
+    var box = new TextBox { Multiline = true, Dock = DockStyle.Top, Height = Px(180) };
+    form.Controls.Add(box);
+
+    form.Shown += async (_, _) =>
+    {
+        var fg = form.Handle;
+        var outside = new Point(form.Left + form.Width / 2, form.Bottom - Px(40)); // form area below the text box
+        // Points inside the open panel, in DIPs from its top-left corner (384 wide, 8 below the screen edge).
+        Point Panel(int x, int y) => new(mon.Left + mon.Width / 2 - Px(192) + Px(x), mon.Top + Px(8 + y));
+
+        // The test copies text, so put the user's clipboard back afterwards.
+        var savedText = Clipboard.ContainsText() ? Clipboard.GetText() : null;
+        var savedHtml = Clipboard.ContainsText(TextDataFormat.Html) ? Clipboard.GetText(TextDataFormat.Html) : null;
+        try
+        {
+            exit = await Task.Run(() => Run(fg, outside, Panel, s, () => (string)form.Invoke(() => box.Text),
+                t => form.Invoke(() => Clipboard.SetText(t))));
+        }
+        finally
+        {
+            var o = new DataObject();
+            if (savedText != null) o.SetText(savedText);
+            if (savedHtml != null) o.SetText(savedHtml, TextDataFormat.Html);
+            if (savedText != null || savedHtml != null) Clipboard.SetDataObject(o, true);
+        }
+        form.Close();
+    };
+    Application.Run(form);
+});
+ui.SetApartmentState(ApartmentState.STA);
+ui.Start();
+ui.Join();
 return exit;
 
-static int Run(nint fg, Point outside, Point play, double s, Func<string> text)
+static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Func<string> text, Action<string> copy)
 {
+    var play = panel(192, 123);
+    Point mediaTab = panel(40, 22), clipboardTab = panel(190, 22), pasteFirst = panel(349, 56);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)
@@ -94,7 +119,13 @@ static int Run(nint fg, Point outside, Point play, double s, Func<string> text)
             AltQ(); Type(40); Expect("panel", "Alt+Q");         // open over the alert, typing through the spring
             Click(play); Type(20); Click(play); Type(20); Expect("panel", "button clicks"); // play/pause twice: music ends as it was
             AltQ(); Type(40); Expect("hidden", "Alt+Q");        // close with the shortcut
-            AltQ(); Type(30); Expect("panel", "Alt+Q");         // open again
+            var clip = $"[pasted {cycle}]";
+            copy(clip); Type(20); Expect("alert", "a copy");    // copy alert, mid-sentence
+            AltQ(); Type(20); Expect("panel", "Alt+Q");         // open again
+            Click(clipboardTab); Thread.Sleep(400);
+            Click(pasteFirst); Thread.Sleep(300);               // Atoll types Ctrl+V into this window
+            expected.Append(clip);
+            Click(mediaTab); Type(30);
             Click(outside); Type(40); Expect("hidden", "outside click"); // click outside closes it
         }
     }
