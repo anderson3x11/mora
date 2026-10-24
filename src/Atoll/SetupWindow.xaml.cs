@@ -35,7 +35,7 @@ public sealed partial class SetupWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Atoll.ico"));
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         double scale = Native.GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
-        int w = (int)(540 * scale), h = (int)((firstRun ? 500 : 760) * scale);
+        int w = (int)(540 * scale), h = (int)((firstRun ? 540 : 800) * scale);
         AppWindow.MoveAndResize(new RectInt32(area.X + (area.Width - w) / 2, area.Y + (area.Height - h) / 2, w, h));
         // Closing setup early still counts as done: the defaults are safe, and it should not come back every launch.
         Closed += (_, _) => { if (!_finished && _firstRun) _done(_working); };
@@ -72,6 +72,7 @@ public sealed partial class SetupWindow : Window
                 Heading("Two promises");
                 Body("Atoll never takes your keyboard. Every key you press keeps going to the app you are in, even while the island opens.");
                 Body("No ads, ever. The island only shows things you are doing. Never promotions, including ours.");
+                Page.Children.Add(StartCheck());
                 break;
         }
         BackButton.Visibility = _step == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -125,8 +126,11 @@ public sealed partial class SetupWindow : Window
     {
         var p = Section("Island");
         p.Children.Add(Check("Keep a small pill on screen while music plays", () => _working.ShowCompactPill, v => _working.ShowCompactPill = v));
+        p.Children.Add(StartCheck());
         return p;
     }
+
+    CheckBox StartCheck() => Check("Start Atoll when Windows starts", () => _working.StartWithWindows, v => _working.StartWithWindows = v);
 
     static CheckBox Check(string label, Func<bool> get, Action<bool> set)
     {

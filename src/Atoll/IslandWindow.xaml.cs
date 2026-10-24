@@ -126,6 +126,7 @@ public sealed partial class IslandWindow : Window
             }),
         ];
         if (Settings.FirstRun) OpenSetup(firstRun: true);
+        else Startup.Apply(_settings.StartWithWindows); // keeps the entry right if the app was moved or updated
     }
 
     // The island stays hidden and quiet while setup or settings are open.
@@ -141,6 +142,7 @@ public sealed partial class IslandWindow : Window
         {
             _settings = chosen;
             _settings.Save();
+            Startup.Apply(_settings.StartWithWindows);
             UpdateHotkey();
             OnMediaChanged(); // the resting pill may have been switched on or off
             if (firstRun)

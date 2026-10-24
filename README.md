@@ -4,6 +4,18 @@ A Dynamic Island for Windows 10 and 11. A black pill at the top of the screen sh
 
 The product brief is in [project.md](project.md).
 
+## Install
+
+Builds Atoll, installs it for your user in `%LOCALAPPDATA%\Programs\Atoll` (no admin rights) and starts it. Run it again to update; settings are kept.
+
+```bash
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+With "Start Atoll when Windows starts" checked (the default, in setup and settings), the installed copy adds itself to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. Unchecking it removes the entry. Development builds never write that entry.
+
+To uninstall: Quit Atoll from its tray icon, uncheck the start option first (or delete the `Atoll` value under that key), then delete `%LOCALAPPDATA%\Programs\Atoll` and `%LOCALAPPDATA%\Atoll`.
+
 ## Build and run
 
 Needs the .NET 10 SDK. Visual Studio is not required: the Windows App SDK comes from NuGet and the app runs unpackaged.

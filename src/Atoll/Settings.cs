@@ -13,6 +13,8 @@ sealed class Settings
 {
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
 
+    public bool StartWithWindows { get; set; } = true;
+
     // Off by default: unlike a Mac notch, a resting pill covers real content (browser tabs).
     public bool ShowCompactPill { get; set; }
 
