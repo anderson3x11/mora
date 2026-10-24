@@ -31,6 +31,8 @@ static partial class Native
     [LibraryImport("user32.dll")] public static partial int GetCursorPos(out POINT pt);
     [LibraryImport("user32.dll")] public static partial uint GetDpiForWindow(nint hwnd);
     [LibraryImport("user32.dll")] public static partial short GetAsyncKeyState(int vk);
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowW", StringMarshalling = StringMarshalling.Utf16)] public static partial nint FindWindow(string? cls, string title);
+    [LibraryImport("user32.dll", EntryPoint = "PostMessageW")] public static partial int PostMessage(nint hwnd, uint msg, nint wParam, nint lParam);
     [LibraryImport("user32.dll")] public static partial int UnregisterHotKey(nint hwnd, int id);
     [LibraryImport("user32.dll")] public static partial int IsZoomed(nint hwnd);
     [LibraryImport("user32.dll")] public static partial int GetWindowRect(nint hwnd, out RECT rect);

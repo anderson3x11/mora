@@ -5,6 +5,7 @@ namespace Atoll;
 public partial class App : Application
 {
     IslandWindow? _island;
+    Mutex? _single;
 
     public App()
     {
@@ -24,5 +25,16 @@ public partial class App : Application
         };
     }
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args) => _island = new IslandWindow();
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        // One island only: launching again (Start menu, startup) opens the running one instead.
+        _single = new Mutex(true, @"Local\Atoll.Island", out bool first);
+        if (!first)
+        {
+            var running = Native.FindWindow(null, "Atoll");
+            if (running != 0) Native.PostMessage(running, Tray.Message, 1, 0x202); // as a click on its tray icon
+            Environment.Exit(0);
+        }
+        _island = new IslandWindow();
+    }
 }
