@@ -5,7 +5,7 @@ namespace Atoll;
 enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard }
 
 // User preferences, read once at startup from %LOCALAPPDATA%\Atoll\settings.json.
-// ponytail: no settings window yet, the file is edited by hand until it exists.
+// ponytail: no settings window yet, the file is edited by hand (tray menu) and applies on restart.
 sealed class Settings
 {
     // Off by default: unlike a Mac notch, a resting pill covers real content (browser tabs).
@@ -29,12 +29,22 @@ sealed class Settings
         _ => PopClipboard,
     };
 
+    public static readonly string FilePath =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Atoll", "settings.json");
+
+    // Writes the defaults out so there is something to edit by hand.
+    public static void EnsureFile()
+    {
+        if (File.Exists(FilePath)) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+        File.WriteAllText(FilePath, JsonSerializer.Serialize(new Settings(), new JsonSerializerOptions { WriteIndented = true }));
+    }
+
     public static Settings Load()
     {
-        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Atoll", "settings.json");
         try
         {
-            return JsonSerializer.Deserialize<Settings>(File.ReadAllText(path)) ?? new();
+            return JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new();
         }
         catch (Exception e) when (e is IOException or JsonException)
         {

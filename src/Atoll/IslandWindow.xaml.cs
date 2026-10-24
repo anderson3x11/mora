@@ -39,6 +39,8 @@ public sealed partial class IslandWindow : Window
     readonly Stopwatch _clock = new();
     readonly Media _media;
     readonly Settings _settings = Settings.Load();
+    readonly Tray _tray;
+    readonly IReadOnlyList<(string Label, Action Run)> _trayMenu;
     readonly List<Visual> _wave = [];
     readonly DispatcherQueueTimer _waveTimer;
     readonly DispatcherQueueTimer _progressTimer;
@@ -93,6 +95,22 @@ public sealed partial class IslandWindow : Window
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
         WireAlerts();
+        _tray = new Tray(_hwnd);
+        _trayMenu =
+        [
+            ("Open Atoll    Alt+Q", () => SetMode(Mode.Expanded, Via.Click)),
+            ("Edit settings (applies on restart)", () =>
+            {
+                Settings.EnsureFile();
+                Process.Start("notepad.exe", $"\"{Settings.FilePath}\"");
+            }),
+            ("Quit Atoll", () =>
+            {
+                _tray.Remove();
+                HookMouse(false);
+                Application.Current.Exit();
+            }),
+        ];
         _ = _media.StartAsync();
     }
 
@@ -390,6 +408,12 @@ public sealed partial class IslandWindow : Window
     static nint WndProc(nint hwnd, uint msg, nint wParam, nint lParam, nuint id, nuint data)
     {
         if (msg == WM_MOUSEACTIVATE) return (nint)MA_NOACTIVATE;
+        if (msg == Tray.Message)
+        {
+            _self._tray.OnMessage(lParam, _self.Toggle, _self._trayMenu);
+            return 0;
+        }
+        if (msg == Tray.TaskbarCreated) _self._tray.Add();
         // No frame at all: WinUI keeps a 3 px dialog frame that DWM paints white at the screen's top edge.
         if (msg == WM_NCCALCSIZE && wParam != 0) return 0;
         if (msg == WM_HOTKEY && wParam == HotkeyId)
