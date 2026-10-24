@@ -107,6 +107,7 @@ public sealed partial class IslandWindow : Window
         FillTimer();
         _clipboard = new ClipboardHistory(_hwnd);
         FillClipboard();
+        LoadShelf();
         FillShelf();
         WatchGames();
         _media = new Media(DispatcherQueue);

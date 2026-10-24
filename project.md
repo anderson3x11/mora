@@ -235,4 +235,4 @@ Decisions taken while building:
 - During a game set to "Stay out of my way", Atoll releases Alt+Q so the game receives it.
 - Clipboard history skips copies flagged private (password managers) and never touches disk.
 
-Open follow-ups: dragging toward the top opens the shelf while hidden (needs a global drag watcher without false positives on tab and window drags), split bubble, output-device picker, mixed-DPI testing, persistence of the shelf.
+Open follow-ups: dragging toward the top opens the shelf while hidden (needs a global drag watcher without false positives on tab and window drags), split bubble, output-device picker, mixed-DPI testing.

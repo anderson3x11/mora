@@ -69,8 +69,12 @@ sealed class Audio
             if (flow != 0 || role != 1 || id is null) return; // render, multimedia: one event per switch
             audio._ui.TryEnqueue(() =>
             {
-                audio.Attach();
-                if (audio._devices.GetDevice(id, out var device) == 0) audio.OutputChanged?.Invoke(FriendlyName(device));
+                try
+                {
+                    audio.Attach();
+                    if (audio._devices.GetDevice(id, out var device) == 0) audio.OutputChanged?.Invoke(FriendlyName(device));
+                }
+                catch (COMException) { } // the device went away again while switching
             });
         }
 

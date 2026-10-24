@@ -44,7 +44,7 @@ public sealed partial class IslandWindow
 
         _downloads = new Downloads(DispatcherQueue);
         _downloads.Finished += path => Notify(new Alert(Pop.Downloads, "", Path.GetFileName(path),
-            "Download finished · " + Size(path), Green, ActionLabel: "Show",
+            "Download finished " + Size(path), Green, ActionLabel: "Show",
             Action: () => Process.Start("explorer.exe", $"/select,\"{path}\"")));
 
         if (PowerManager.BatteryStatus != BatteryStatus.NotPresent)
@@ -72,11 +72,13 @@ public sealed partial class IslandWindow
 
     static string Size(string path)
     {
-        double b = new FileInfo(path).Exists ? new FileInfo(path).Length : 0;
+        double b;
+        try { b = new FileInfo(path).Length; }
+        catch (IOException) { return ""; } // moved or deleted right after finishing
         string[] units = ["B", "KB", "MB", "GB"];
         int i = 0;
         while (b >= 1024 && i < units.Length - 1) { b /= 1024; i++; }
-        return $"{b:0.#} {units[i]}";
+        return $"· {b:0.#} {units[i]}";
     }
 
     // force: Atoll's own questions and summaries, shown whatever the pop-up settings or a running game.

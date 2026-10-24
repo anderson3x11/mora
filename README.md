@@ -43,6 +43,7 @@ dotnet run --project tests/KeystrokeTest
 ## Known limits
 
 - Dragging a file toward the top of the screen while the island is hidden does not open the shelf yet: open the panel with Alt+Q first (also works mid-drag). A global drag watcher would fire on browser tab and window drags too.
-- The shelf and clipboard history live in memory only and are cleared on quit.
+- Clipboard history lives in memory only (by design) and is cleared on quit. The shelf list is saved in `%LOCALAPPDATA%\Atoll\shelf.json`.
+- Unexpected errors are logged to `%LOCALAPPDATA%\Atoll\errors.log` instead of closing the app.
 - Monitors with different scaling were not tested (both test monitors were at 100%).
 - Native Windows volume and brightness flyouts are not hidden, which is why the volume pop-up is opt-in.

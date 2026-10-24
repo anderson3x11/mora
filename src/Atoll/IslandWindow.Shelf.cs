@@ -9,12 +9,34 @@ namespace Atoll;
 
 // Shelf: files dropped on the island stay listed (the files themselves are not moved or copied)
 // and can be dragged out into any app. A file dragged over the island opens it on this tab.
-// ponytail: the list lives in memory; dragging toward the top of the screen while the island
-// is hidden does not open it yet (that needs a global drag watcher).
+// The list of paths is kept in shelf.json next to the settings.
+// ponytail: dragging toward the top of the screen while the island is hidden does not open it yet
+// (that needs a global drag watcher that ignores browser tab and window drags).
 public sealed partial class IslandWindow
 {
+    static readonly string ShelfFile = Path.Combine(Path.GetDirectoryName(Settings.FilePath)!, "shelf.json");
     readonly List<string> _shelf = [];
     int _dragToken;
+
+    void LoadShelf()
+    {
+        try
+        {
+            var saved = System.Text.Json.JsonSerializer.Deserialize<List<string>>(File.ReadAllText(ShelfFile)) ?? [];
+            _shelf.AddRange(saved.Where(p => File.Exists(p) || Directory.Exists(p)));
+        }
+        catch (Exception e) when (e is IOException or System.Text.Json.JsonException) { }
+    }
+
+    void SaveShelf()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(ShelfFile)!);
+            File.WriteAllText(ShelfFile, System.Text.Json.JsonSerializer.Serialize(_shelf));
+        }
+        catch (IOException) { } // keeps working from memory
+    }
 
     void Pill_DragEnter(object sender, DragEventArgs e)
     {
@@ -40,10 +62,13 @@ public sealed partial class IslandWindow
     {
         if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
         var deferral = e.GetDeferral();
-        var items = await e.DataView.GetStorageItemsAsync();
-        deferral.Complete();
+        IReadOnlyList<IStorageItem> items;
+        try { items = await e.DataView.GetStorageItemsAsync(); }
+        catch (System.Runtime.InteropServices.COMException) { return; } // virtual files (zip contents, phones) have no path
+        finally { deferral.Complete(); }
         foreach (var item in items)
             if (!string.IsNullOrEmpty(item.Path) && !_shelf.Contains(item.Path)) _shelf.Insert(0, item.Path);
+        SaveShelf();
         FillShelf();
         if (_mode == Mode.Expanded) Retarget(GeoOf(Mode.Expanded), OpenSpring);
         await SettleAfterDrag(900);
@@ -103,6 +128,7 @@ public sealed partial class IslandWindow
             {
                 e.Handled = true;
                 _shelf.Remove(path);
+                SaveShelf();
                 FillShelf();
                 Retarget(GeoOf(Mode.Expanded), CloseSpring);
             };
@@ -123,6 +149,7 @@ public sealed partial class IslandWindow
                 {
                     e.Cancel = true; // moved or deleted since it was dropped
                     _shelf.Remove(path);
+                    SaveShelf();
                     FillShelf();
                 }
                 finally { deferral.Complete(); }

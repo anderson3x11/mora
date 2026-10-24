@@ -128,6 +128,6 @@ public sealed partial class IslandWindow
         GetWindowThreadProcessId(fg, out var pid);
         if (pid == Environment.ProcessId) return null;
         try { return Process.GetProcessById((int)pid).ProcessName; }
-        catch (ArgumentException) { return null; } // exited meanwhile
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException) { return null; } // exited meanwhile
     }
 }
