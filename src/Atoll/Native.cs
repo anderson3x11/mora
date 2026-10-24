@@ -12,6 +12,7 @@ static partial class Native
     public const uint MOD_ALT = 0x1, MOD_NOREPEAT = 0x4000;
     public const int WH_MOUSE_LL = 14;
     public const nint WM_LBUTTONDOWN = 0x201, WM_RBUTTONDOWN = 0x204, WM_MBUTTONDOWN = 0x207;
+    public const nint WM_LBUTTONUP = 0x202, WM_RBUTTONUP = 0x205, WM_MBUTTONUP = 0x208;
     public static readonly nint HWND_TOPMOST = -1;
 
     [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
@@ -29,6 +30,7 @@ static partial class Native
     [LibraryImport("user32.dll")] public static partial nint GetForegroundWindow();
     [LibraryImport("user32.dll")] public static partial int GetCursorPos(out POINT pt);
     [LibraryImport("user32.dll")] public static partial uint GetDpiForWindow(nint hwnd);
+    [LibraryImport("user32.dll")] public static partial short GetAsyncKeyState(int vk);
     [LibraryImport("user32.dll")] public static partial int UnregisterHotKey(nint hwnd, int id);
     [LibraryImport("user32.dll")] public static partial int IsZoomed(nint hwnd);
     [LibraryImport("user32.dll")] public static partial int GetWindowRect(nint hwnd, out RECT rect);

@@ -23,7 +23,8 @@
         </Grid.Resources>
 
         <Border x:Name="Pill" Background="#08080A" HorizontalAlignment="Center" VerticalAlignment="Top"
-                PointerEntered="Pill_PointerEntered" PointerExited="Pill_PointerExited" Tapped="Pill_Tapped">
+                PointerEntered="Pill_PointerEntered" PointerExited="Pill_PointerExited" Tapped="Pill_Tapped"
+                AllowDrop="True" DragEnter="Pill_DragEnter" DragOver="Pill_DragOver" DragLeave="Pill_DragLeave" Drop="Pill_Drop">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="PillOffset" />
             </Border.RenderTransform>
@@ -138,6 +139,12 @@
                                 <TextBlock Text="Timers" FontSize="10.5" FontWeight="SemiBold" />
                             </StackPanel>
                         </Grid>
+                        <Grid Tag="Shelf" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE7B8;" FontSize="12" FontFamily="{StaticResource Icons}" />
+                                <TextBlock x:Name="ShelfTabText" Text="Shelf" FontSize="10.5" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Grid>
                         <Grid Tag="Clipboard" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE77F;" FontSize="12" FontFamily="{StaticResource Icons}" />
@@ -224,6 +231,9 @@
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
+
+                        <!-- Shelf: files dropped here stay until removed, and drag out into any app -->
+                        <StackPanel x:Name="ShelfTab" Visibility="Collapsed" Spacing="5" />
 
                         <!-- Clipboard -->
                         <StackPanel x:Name="ClipboardTab" Visibility="Collapsed" Spacing="5" />

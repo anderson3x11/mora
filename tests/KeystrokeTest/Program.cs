@@ -24,6 +24,10 @@ var ui = new Thread(() =>
     };
     var box = new TextBox { Multiline = true, Dock = DockStyle.Top, Height = Px(180) };
     form.Controls.Add(box);
+    string? dropped = null; // a file dragged out of the shelf lands here
+    form.AllowDrop = true;
+    form.DragEnter += (_, e) => e.Effect = e.Data!.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+    form.DragDrop += (_, e) => dropped = ((string[])e.Data!.GetData(DataFormats.FileDrop)!)[0];
 
     form.Shown += async (_, _) =>
     {
@@ -37,13 +41,17 @@ var ui = new Thread(() =>
         var savedHtml = Clipboard.ContainsText(TextDataFormat.Html) ? Clipboard.GetText(TextDataFormat.Html) : null;
         try
         {
-            exit = await Task.Run(() => Run(fg, outside, Panel, s, () => (string)form.Invoke(() => box.Text),
-                t => form.Invoke(() => Clipboard.SetText(t)),
-                on => form.Invoke(() =>
+            var host = new Host(
+                Text: () => (string)form.Invoke(() => box.Text),
+                Copy: t => form.Invoke(() => Clipboard.SetText(t)),
+                Fullscreen: on => form.Invoke(() =>
                 {
                     form.FormBorderStyle = on ? FormBorderStyle.None : FormBorderStyle.Sizable;
                     form.Bounds = on ? mon : new Rectangle(mon.Left + mon.Width / 2 - Px(300), mon.Top + Px(360), Px(600), Px(300));
-                })));
+                }),
+                StartDrag: path => form.BeginInvoke(() => form.DoDragDrop(new DataObject(DataFormats.FileDrop, new[] { path }), DragDropEffects.Copy)),
+                Dropped: () => (string?)form.Invoke(() => dropped));
+            exit = await Task.Run(() => Run(fg, outside, Panel, s, host));
         }
         finally
         {
@@ -61,10 +69,10 @@ ui.Start();
 ui.Join();
 return exit;
 
-static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Func<string> text, Action<string> copy, Action<bool> fullscreen)
+static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
     var play = panel(192, 123);
-    Point mediaTab = panel(40, 22), clipboardTab = panel(190, 22), pasteFirst = panel(349, 56);
+    Point mediaTab = panel(40, 22), clipboardTab = panel(260, 22), pasteFirst = panel(349, 56), firstShelfRow = panel(100, 56);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)
@@ -125,7 +133,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Fu
             Click(play); Type(20); Click(play); Type(20); Expect("panel", "button clicks"); // play/pause twice: music ends as it was
             AltQ(); Type(40); Expect("hidden", "Alt+Q");        // close with the shortcut
             var clip = $"[pasted {cycle}]";
-            copy(clip); Type(20); Expect("alert", "a copy");    // copy alert, mid-sentence
+            host.Copy(clip); Type(20); Expect("alert", "a copy");    // copy alert, mid-sentence
             AltQ(); Type(20); Expect("panel", "Alt+Q");         // open again
             Click(clipboardTab); Thread.Sleep(400);
             Click(pasteFirst); Thread.Sleep(300);               // Atoll types Ctrl+V into this window
@@ -134,11 +142,25 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Fu
             Click(outside); Type(40); Expect("hidden", "outside click"); // click outside closes it
         }
 
+        // Shelf: drag a file from this window onto the open panel, then drag it back out of the shelf.
+        var file = Path.Combine(Path.GetTempPath(), "atoll-shelf-test.txt");
+        File.WriteAllText(file, "shelf");
+        AltQ(); Type(30); Expect("panel", "Alt+Q");
+        MoveTo(outside); Down(); host.StartDrag(file); Thread.Sleep(150);
+        DragTo(panel(192, 60)); Thread.Sleep(400); Up(); Thread.Sleep(600);
+        Expect("panel", "a file dropped on it");                   // the press started outside, the panel stays
+        MoveTo(firstShelfRow); Down(); DragTo(outside); Thread.Sleep(400); Up(); Thread.Sleep(600);
+        if (!string.Equals(host.Dropped(), file, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"the shelf handed back \"{host.Dropped()}\" instead of the dropped file");
+        File.Delete(file);
+        Type(30);
+        Click(outside); Type(40); Expect("hidden", "outside click");
+
         // A borderless fullscreen "game" with the default setting: the island stays out of the way.
-        fullscreen(true); Type(250);                        // Atoll checks every 1.5 s
+        host.Fullscreen(true); Type(250);                        // Atoll checks every 1.5 s
         FinishDownload(98); Type(40); Expect("hidden", "a download during a game");
         AltQ(); Type(40); Expect("hidden", "Alt+Q during a game"); // the shortcut is released to the game
-        fullscreen(false); Type(200); Expect("alert", "leaving the game"); // one summary of what was held
+        host.Fullscreen(false); Type(200); Expect("alert", "leaving the game"); // one summary of what was held
     }
     catch (InvalidOperationException e)
     {
@@ -151,7 +173,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Fu
     }
     Thread.Sleep(500);
 
-    var got = text();
+    var got = host.Text();
     bool ok = got == expected.ToString();
     Console.WriteLine($"typed {expected.Length}, received {got.Length}, foreground kept");
     if (got != expected.ToString())
@@ -173,6 +195,26 @@ static void AltQ()
     Key(0x12, '\0', 2);
 }
 
+static void MoveTo(Point p)
+{
+    var screen = Screen.PrimaryScreen!.Bounds;
+    Send(new INPUT { Type = 0, Mi = new MOUSEINPUT { Dx = p.X * 65536 / screen.Width, Dy = p.Y * 65536 / screen.Height, Flags = 0x1 | 0x8000 } }); // MOVE | ABSOLUTE
+}
+
+// Small steps, so drag-and-drop sees real movement rather than a jump.
+static void DragTo(Point to)
+{
+    GetCursorPos(out var from);
+    for (int i = 1; i <= 20; i++)
+    {
+        MoveTo(new Point(from.X + (to.X - from.X) * i / 20, from.Y + (to.Y - from.Y) * i / 20));
+        Thread.Sleep(15);
+    }
+}
+
+static void Down() => Send(new INPUT { Type = 0, Mi = new MOUSEINPUT { Flags = 0x2 } });
+static void Up() => Send(new INPUT { Type = 0, Mi = new MOUSEINPUT { Flags = 0x4 } });
+
 static void Click(Point p)
 {
     SetCursorPos(p.X, p.Y);
@@ -187,6 +229,7 @@ static unsafe void Send(INPUT input) => SendInput(1, &input, sizeof(INPUT));
 
 [DllImport("user32.dll")] static extern unsafe uint SendInput(uint n, INPUT* inputs, int size);
 [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
+[DllImport("user32.dll")] static extern bool GetCursorPos(out Point p);
 [DllImport("user32.dll")] static extern nint GetForegroundWindow();
 [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern nint FindWindow(string? cls, string title);
 [DllImport("user32.dll")] static extern int GetWindowRgnBox(nint hwnd, out RECT box);
@@ -200,6 +243,7 @@ struct INPUT
     [FieldOffset(8)] public MOUSEINPUT Mi;
     [FieldOffset(8)] public KEYBDINPUT Ki;
 }
+record Host(Func<string> Text, Action<string> Copy, Action<bool> Fullscreen, Action<string> StartDrag, Func<string?> Dropped);
 struct RECT { public int Left, Top, Right, Bottom; }
 struct MOUSEINPUT { public int Dx, Dy; public uint Data, Flags, Time; public nint Extra; }
 struct KEYBDINPUT { public ushort Vk; public char Scan; public uint Flags, Time; public nint Extra; }

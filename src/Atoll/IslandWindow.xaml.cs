@@ -21,10 +21,10 @@ public sealed partial class IslandWindow : Window
     static readonly (double K, double C) OpenSpring = (340, 27), CloseSpring = (520, 46), Reduced = (900, 60);
 
     enum Mode { Hidden, Compact, Alert, Game, Expanded }
-    enum Via { None, Hotkey, Click, Hover }
+    enum Via { None, Hotkey, Click, Hover, Drag }
     record struct Geo(double W, double H, double R, double Y);
 
-    enum Tab { Media, Timers, Clipboard }
+    enum Tab { Media, Timers, Shelf, Clipboard }
 
     Geo GeoOf(Mode m) => m switch
     {
@@ -35,6 +35,7 @@ public sealed partial class IslandWindow : Window
         {
             Tab.Media => 170,
             Tab.Timers => 124,
+            Tab.Shelf => 54 + 31 * Math.Clamp(_shelf.Count, 2, 4),           // the empty drop zone takes two rows
             _ => 54 + 31 * Math.Clamp(_clipboard?.Items.Count ?? 0, 1, 4), // one 26 px row + 5 px gap per copy
         }, 26, 8),
         _ => new(96, 24, 12, -40),
@@ -106,6 +107,7 @@ public sealed partial class IslandWindow : Window
         FillTimer();
         _clipboard = new ClipboardHistory(_hwnd);
         FillClipboard();
+        FillShelf();
         WatchGames();
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
@@ -172,7 +174,17 @@ public sealed partial class IslandWindow : Window
             if (GamePolicy == GameMode.Music) ToggleGameCard();
             return;
         }
-        if (_mode == Mode.Expanded) Settle(); else SetMode(Mode.Expanded, Via.Hotkey);
+        if (_mode == Mode.Expanded)
+        {
+            Settle();
+            return;
+        }
+        if (GetAsyncKeyState(0x01) < 0) // pressed mid-drag: open where the file can be dropped
+        {
+            _tab = Tab.Shelf;
+            ShowTab();
+        }
+        SetMode(Mode.Expanded, Via.Hotkey);
     }
 
     // The resting pill, when enabled, stays while media exists (paused included), never over a game.
@@ -351,6 +363,7 @@ public sealed partial class IslandWindow : Window
     {
         MediaTab.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
         TimersTab.Visibility = _tab == Tab.Timers ? Visibility.Visible : Visibility.Collapsed;
+        ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
         ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
         var res = ((FrameworkElement)Content).Resources;
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
@@ -448,6 +461,10 @@ public sealed partial class IslandWindow : Window
     }
 
     // Low-level mouse hook only while the panel is open, to close on a click outside it.
+    // A click closes it on release, and only when pressed and released outside: a file dragged
+    // from Explorer onto the open panel starts outside but ends on it, and must not close it.
+    static bool _pressedOutside;
+
     void HookMouse(bool on)
     {
         if (on && _hook == 0)
@@ -468,11 +485,17 @@ public sealed partial class IslandWindow : Window
     [System.Runtime.InteropServices.UnmanagedCallersOnly]
     static unsafe nint MouseProc(int code, nint wParam, nint lParam)
     {
-        if (code >= 0 && (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN))
+        if (code >= 0)
         {
             var s = _self;
-            if (!s.OnPill(*(POINT*)lParam)) // MSLLHOOKSTRUCT starts with the screen point
-                s.DispatcherQueue.TryEnqueue(() => { if (s._mode == Mode.Expanded) s.Settle(); });
+            bool outside = !s.OnPill(*(POINT*)lParam); // MSLLHOOKSTRUCT starts with the screen point
+            if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN) _pressedOutside = outside;
+            else if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP || wParam == WM_MBUTTONUP)
+            {
+                if (_pressedOutside && outside)
+                    s.DispatcherQueue.TryEnqueue(() => { if (s._mode == Mode.Expanded) s.Settle(); });
+                _pressedOutside = false;
+            }
         }
         return CallNextHookEx(0, code, wParam, lParam);
     }
