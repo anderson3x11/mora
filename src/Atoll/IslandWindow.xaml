@@ -71,9 +71,48 @@
                             <Border CornerRadius="2.5" Background="White" />
                         </Grid>
                     </StackPanel>
-                    <Border x:Name="AlertAction" Grid.Column="2" Background="White" CornerRadius="12" Padding="11,5" VerticalAlignment="Center" Tapped="AlertAction_Tapped">
-                        <TextBlock x:Name="AlertActionText" FontSize="10.5" FontWeight="SemiBold" Foreground="#08080A" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <Border x:Name="AlertAction2" Style="{StaticResource Chip}" Tapped="AlertAction2_Tapped">
+                            <TextBlock x:Name="AlertAction2Text" Style="{StaticResource ChipText}" />
+                        </Border>
+                        <Border x:Name="AlertAction" Background="White" CornerRadius="12" Padding="11,5" Tapped="AlertAction_Tapped">
+                            <TextBlock x:Name="AlertActionText" FontSize="10.5" FontWeight="SemiBold" Foreground="#08080A" />
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Game music card: shortcut during a game set to "Only when I ask" -->
+                <Grid x:Name="GameLayer" Width="288" Height="66" Padding="11,0,8,0" ColumnSpacing="10" Opacity="0"
+                      HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
+                    <Grid.RenderTransform>
+                        <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
+                    </Grid.RenderTransform>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="45" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="GameArt" Width="45" Height="45" CornerRadius="11" Background="{StaticResource Line}">
+                        <FontIcon x:Name="GameArtIcon" Glyph="&#xEC4F;" FontSize="18" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                     </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="GameTitle" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock x:Name="GameArtist" FontSize="10.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Grid Width="32" Height="32" CornerRadius="16" Background="Transparent" Tapped="Previous_Tapped"
+                              PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                            <FontIcon Glyph="&#xE892;" FontSize="14" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                        </Grid>
+                        <Grid Width="32" Height="32" CornerRadius="16" Background="Transparent" Tapped="Play_Tapped"
+                              PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                            <FontIcon x:Name="GamePlayIcon" Glyph="&#xE768;" FontSize="17" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                        </Grid>
+                        <Grid Width="32" Height="32" CornerRadius="16" Background="Transparent" Tapped="Next_Tapped"
+                              PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                            <FontIcon Glyph="&#xE893;" FontSize="14" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                        </Grid>
+                    </StackPanel>
                 </Grid>
 
                 <!-- Expanded panel: tabs on top, one pane below. Media fits 170 high, the others 190. -->

@@ -28,6 +28,11 @@ static partial class Native
     [LibraryImport("user32.dll")] public static partial nint MonitorFromWindow(nint hwnd, uint flags);
     [LibraryImport("user32.dll")] public static partial nint GetForegroundWindow();
     [LibraryImport("user32.dll")] public static partial int GetCursorPos(out POINT pt);
+    [LibraryImport("user32.dll")] public static partial int UnregisterHotKey(nint hwnd, int id);
+    [LibraryImport("user32.dll")] public static partial int IsZoomed(nint hwnd);
+    [LibraryImport("user32.dll")] public static partial int GetWindowRect(nint hwnd, out RECT rect);
+    [LibraryImport("user32.dll")] public static partial uint GetWindowThreadProcessId(nint hwnd, out uint pid);
+    [LibraryImport("user32.dll", EntryPoint = "GetClassNameW")] public static unsafe partial int GetClassName(nint hwnd, char* name, int max);
     [LibraryImport("user32.dll", EntryPoint = "GetMonitorInfoW")] public static partial int GetMonitorInfo(nint monitor, ref MONITORINFO info);
     [LibraryImport("user32.dll", EntryPoint = "SetWindowsHookExW")] public static partial nint SetWindowsHookEx(int id, nint proc, nint module, uint thread);
     [LibraryImport("user32.dll")] public static partial int UnhookWindowsHookEx(nint hook);

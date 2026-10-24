@@ -38,7 +38,12 @@ var ui = new Thread(() =>
         try
         {
             exit = await Task.Run(() => Run(fg, outside, Panel, s, () => (string)form.Invoke(() => box.Text),
-                t => form.Invoke(() => Clipboard.SetText(t))));
+                t => form.Invoke(() => Clipboard.SetText(t)),
+                on => form.Invoke(() =>
+                {
+                    form.FormBorderStyle = on ? FormBorderStyle.None : FormBorderStyle.Sizable;
+                    form.Bounds = on ? mon : new Rectangle(mon.Left + mon.Width / 2 - Px(300), mon.Top + Px(360), Px(600), Px(300));
+                })));
         }
         finally
         {
@@ -56,7 +61,7 @@ ui.Start();
 ui.Join();
 return exit;
 
-static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Func<string> text, Action<string> copy)
+static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Func<string> text, Action<string> copy, Action<bool> fullscreen)
 {
     var play = panel(192, 123);
     Point mediaTab = panel(40, 22), clipboardTab = panel(190, 22), pasteFirst = panel(349, 56);
@@ -128,6 +133,12 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Fu
             Click(mediaTab); Type(30);
             Click(outside); Type(40); Expect("hidden", "outside click"); // click outside closes it
         }
+
+        // A borderless fullscreen "game" with the default setting: the island stays out of the way.
+        fullscreen(true); Type(250);                        // Atoll checks every 1.5 s
+        FinishDownload(98); Type(40); Expect("hidden", "a download during a game");
+        AltQ(); Type(40); Expect("hidden", "Alt+Q during a game"); // the shortcut is released to the game
+        fullscreen(false); Type(200); Expect("alert", "leaving the game"); // one summary of what was held
     }
     catch (InvalidOperationException e)
     {

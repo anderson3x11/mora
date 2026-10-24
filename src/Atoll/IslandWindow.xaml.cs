@@ -20,7 +20,7 @@ public sealed partial class IslandWindow : Window
     const int HotkeyId = 1;
     static readonly (double K, double C) OpenSpring = (340, 27), CloseSpring = (520, 46), Reduced = (900, 60);
 
-    enum Mode { Hidden, Compact, Alert, Expanded }
+    enum Mode { Hidden, Compact, Alert, Game, Expanded }
     enum Via { None, Hotkey, Click, Hover }
     record struct Geo(double W, double H, double R, double Y);
 
@@ -29,7 +29,8 @@ public sealed partial class IslandWindow : Window
     Geo GeoOf(Mode m) => m switch
     {
         Mode.Compact => new(214, 32, 16, 8),
-        Mode.Alert => new(304, 50, 25, 8),
+        Mode.Alert => new(_alert?.Action2Label is null ? 304 : 384, 50, 25, 8), // a question with two answers needs room
+        Mode.Game => new(288, 66, 33, 8),
         Mode.Expanded => new(384, _tab switch
         {
             Tab.Media => 170,
@@ -104,6 +105,7 @@ public sealed partial class IslandWindow : Window
         FillTimer();
         _clipboard = new ClipboardHistory(_hwnd);
         FillClipboard();
+        WatchGames();
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
         WireAlerts();
@@ -145,11 +147,16 @@ public sealed partial class IslandWindow : Window
 
     void Toggle()
     {
+        if (_game != null)
+        {
+            if (GamePolicy == GameMode.Music) ToggleGameCard();
+            return;
+        }
         if (_mode == Mode.Expanded) Settle(); else SetMode(Mode.Expanded, Via.Hotkey);
     }
 
-    // The resting pill, when enabled, stays while media exists (paused included).
-    bool RestingPill => _settings.ShowCompactPill && _media.HasSession;
+    // The resting pill, when enabled, stays while media exists (paused included), never over a game.
+    bool RestingPill => _settings.ShowCompactPill && _media.HasSession && _game is null;
 
     // Back to rest, unless alerts waited while the panel was open.
     void Settle()
@@ -169,6 +176,7 @@ public sealed partial class IslandWindow : Window
         HookMouse(mode == Mode.Expanded);
         Fade(CompactLayer, false);
         Fade(AlertLayer, false);
+        Fade(GameLayer, false);
         Fade(ExpandedLayer, false);
         UpdateWave();
         UpdateProgressTimer();
@@ -189,6 +197,11 @@ public sealed partial class IslandWindow : Window
         if (t != _token) return;
         if (mode == Mode.Compact) Fade(CompactLayer, true);
         if (mode == Mode.Expanded) Fade(ExpandedLayer, true);
+        if (mode == Mode.Game)
+        {
+            FillGameCard();
+            Fade(GameLayer, true);
+        }
         if (mode == Mode.Alert)
         {
             FillAlert(); // swapped only now, so the previous alert fades out with its own text
@@ -213,6 +226,7 @@ public sealed partial class IslandWindow : Window
         PlayIcon.Glyph = _media.Playing ? "" : "";
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
+        FillGameCard();
         UpdateProgress();
         UpdateWave();
         UpdateProgressTimer();
@@ -300,7 +314,8 @@ public sealed partial class IslandWindow : Window
 
     void Pill_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
     {
-        if (_mode is Mode.Compact or Mode.Alert) SetMode(Mode.Expanded, Via.Click);
+        if (_mode == Mode.Game) ArmGameCard(); // any click on the card counts as interaction
+        else if (_mode is Mode.Compact or Mode.Alert && _game is null) SetMode(Mode.Expanded, Via.Click);
     }
 
     void Tab_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)

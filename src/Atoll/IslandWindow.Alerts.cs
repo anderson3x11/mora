@@ -8,10 +8,11 @@ using static Atoll.Native;
 namespace Atoll;
 
 record Alert(Pop Kind, string Glyph, string Title, string Sub = "", Color? Tint = null, double? Level = null,
-             string? ActionLabel = null, Action? Action = null, ImageSource? Art = null);
+             string? ActionLabel = null, Action? Action = null, ImageSource? Art = null,
+             string? Action2Label = null, Action? Action2 = null, int Seconds = 3);
 
 // Short-lived events: shown one at a time for ~3 s, held longer only while hovered,
-// queued while the panel is open.
+// queued while the panel is open, held during fullscreen games.
 public sealed partial class IslandWindow
 {
     static readonly Color Green = Color.FromArgb(255, 0x5B, 0xD6, 0x8A), Red = Color.FromArgb(255, 0xFF, 0x6B, 0x5B);
@@ -78,9 +79,15 @@ public sealed partial class IslandWindow
         return $"{b:0.#} {units[i]}";
     }
 
-    void Notify(Alert a)
+    // force: Atoll's own questions and summaries, shown whatever the pop-up settings or a running game.
+    void Notify(Alert a, bool force = false)
     {
-        if (!_settings.Allows(a.Kind)) return;
+        if (!force && !_settings.Allows(a.Kind)) return;
+        if (!force && _game != null)
+        {
+            if (a.Kind != Pop.Volume) _held.Add(a); // shown as one summary after the game; a stale volume level is noise
+            return;
+        }
         if (_mode == Mode.Alert && _alert?.Kind == Pop.Volume && a.Kind == Pop.Volume)
         {
             _alert = a; // a held volume key updates the HUD in place instead of queueing 30 alerts
@@ -102,7 +109,7 @@ public sealed partial class IslandWindow
     async void ArmAlert()
     {
         var t = ++_alertToken;
-        await Task.Delay(3200);
+        await Task.Delay(TimeSpan.FromSeconds(_alert?.Seconds ?? 3) + TimeSpan.FromMilliseconds(200));
         while (t == _alertToken && _mode == Mode.Alert && GetCursorPos(out var pt) != 0 && OnPill(pt))
             await Task.Delay(700);
         if (t != _alertToken || _mode != Mode.Alert) return;
@@ -113,6 +120,7 @@ public sealed partial class IslandWindow
     void FillAlert()
     {
         if (_alert is not { } a) return;
+        AlertLayer.Width = GeoOf(Mode.Alert).W;
         AlertIcon.Glyph = a.Glyph;
         AlertIcon.Foreground = new SolidColorBrush(a.Tint ?? Color.FromArgb(255, 0xF4, 0xF4, 0xF6));
         AlertIcon.Visibility = a.Art is null ? Visibility.Visible : Visibility.Collapsed;
@@ -128,15 +136,20 @@ public sealed partial class IslandWindow
         AlertBarLeft.Width = new GridLength(1 - level, GridUnitType.Star);
         AlertAction.Visibility = a.ActionLabel is null ? Visibility.Collapsed : Visibility.Visible;
         AlertActionText.Text = a.ActionLabel ?? "";
+        AlertAction2.Visibility = a.Action2Label is null ? Visibility.Collapsed : Visibility.Visible;
+        AlertAction2Text.Text = a.Action2Label ?? "";
     }
 
-    void AlertAction_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    void AlertAction_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => RunAlertAction(e, a => a.Action);
+    void AlertAction2_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => RunAlertAction(e, a => a.Action2);
+
+    void RunAlertAction(Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e, Func<Alert, Action?> pick)
     {
         e.Handled = true; // not a click on the alert body, which opens the panel
         var a = _alert;
         _alertToken++;
         _alert = null;
-        a?.Action?.Invoke();
+        if (a != null) pick(a)?.Invoke();
         if (_mode == Mode.Alert) Settle();
     }
 }
