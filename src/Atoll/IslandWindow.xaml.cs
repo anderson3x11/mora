@@ -1,7 +1,10 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using Microsoft.UI.Composition;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using static Atoll.Native;
@@ -17,19 +20,33 @@ public sealed partial class IslandWindow : Window
     const int HotkeyId = 1;
     static readonly (double K, double C) OpenSpring = (340, 27), CloseSpring = (520, 46), Reduced = (900, 60);
 
+    enum Mode { Hidden, Compact, Expanded }
+    enum Via { None, Hotkey, Click, Hover }
     record struct Geo(double W, double H, double R, double Y);
-    static readonly Geo HiddenGeo = new(96, 24, 12, -40), ExpandedGeo = new(480, 212, 32, 8);
+
+    static Geo GeoOf(Mode m) => m switch
+    {
+        Mode.Compact => new(214, 32, 16, 8),
+        Mode.Expanded => new(480, 212, 32, 8),
+        _ => new(96, 24, 12, -40),
+    };
 
     static IslandWindow _self = null!; // one island; native callbacks route here
     readonly nint _hwnd;
-    readonly Spring _w = new(HiddenGeo.W), _h = new(HiddenGeo.H), _r = new(HiddenGeo.R), _y = new(HiddenGeo.Y);
+    readonly Spring _w, _h, _r, _y;
     readonly bool _motion = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
     readonly Stopwatch _clock = new();
+    readonly Media _media;
+    readonly List<Visual> _wave = [];
+    readonly DispatcherQueueTimer _waveTimer;
+    readonly DispatcherQueueTimer _progressTimer;
     (double K, double C) _spring = OpenSpring;
     double _last, _scale = 1;
-    bool _animating, _expanded;
-    int _token, _winX, _winY;
-    nint _hook;
+    bool _animating;
+    Mode _mode;
+    Via _via;
+    int _token, _hoverToken, _winX, _winY;
+    nint _hook, _monitor;
     RECT _hit; // physical px, window-relative
 
     public IslandWindow()
@@ -37,6 +54,8 @@ public sealed partial class IslandWindow : Window
         InitializeComponent();
         _self = this;
         _hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var g = GeoOf(Mode.Hidden);
+        (_w, _h, _r, _y) = (new(g.W), new(g.H), new(g.R), new(g.Y));
         SystemBackdrop = new TransparentBackdrop();
         Title = "Atoll";
 
@@ -62,12 +81,24 @@ public sealed partial class IslandWindow : Window
         Place();
         Render();
         ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+
+        _progressTimer = DispatcherQueue.CreateTimer();
+        _progressTimer.Interval = TimeSpan.FromSeconds(1);
+        _progressTimer.Tick += (_, _) => UpdateProgress();
+        _waveTimer = DispatcherQueue.CreateTimer();
+        BuildWave();
+        _media = new Media(DispatcherQueue);
+        _media.Changed += OnMediaChanged;
+        _ = _media.StartAsync();
     }
 
     // Top center of the monitor holding the active window.
+    // ponytail: only re-checked when the island appears or opens; a resting pill does not follow focus yet.
     void Place()
     {
         var mon = MonitorFromWindow(GetForegroundWindow(), 1); // MONITOR_DEFAULTTOPRIMARY
+        if (mon == _monitor) return;
+        _monitor = mon;
         var info = new MONITORINFO { Size = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
         GetMonitorInfo(mon, ref info);
         GetDpiForMonitor(mon, 0, out var dpi, out _);
@@ -80,29 +111,162 @@ public sealed partial class IslandWindow : Window
 
     void Toggle()
     {
-        if (_expanded) Collapse(); else Expand();
+        if (_mode == Mode.Expanded) Settle(); else SetMode(Mode.Expanded, Via.Hotkey);
     }
 
-    async void Expand()
+    // Back to the resting state: the pill while media exists (paused included), otherwise hidden.
+    void Settle() => SetMode(_media.HasSession ? Mode.Compact : Mode.Hidden);
+
+    // Growing: shape first, content fades in 140 ms later. Shrinking: content fades out first,
+    // the shape follows 90 ms later, and the new content appears once it has mostly settled.
+    async void SetMode(Mode mode, Via via = Via.None)
     {
+        var prev = _mode;
         var t = ++_token;
-        _expanded = true;
-        if (_hit.Equals(default(RECT))) Place(); // only while fully hidden, never jump a visible island
-        HookMouse(true);
-        Retarget(ExpandedGeo, OpenSpring);
-        await Task.Delay(140);
-        if (t == _token) Fade(true);
+        (_mode, _via) = (mode, via);        if (prev == Mode.Hidden || mode == Mode.Expanded) Place();
+        HookMouse(mode == Mode.Expanded);
+        Fade(CompactLayer, false);
+        Fade(ExpandedLayer, false);
+        UpdateWave();
+        UpdateProgressTimer();
+
+        Geo g = GeoOf(mode), pg = GeoOf(prev);
+        if (g.W * g.H > pg.W * pg.H + 1)
+        {
+            Retarget(g, OpenSpring);
+            await Task.Delay(140);
+        }
+        else
+        {
+            await Task.Delay(90);
+            if (t != _token) return;
+            Retarget(g, CloseSpring);
+            await Task.Delay(170);
+        }
+        if (t != _token) return;
+        if (mode == Mode.Compact) Fade(CompactLayer, true);
+        if (mode == Mode.Expanded) Fade(ExpandedLayer, true);
     }
 
-    async void Collapse()
+    void OnMediaChanged()
     {
-        var t = ++_token;
-        _expanded = false;
-        HookMouse(false);
-        Fade(false);
-        await Task.Delay(90);
-        if (t == _token) Retarget(HiddenGeo, CloseSpring);
+        Fill();
+        if (_mode == Mode.Hidden && _media.HasSession) SetMode(Mode.Compact);
+        else if (_mode == Mode.Compact && !_media.HasSession) SetMode(Mode.Hidden);
     }
+
+    void Fill()
+    {
+        bool has = _media.HasSession;
+        NothingPlaying.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
+        MediaPane.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
+        TitleText.Text = _media.Title;
+        ArtistText.Text = _media.Artist;
+        PlayIcon.Glyph = _media.Playing ? "" : "";
+        SetArt(CompactArt, CompactArtIcon);
+        SetArt(ExpandedArt, ExpandedArtIcon);
+        UpdateProgress();
+        UpdateWave();
+        UpdateProgressTimer();
+    }
+
+    void SetArt(Microsoft.UI.Xaml.Controls.Border frame, UIElement fallback)
+    {
+        frame.Background = _media.Art is { } art
+            ? new ImageBrush { ImageSource = art, Stretch = Stretch.UniformToFill }
+            : (Brush)((FrameworkElement)Content).Resources["Line"];
+        fallback.Visibility = _media.Art is null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    void UpdateProgress()
+    {
+        var d = _media.Duration;
+        var p = _media.Position;
+        ProgressRow.Visibility = d > TimeSpan.Zero ? Visibility.Visible : Visibility.Collapsed; // Firefox reports no timeline
+        PositionText.Text = Format(p);
+        DurationText.Text = Format(d);
+        var f = d > TimeSpan.Zero ? p / d : 0;
+        SeekDone.Width = new GridLength(f, GridUnitType.Star);
+        SeekLeft.Width = new GridLength(1 - f, GridUnitType.Star);
+    }
+
+    static string Format(TimeSpan t) => $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+
+    // Ticks only while someone can see the progress move.
+    void UpdateProgressTimer()
+    {
+        if (_mode == Mode.Expanded && _media.Playing) _progressTimer.Start(); else _progressTimer.Stop();
+    }
+
+    // ponytail: waveform stepped at 30 fps. Any per-vsync animation recomposes the window every frame
+    // (~10% of a core at 240 Hz); the decorative bars don't need more. The pill's springs keep full rate.
+    void BuildWave()
+    {
+        foreach (var bar in Wave.Children)
+        {
+            var v = ElementCompositionPreview.GetElementVisual(bar);
+            v.CenterPoint = new Vector3(1.5f, 8, 0);
+            v.Scale = new Vector3(1, 0.22f, 1);
+            _wave.Add(v);
+        }
+        _waveTimer.Interval = TimeSpan.FromMilliseconds(33);
+        _waveTimer.Tick += (_, _) =>
+        {
+            double t = _clock.Elapsed.TotalSeconds;
+            double[] periods = [0.9, 0.76, 1.04, 0.82];
+            for (int i = 0; i < _wave.Count; i++)
+                _wave[i].Scale = new Vector3(1, (float)(0.25 + 0.75 * (0.5 - 0.5 * Math.Cos(2 * Math.PI * t / periods[i]))), 1);
+        };
+    }
+
+    // The waveform only runs while the pill shows and music plays; paused bars sit low and still.
+    void UpdateWave()
+    {
+        bool run = _motion && _mode == Mode.Compact && _media.Playing;
+        if (run == _waveTimer.IsRunning) return;
+        if (run) _waveTimer.Start();
+        else
+        {
+            _waveTimer.Stop();
+            foreach (var v in _wave) v.Scale = new Vector3(1, 0.22f, 1);
+        }
+    }
+
+    async void Pill_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var t = ++_hoverToken;
+        if (_mode != Mode.Compact || e.Pointer.PointerDeviceType != Microsoft.UI.Input.PointerDeviceType.Mouse) return;
+        await Task.Delay(320);
+        // XAML can report a stale "entered" right after the pill shrinks away from the cursor.
+        if (t == _hoverToken && _mode == Mode.Compact && GetCursorPos(out var pt) != 0 && OnPill(pt))
+            SetMode(Mode.Expanded, Via.Hover);
+    }
+
+    async void Pill_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var t = ++_hoverToken;
+        if (_mode != Mode.Expanded || _via != Via.Hover) return;
+        await Task.Delay(450);
+        if (t == _hoverToken && _mode == Mode.Expanded && _via == Via.Hover) Settle();
+    }
+
+    void Pill_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        if (_mode == Mode.Compact) SetMode(Mode.Expanded, Via.Click);
+    }
+
+    void Play_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.TogglePlay();
+    void Next_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.Next();
+    void Previous_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.Previous();
+
+    void Seek_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) =>
+        _media.Seek(Math.Clamp(e.GetPosition(SeekTrack).X / SeekTrack.ActualWidth, 0, 1));
+
+    void Button_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
+        ((Microsoft.UI.Xaml.Controls.Panel)sender).Background = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 0x1C, 0x1C, 0x21));
+
+    void Button_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
+        ((Microsoft.UI.Xaml.Controls.Panel)sender).Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 
     // Retargets from the current position and velocity, never from zero.
     void Retarget(Geo g, (double K, double C) spring)
@@ -152,12 +316,12 @@ public sealed partial class IslandWindow : Window
         SetWindowRgn(_hwnd, CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom), 1);
     }
 
-    void Fade(bool on)
+    void Fade(UIElement layer, bool on)
     {
         var sb = new Storyboard();
-        Animate(sb, PanelContent, "Opacity", on ? 1 : 0, on ? 220 : 140);
-        Animate(sb, ContentScale, "ScaleX", on ? 1 : 0.94, on ? 380 : 280);
-        Animate(sb, ContentScale, "ScaleY", on ? 1 : 0.94, on ? 380 : 280);
+        Animate(sb, layer, "Opacity", on ? 1 : 0, on ? 220 : 140);
+        Animate(sb, layer.RenderTransform, "ScaleX", on ? 1 : 0.94, on ? 380 : 280);
+        Animate(sb, layer.RenderTransform, "ScaleY", on ? 1 : 0.94, on ? 380 : 280);
         sb.Begin();
     }
 
@@ -186,16 +350,20 @@ public sealed partial class IslandWindow : Window
         }
     }
 
+    bool OnPill(POINT pt)
+    {
+        int x = pt.X - _winX, y = pt.Y - _winY;
+        return x >= _hit.Left && x < _hit.Right && y >= _hit.Top && y < _hit.Bottom;
+    }
+
     [System.Runtime.InteropServices.UnmanagedCallersOnly]
     static unsafe nint MouseProc(int code, nint wParam, nint lParam)
     {
         if (code >= 0 && (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN))
         {
-            var pt = *(POINT*)lParam; // MSLLHOOKSTRUCT starts with the screen point
             var s = _self;
-            int x = pt.X - s._winX, y = pt.Y - s._winY;
-            if (x < s._hit.Left || x >= s._hit.Right || y < s._hit.Top || y >= s._hit.Bottom)
-                s.DispatcherQueue.TryEnqueue(() => { if (s._expanded) s.Collapse(); });
+            if (!s.OnPill(*(POINT*)lParam)) // MSLLHOOKSTRUCT starts with the screen point
+                s.DispatcherQueue.TryEnqueue(() => { if (s._mode == Mode.Expanded) s.Settle(); });
         }
         return CallNextHookEx(0, code, wParam, lParam);
     }

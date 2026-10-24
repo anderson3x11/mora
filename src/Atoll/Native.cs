@@ -27,6 +27,7 @@ static partial class Native
     [LibraryImport("shcore.dll")] public static partial int GetDpiForMonitor(nint monitor, int type, out uint dpiX, out uint dpiY);
     [LibraryImport("user32.dll")] public static partial nint MonitorFromWindow(nint hwnd, uint flags);
     [LibraryImport("user32.dll")] public static partial nint GetForegroundWindow();
+    [LibraryImport("user32.dll")] public static partial int GetCursorPos(out POINT pt);
     [LibraryImport("user32.dll", EntryPoint = "GetMonitorInfoW")] public static partial int GetMonitorInfo(nint monitor, ref MONITORINFO info);
     [LibraryImport("user32.dll", EntryPoint = "SetWindowsHookExW")] public static partial nint SetWindowsHookEx(int id, nint proc, nint module, uint thread);
     [LibraryImport("user32.dll")] public static partial int UnhookWindowsHookEx(nint hook);

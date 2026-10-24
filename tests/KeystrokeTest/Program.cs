@@ -26,14 +26,14 @@ form.Shown += async (_, _) =>
 {
     var fg = form.Handle;
     var outside = new Point(form.Left + form.Width / 2, form.Bottom - Px(40)); // form area below the text box
-    var panel = new Point(mon.Left + mon.Width / 2, mon.Top + Px(110));
-    exit = await Task.Run(() => Run(fg, outside, panel, () => (string)form.Invoke(() => box.Text)));
+    var play = new Point(mon.Left + mon.Width / 2, mon.Top + Px(165)); // play/pause button of the open panel
+    exit = await Task.Run(() => Run(fg, outside, play, s, () => (string)form.Invoke(() => box.Text)));
     form.Close();
 };
 Application.Run(form);
 return exit;
 
-static int Run(nint fg, Point outside, Point panel, Func<string> text)
+static int Run(nint fg, Point outside, Point play, double s, Func<string> text)
 {
     Click(outside);
     Thread.Sleep(300);
@@ -49,11 +49,12 @@ static int Run(nint fg, Point outside, Point panel, Func<string> text)
         Console.WriteLine("FAIL: Atoll is not running");
         return 2;
     }
-    // The island's window region is empty when hidden and covers the pill when open.
+    // The island's window region follows the pill: tall when the panel is open, empty or a thin pill otherwise.
     void Expect(bool open, string step)
     {
-        if ((GetWindowRgnBox(island, out _) == 2) != open)
-            throw new InvalidOperationException($"island should be {(open ? "open" : "hidden")} after {step}");
+        bool tall = GetWindowRgnBox(island, out var box) == 2 && box.Bottom - box.Top > 100 * s;
+        if (tall != open)
+            throw new InvalidOperationException($"panel should be {(open ? "open" : "closed")} after {step}");
     }
 
     var rng = new Random(1);
@@ -75,7 +76,7 @@ static int Run(nint fg, Point outside, Point panel, Func<string> text)
         for (int cycle = 0; cycle < 10; cycle++)
         {
             AltQ(); Type(40); Expect(true, "Alt+Q");           // open, typing through the spring
-            Click(panel); Type(40); Expect(true, "panel click"); // click inside the open panel
+            Click(play); Type(20); Click(play); Type(20); Expect(true, "button clicks"); // play/pause twice: music ends as it was
             AltQ(); Type(40); Expect(false, "Alt+Q");          // close with the shortcut
             AltQ(); Type(30); Expect(true, "Alt+Q");           // open again
             Click(outside); Type(40); Expect(false, "outside click"); // click outside closes it
@@ -126,7 +127,7 @@ static unsafe void Send(INPUT input) => SendInput(1, &input, sizeof(INPUT));
 [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
 [DllImport("user32.dll")] static extern nint GetForegroundWindow();
 [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern nint FindWindow(string? cls, string title);
-[DllImport("user32.dll")] static extern int GetWindowRgnBox(nint hwnd, out Rectangle box);
+[DllImport("user32.dll")] static extern int GetWindowRgnBox(nint hwnd, out RECT box);
 [DllImport("user32.dll")] static extern nint MonitorFromPoint(Point pt, uint flags);
 [DllImport("shcore.dll")] static extern int GetDpiForMonitor(nint monitor, int type, out uint x, out uint y);
 
@@ -137,5 +138,6 @@ struct INPUT
     [FieldOffset(8)] public MOUSEINPUT Mi;
     [FieldOffset(8)] public KEYBDINPUT Ki;
 }
+struct RECT { public int Left, Top, Right, Bottom; }
 struct MOUSEINPUT { public int Dx, Dy; public uint Data, Flags, Time; public nint Extra; }
 struct KEYBDINPUT { public ushort Vk; public char Scan; public uint Flags, Time; public nint Extra; }

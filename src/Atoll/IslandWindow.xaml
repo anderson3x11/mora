@@ -1,18 +1,99 @@
-<Window
+﻿<Window
     x:Class="Atoll.IslandWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Background="Transparent" AllowFocusOnInteraction="False" IsTabStop="False">
-        <Border x:Name="Pill" Background="#08080A" HorizontalAlignment="Center" VerticalAlignment="Top">
+    <Grid Background="Transparent">
+        <Grid.Resources>
+            <FontFamily x:Key="Icons">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>
+            <FontFamily x:Key="Mono">Cascadia Mono,Consolas</FontFamily>
+            <SolidColorBrush x:Key="Fg" Color="#F4F4F6" />
+            <SolidColorBrush x:Key="Muted" Color="#9B9BA5" />
+            <SolidColorBrush x:Key="Line" Color="#2C2C33" />
+        </Grid.Resources>
+
+        <Border x:Name="Pill" Background="#08080A" HorizontalAlignment="Center" VerticalAlignment="Top"
+                PointerEntered="Pill_PointerEntered" PointerExited="Pill_PointerExited" Tapped="Pill_Tapped">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="PillOffset" />
             </Border.RenderTransform>
-            <Grid x:Name="PanelContent" Opacity="0" Padding="18,14" RenderTransformOrigin="0.5,0">
-                <Grid.RenderTransform>
-                    <ScaleTransform x:Name="ContentScale" ScaleX="0.94" ScaleY="0.94" />
-                </Grid.RenderTransform>
-                <TextBlock Text="Nothing playing right now" Foreground="#9B9BA5" FontSize="13"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Grid>
+                <!-- Compact pill: artwork left, waveform right -->
+                <Grid x:Name="CompactLayer" Width="214" Height="32" Padding="8,0,12,0" Opacity="0"
+                      HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
+                    <Grid.RenderTransform>
+                        <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
+                    </Grid.RenderTransform>
+                    <Border x:Name="CompactArt" Width="22" Height="22" CornerRadius="6" Background="{StaticResource Line}" HorizontalAlignment="Left">
+                        <FontIcon x:Name="CompactArtIcon" Glyph="&#xEC4F;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                    </Border>
+                    <StackPanel x:Name="Wave" Orientation="Horizontal" Spacing="2" Height="16" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Expanded panel: media -->
+                <Grid x:Name="ExpandedLayer" Width="480" Height="212" Padding="20,18,20,14" Opacity="0"
+                      HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
+                    <Grid.RenderTransform>
+                        <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
+                    </Grid.RenderTransform>
+                    <TextBlock x:Name="NothingPlaying" Text="Nothing playing right now" Foreground="{StaticResource Muted}" FontSize="13"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Grid x:Name="MediaPane" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="72" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="ExpandedArt" CornerRadius="14" Background="{StaticResource Line}">
+                                <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="28" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="TitleText" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                <TextBlock x:Name="ArtistText" FontSize="13" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid x:Name="ProgressRow" Grid.Row="1" Margin="0,10,0,0" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="PositionText" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                            <Grid x:Name="SeekTrack" Grid.Column="1" Height="16" Background="Transparent" Tapped="Seek_Tapped">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="SeekDone" Width="0*" />
+                                    <ColumnDefinition x:Name="SeekLeft" Width="1*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.ColumnSpan="2" Height="6" CornerRadius="3" Background="{StaticResource Line}" />
+                                <Border Height="6" CornerRadius="3" Background="White" />
+                            </Grid>
+                            <TextBlock x:Name="DurationText" Grid.Column="2" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                        </Grid>
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid Width="44" Height="44" CornerRadius="22" Background="Transparent" Tapped="Previous_Tapped"
+                                  PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                <FontIcon Glyph="&#xE892;" FontSize="20" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                            </Grid>
+                            <Grid Width="44" Height="44" CornerRadius="22" Background="Transparent" Tapped="Play_Tapped"
+                                  PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" FontSize="24" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                            </Grid>
+                            <Grid Width="44" Height="44" CornerRadius="22" Background="Transparent" Tapped="Next_Tapped"
+                                  PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                <FontIcon Glyph="&#xE893;" FontSize="20" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
             </Grid>
         </Border>
     </Grid>
