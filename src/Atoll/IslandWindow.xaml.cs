@@ -112,6 +112,7 @@ public sealed partial class IslandWindow : Window
         WatchGames();
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
+        _ = _media.StartAsync();
         WireAlerts();
         _tray = new Tray(_hwnd);
         _trayMenu =
@@ -149,7 +150,6 @@ public sealed partial class IslandWindow : Window
                 Notify(new Alert(Pop.Music, "", "Press Alt+Q any time", "Atoll never takes your keyboard", Seconds: 5), force: true);
         });
         _setup.Closed += (_, _) => _setup = null;
-        _ = _media.StartAsync();
     }
 
     // Top center of the monitor holding the active window.
