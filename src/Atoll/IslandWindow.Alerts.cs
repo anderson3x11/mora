@@ -82,7 +82,7 @@ public sealed partial class IslandWindow
     // force: Atoll's own questions and summaries, shown whatever the pop-up settings or a running game.
     void Notify(Alert a, bool force = false)
     {
-        if (!force && !_settings.Allows(a.Kind)) return;
+        if (!force && (!_settings.Allows(a.Kind) || _setup != null)) return;
         if (!force && _game != null)
         {
             if (a.Kind != Pop.Volume) _held.Add(a); // shown as one summary after the game; a stale volume level is noise

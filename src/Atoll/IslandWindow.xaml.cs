@@ -46,7 +46,8 @@ public sealed partial class IslandWindow : Window
     readonly bool _motion = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
     readonly Stopwatch _clock = new();
     readonly Media _media;
-    readonly Settings _settings = Settings.Load();
+    Settings _settings = Settings.Load();
+    SetupWindow? _setup; // first-run setup or the settings window, while open
     readonly Tray _tray;
     readonly IReadOnlyList<(string Label, Action Run)> _trayMenu;
     readonly List<Visual> _wave = [];
@@ -113,11 +114,7 @@ public sealed partial class IslandWindow : Window
         _trayMenu =
         [
             ("Open Atoll    Alt+Q", () => SetMode(Mode.Expanded, Via.Click)),
-            ("Edit settings (applies on restart)", () =>
-            {
-                Settings.EnsureFile();
-                Process.Start("notepad.exe", $"\"{Settings.FilePath}\"");
-            }),
+            ("Settings…", () => OpenSetup(firstRun: false)),
             ("Quit Atoll", () =>
             {
                 _tray.Remove();
@@ -125,6 +122,28 @@ public sealed partial class IslandWindow : Window
                 Application.Current.Exit();
             }),
         ];
+        if (Settings.FirstRun) OpenSetup(firstRun: true);
+    }
+
+    // The island stays hidden and quiet while setup or settings are open.
+    void OpenSetup(bool firstRun)
+    {
+        if (_setup != null)
+        {
+            _setup.Activate(); // the user asked for it from the tray
+            return;
+        }
+        SetMode(Mode.Hidden);
+        _setup = SetupWindow.Open(_settings, firstRun, chosen =>
+        {
+            _settings = chosen;
+            _settings.Save();
+            UpdateHotkey();
+            OnMediaChanged(); // the resting pill may have been switched on or off
+            if (firstRun)
+                Notify(new Alert(Pop.Music, "", "Press Alt+Q any time", "Atoll never takes your keyboard", Seconds: 5), force: true);
+        });
+        _setup.Closed += (_, _) => _setup = null;
         _ = _media.StartAsync();
     }
 
@@ -147,6 +166,7 @@ public sealed partial class IslandWindow : Window
 
     void Toggle()
     {
+        if (_setup != null) return;
         if (_game != null)
         {
             if (GamePolicy == GameMode.Music) ToggleGameCard();

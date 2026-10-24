@@ -8,8 +8,7 @@ enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard }
 // During fullscreen games: hidden with the shortcut off, music card on the shortcut, or ask once per game.
 enum GameMode { Quiet, Music, Ask }
 
-// User preferences in %LOCALAPPDATA%\Atoll\settings.json, read at startup.
-// ponytail: no settings window yet, the file is edited by hand (tray menu) and applies on restart.
+// User preferences in %LOCALAPPDATA%\Atoll\settings.json, written by the setup and settings window.
 sealed class Settings
 {
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
@@ -47,11 +46,9 @@ sealed class Settings
         File.WriteAllText(FilePath, JsonSerializer.Serialize(this, Json));
     }
 
-    // Writes the defaults out so there is something to edit by hand.
-    public static void EnsureFile()
-    {
-        if (!File.Exists(FilePath)) new Settings().Save();
-    }
+    public Settings Clone() => JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(this, Json), Json)!;
+
+    public static bool FirstRun => !File.Exists(FilePath);
 
     public static Settings Load()
     {

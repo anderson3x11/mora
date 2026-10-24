@@ -28,6 +28,7 @@ static partial class Native
     [LibraryImport("user32.dll")] public static partial nint MonitorFromWindow(nint hwnd, uint flags);
     [LibraryImport("user32.dll")] public static partial nint GetForegroundWindow();
     [LibraryImport("user32.dll")] public static partial int GetCursorPos(out POINT pt);
+    [LibraryImport("user32.dll")] public static partial uint GetDpiForWindow(nint hwnd);
     [LibraryImport("user32.dll")] public static partial int UnregisterHotKey(nint hwnd, int id);
     [LibraryImport("user32.dll")] public static partial int IsZoomed(nint hwnd);
     [LibraryImport("user32.dll")] public static partial int GetWindowRect(nint hwnd, out RECT rect);
