@@ -518,6 +518,17 @@ public sealed partial class IslandWindow : Window
         }
         // No frame at all: WinUI keeps a 3 px dialog frame that DWM paints white at the screen's top edge.
         if (msg == WM_NCCALCSIZE && wParam != 0) return 0;
+        if (msg == WM_DPICHANGED)
+        {
+            // Let WinUI pick up the new scale, then undo its suggested resize: Place already sized
+            // the window for this monitor, and the region must be recomputed in the new pixels.
+            var result = DefSubclassProc(hwnd, msg, wParam, lParam);
+            var s = _self;
+            SetWindowPos(hwnd, HWND_TOPMOST, s._winX, s._winY, (int)Math.Ceiling(CanvasW * s._scale), (int)Math.Ceiling(CanvasH * s._scale), SWP_NOACTIVATE);
+            s._hit = new RECT { Right = -1 };
+            s.Render();
+            return result;
+        }
         if (msg == WM_HOTKEY && wParam == HotkeyId)
         {
             _self.Toggle();

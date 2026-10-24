@@ -8,7 +8,7 @@ static partial class Native
     public const nint WS_EX_TOPMOST = 0x8, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x40000, WS_EX_NOACTIVATE = 0x08000000;
     public const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
     public const int SW_SHOWNOACTIVATE = 4;
-    public const uint WM_NCCALCSIZE = 0x83, WM_MOUSEACTIVATE = 0x21, WM_HOTKEY = 0x312, MA_NOACTIVATE = 3;
+    public const uint WM_DPICHANGED = 0x2E0, WM_NCCALCSIZE = 0x83, WM_MOUSEACTIVATE = 0x21, WM_HOTKEY = 0x312, MA_NOACTIVATE = 3;
     public const uint MOD_ALT = 0x1, MOD_NOREPEAT = 0x4000;
     public const int WH_MOUSE_LL = 14;
     public const nint WM_LBUTTONDOWN = 0x201, WM_RBUTTONDOWN = 0x204, WM_MBUTTONDOWN = 0x207;
