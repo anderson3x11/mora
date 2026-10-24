@@ -55,12 +55,21 @@ static int Run(nint fg, Point outside, Point play, double s, Func<string> text)
         return 1;
     }
 
-    // The island's window region follows the pill: tall when the panel is open, empty or a thin pill otherwise.
-    void Expect(bool open, string step)
+    // The island's window region follows its shape: empty when hidden, short for an alert, tall for the panel.
+    void Expect(string state, string step)
     {
-        bool tall = GetWindowRgnBox(island, out var box) == 2 && box.Bottom - box.Top > 100 * s;
-        if (tall != open)
-            throw new InvalidOperationException($"panel should be {(open ? "open" : "closed")} after {step}");
+        double h = GetWindowRgnBox(island, out var box) == 2 ? box.Bottom - box.Top : 0;
+        var actual = h == 0 ? "hidden" : h < 100 * s ? "alert" : "panel";
+        if (actual != state) throw new InvalidOperationException($"island should show {state} after {step}, shows {actual}");
+    }
+
+    // A browser finishing a download renames its temp file; Atoll answers with an alert.
+    var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+    void FinishDownload(int n)
+    {
+        var temp = Path.Combine(downloads, $"atoll-keystroke-test-{n}.txt.crdownload");
+        File.WriteAllText(temp, "test");
+        File.Move(temp, temp[..^".crdownload".Length]);
     }
 
     var rng = new Random(1);
@@ -81,17 +90,22 @@ static int Run(nint fg, Point outside, Point play, double s, Func<string> text)
     {
         for (int cycle = 0; cycle < 10; cycle++)
         {
-            AltQ(); Type(40); Expect(true, "Alt+Q");           // open, typing through the spring
-            Click(play); Type(20); Click(play); Type(20); Expect(true, "button clicks"); // play/pause twice: music ends as it was
-            AltQ(); Type(40); Expect(false, "Alt+Q");          // close with the shortcut
-            AltQ(); Type(30); Expect(true, "Alt+Q");           // open again
-            Click(outside); Type(40); Expect(false, "outside click"); // click outside closes it
+            FinishDownload(cycle); Type(30); Expect("alert", "a download finished"); // pops up mid-sentence
+            AltQ(); Type(40); Expect("panel", "Alt+Q");         // open over the alert, typing through the spring
+            Click(play); Type(20); Click(play); Type(20); Expect("panel", "button clicks"); // play/pause twice: music ends as it was
+            AltQ(); Type(40); Expect("hidden", "Alt+Q");        // close with the shortcut
+            AltQ(); Type(30); Expect("panel", "Alt+Q");         // open again
+            Click(outside); Type(40); Expect("hidden", "outside click"); // click outside closes it
         }
     }
     catch (InvalidOperationException e)
     {
         Console.WriteLine($"FAIL: {e.Message}, stopped typing");
         return 1;
+    }
+    finally
+    {
+        foreach (var f in Directory.GetFiles(downloads, "atoll-keystroke-test-*")) File.Delete(f);
     }
     Thread.Sleep(500);
 

@@ -20,13 +20,14 @@ public sealed partial class IslandWindow : Window
     const int HotkeyId = 1;
     static readonly (double K, double C) OpenSpring = (340, 27), CloseSpring = (520, 46), Reduced = (900, 60);
 
-    enum Mode { Hidden, Compact, Expanded }
+    enum Mode { Hidden, Compact, Alert, Expanded }
     enum Via { None, Hotkey, Click, Hover }
     record struct Geo(double W, double H, double R, double Y);
 
     static Geo GeoOf(Mode m) => m switch
     {
         Mode.Compact => new(214, 32, 16, 8),
+        Mode.Alert => new(304, 50, 25, 8),
         Mode.Expanded => new(384, 170, 26, 8),
         _ => new(96, 24, 12, -40),
     };
@@ -91,6 +92,7 @@ public sealed partial class IslandWindow : Window
         BuildWave();
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
+        WireAlerts();
         _ = _media.StartAsync();
     }
 
@@ -119,7 +121,12 @@ public sealed partial class IslandWindow : Window
     // The resting pill, when enabled, stays while media exists (paused included).
     bool RestingPill => _settings.ShowCompactPill && _media.HasSession;
 
-    void Settle() => SetMode(RestingPill ? Mode.Compact : Mode.Hidden);
+    // Back to rest, unless alerts waited while the panel was open.
+    void Settle()
+    {
+        if (_alerts.Count > 0) NextAlert();
+        else SetMode(RestingPill ? Mode.Compact : Mode.Hidden);
+    }
 
     // Growing: shape first, content fades in 140 ms later. Shrinking: content fades out first,
     // the shape follows 90 ms later, and the new content appears once it has mostly settled.
@@ -127,9 +134,11 @@ public sealed partial class IslandWindow : Window
     {
         var prev = _mode;
         var t = ++_token;
-        (_mode, _via) = (mode, via);        if (prev == Mode.Hidden || mode == Mode.Expanded) Place();
+        (_mode, _via) = (mode, via);
+        if (prev == Mode.Hidden || mode == Mode.Expanded) Place();
         HookMouse(mode == Mode.Expanded);
         Fade(CompactLayer, false);
+        Fade(AlertLayer, false);
         Fade(ExpandedLayer, false);
         UpdateWave();
         UpdateProgressTimer();
@@ -150,6 +159,11 @@ public sealed partial class IslandWindow : Window
         if (t != _token) return;
         if (mode == Mode.Compact) Fade(CompactLayer, true);
         if (mode == Mode.Expanded) Fade(ExpandedLayer, true);
+        if (mode == Mode.Alert)
+        {
+            FillAlert(); // swapped only now, so the previous alert fades out with its own text
+            Fade(AlertLayer, true);
+        }
     }
 
     void OnMediaChanged()
@@ -256,7 +270,7 @@ public sealed partial class IslandWindow : Window
 
     void Pill_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
     {
-        if (_mode == Mode.Compact) SetMode(Mode.Expanded, Via.Click);
+        if (_mode is Mode.Compact or Mode.Alert) SetMode(Mode.Expanded, Via.Click);
     }
 
     void Play_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.TogglePlay();

@@ -92,7 +92,7 @@ None dominates. Feature lists are converging, so features alone will not win. Ou
 |---|---|---|
 | Hidden | slides above screen edge | nothing active, during setup, during games (unless summoned) |
 | Compact pill | 214 x 32, radius 16 | an ongoing activity exists, only if enabled in settings (off by default: without a notch, a resting pill covers real content such as browser tabs) |
-| Alert | 380 x 62, radius 31 | a short-lived event (3 s) |
+| Alert | 304 x 50, radius 25 (scaled with the panel) | a short-lived event (3 s) |
 | Expanded panel | 384 x 170 to 190, radius 26 (20% smaller than the prototype, founder's call) | shortcut, click, hover, or file drag toward the top |
 | Game music card | 360 x 82, radius 41 | shortcut pressed during a game set to "Only when I ask" |
 | Split bubble | 32 x 32 circle beside the pill | two ongoing activities (e.g. music + timer) |

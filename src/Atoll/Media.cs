@@ -16,6 +16,8 @@ sealed class Media(DispatcherQueue ui)
     string _artKey = "";
 
     public event Action? Changed;
+    public event Action? TrackChanged; // not raised for what was already playing at startup
+    bool _primed;
     public bool HasSession => _session != null;
     public string Title { get; private set; } = "";
     public string Artist { get; private set; } = "";
@@ -71,6 +73,7 @@ sealed class Media(DispatcherQueue ui)
         if (s == null)
         {
             (Title, Artist, Art, Playing, _artKey) = ("", "", null, false, "");
+            _primed = true;
             Changed?.Invoke();
             return;
         }
@@ -82,6 +85,7 @@ sealed class Media(DispatcherQueue ui)
         _position = t.Position - t.StartTime;
         _positionAt = t.LastUpdatedTime.Year < 2000 ? DateTimeOffset.Now : t.LastUpdatedTime;
 
+        bool newTrack = false;
         try
         {
             var props = await s.TryGetMediaPropertiesAsync();
@@ -90,6 +94,7 @@ sealed class Media(DispatcherQueue ui)
             var key = Title + "\n" + Artist;
             if (key != _artKey)
             {
+                newTrack = Title != "";
                 _artKey = key;
                 Art = null;
                 if (props.Thumbnail != null)
@@ -104,5 +109,7 @@ sealed class Media(DispatcherQueue ui)
         catch (COMException) { } // the player closed while we were reading it
 
         Changed?.Invoke();
+        if (newTrack && _primed) TrackChanged?.Invoke();
+        _primed = true;
     }
 }

@@ -34,6 +34,37 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- Alert: icon, two lines or a level bar, optional action -->
+                <Grid x:Name="AlertLayer" Width="304" Height="50" Padding="8,0,10,0" ColumnSpacing="10" Opacity="0"
+                      HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
+                    <Grid.RenderTransform>
+                        <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
+                    </Grid.RenderTransform>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="AlertIconFrame" Width="34" Height="34" CornerRadius="17" Background="#1C1C21" VerticalAlignment="Center">
+                        <FontIcon x:Name="AlertIcon" FontSize="17" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="AlertTitle" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock x:Name="AlertSub" FontSize="10.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <Grid x:Name="AlertBar" Height="5" Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="AlertBarDone" Width="0*" />
+                                <ColumnDefinition x:Name="AlertBarLeft" Width="1*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.ColumnSpan="2" CornerRadius="2.5" Background="{StaticResource Line}" />
+                            <Border CornerRadius="2.5" Background="White" />
+                        </Grid>
+                    </StackPanel>
+                    <Border x:Name="AlertAction" Grid.Column="2" Background="White" CornerRadius="12" Padding="11,5" VerticalAlignment="Center" Tapped="AlertAction_Tapped">
+                        <TextBlock x:Name="AlertActionText" FontSize="10.5" FontWeight="SemiBold" Foreground="#08080A" />
+                    </Border>
+                </Grid>
+
                 <!-- Expanded panel: media -->
                 <Grid x:Name="ExpandedLayer" Width="384" Height="170" Padding="16,14,16,11" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
