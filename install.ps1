@@ -13,5 +13,12 @@ Start-Sleep -Milliseconds 500
 robocopy $out $dest /MIR /XD win-x64 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "Copy failed ($LASTEXITCODE)" }
 
+# Start menu shortcut, so Windows search finds the app.
+$shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Programs')) 'Atoll.lnk'))
+$shortcut.TargetPath = Join-Path $dest 'Atoll.exe'
+$shortcut.WorkingDirectory = $dest
+$shortcut.Description = 'A Dynamic Island for Windows'
+$shortcut.Save()
+
 Start-Process (Join-Path $dest 'Atoll.exe')
 "Installed in $dest"

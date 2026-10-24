@@ -6,7 +6,7 @@ The product brief is in [project.md](project.md).
 
 ## Install
 
-Builds Atoll, installs it for your user in `%LOCALAPPDATA%\Programs\Atoll` (no admin rights) and starts it. Run it again to update; settings are kept.
+Builds Atoll, installs it for your user in `%LOCALAPPDATA%\Programs\Atoll` (no admin rights), adds it to the Start menu and starts it. Run it again to update; settings are kept.
 
 ```bash
 powershell -ExecutionPolicy Bypass -File install.ps1
@@ -14,7 +14,7 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 With "Start Atoll when Windows starts" checked (the default, in setup and settings), the installed copy adds itself to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. Unchecking it removes the entry. Development builds never write that entry.
 
-To uninstall: Quit Atoll from its tray icon, uncheck the start option first (or delete the `Atoll` value under that key), then delete `%LOCALAPPDATA%\Programs\Atoll` and `%LOCALAPPDATA%\Atoll`.
+To uninstall: Quit Atoll from its tray icon, uncheck the start option first (or delete the `Atoll` value under that key), then delete `%LOCALAPPDATA%\Programs\Atoll`, `%LOCALAPPDATA%\Atoll` and the `Atoll` shortcut in `%APPDATA%\Microsoft\Windows\Start Menu\Programs`.
 
 ## Build and run
 
