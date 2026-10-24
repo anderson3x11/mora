@@ -211,3 +211,28 @@ The island is always pure black with white text regardless of system theme (it r
 - Keystroke-safety test passes; no focus change ever observed.
 - Smooth on 60, 120 and 144 Hz, correct on 100/125/150/200% scaling and multi-monitor.
 - Idle CPU ~0%, memory footprint small enough to forget it's running.
+
+## 11. Status (2026-10-24)
+
+Built in C# + WinUI 3 (Windows App SDK 2.5, unpackaged). See README.md for build and test.
+
+| Definition of done item | Status |
+|---|---|
+| States and transitions | Done: hidden, compact pill (opt-in), alert, panel, game music card. Split bubble not built (the resting pill is off by default) |
+| Setup flow and settings window | Done |
+| Media, timers, shelf, clipboard | Done. Media output-device picker not built |
+| Alerts | Done for track, timer, download, volume (opt-in), battery, headphones/output switch, clipboard. Meeting alerts wait for calendar support |
+| Games, three modes, summary | Done |
+| Keystroke-safety test | Passes: 3330 characters typed through every state, zero lost, foreground never lost |
+| Refresh rates and scaling | Springs run at display rate (checked on 240 Hz). Mixed scaling across monitors not tested |
+| Idle CPU and memory | 0% idle CPU, about 90 MB private memory |
+
+Decisions taken while building:
+- The resting compact pill is off by default (founder's call): without a notch, it covers browser tabs.
+- Panel and alerts are 20% smaller than the prototype (founder's call).
+- A click outside closes the panel on release, so a file dragged from Explorer onto the open panel does not close it.
+- The waveform animates at 30 fps: per-frame animation cost about 10% of a core at 240 Hz.
+- During a game set to "Stay out of my way", Atoll releases Alt+Q so the game receives it.
+- Clipboard history skips copies flagged private (password managers) and never touches disk.
+
+Open follow-ups: dragging toward the top opens the shelf while hidden (needs a global drag watcher without false positives on tab and window drags), split bubble, output-device picker, mixed-DPI testing, persistence of the shelf.
