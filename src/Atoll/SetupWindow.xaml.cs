@@ -106,6 +106,32 @@ public sealed partial class SetupWindow : Window
             radio.Checked += (_, _) => _working.Games = c.Mode;
             p.Children.Add(radio);
         }
+
+        // Answers given to "Decide per game", so a wrong one can be undone (asked again next launch).
+        if (!_firstRun && _working.PerGame.Count > 0)
+        {
+            p.Children.Add(new TextBlock { Text = "Games Atoll remembers", Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"], Margin = new Thickness(0, 8, 0, 2) });
+            foreach (var (exe, mode) in _working.PerGame.OrderBy(g => g.Key))
+            {
+                var row = new Grid { ColumnSpacing = 12 };
+                row.ColumnDefinitions.Add(new ColumnDefinition());
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                row.Children.Add(new TextBlock
+                {
+                    Text = $"{exe}: {(mode == GameMode.Music ? "music on Alt+Q" : "stays out")}",
+                    VerticalAlignment = VerticalAlignment.Center,
+                });
+                var forget = new Button { Content = "Forget" };
+                forget.Click += (_, _) =>
+                {
+                    _working.PerGame.Remove(exe);
+                    ShowStep();
+                };
+                Grid.SetColumn(forget, 1);
+                row.Children.Add(forget);
+                p.Children.Add(row);
+            }
+        }
         return p;
     }
 

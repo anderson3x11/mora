@@ -9,7 +9,7 @@ namespace Atoll;
 
 record Alert(Pop Kind, string Glyph, string Title, string Sub = "", Color? Tint = null, double? Level = null,
              string? ActionLabel = null, Action? Action = null, ImageSource? Art = null,
-             string? Action2Label = null, Action? Action2 = null, int Seconds = 3);
+             string? Action2Label = null, Action? Action2 = null, int Seconds = 3, bool Wide = false, Action? Expired = null);
 
 // Short-lived events: shown one at a time for ~3 s, held longer only while hovered,
 // queued while the panel is open, held during fullscreen games.
@@ -115,7 +115,9 @@ public sealed partial class IslandWindow
         while (t == _alertToken && _mode == Mode.Alert && GetCursorPos(out var pt) != 0 && OnPill(pt))
             await Task.Delay(700);
         if (t != _alertToken || _mode != Mode.Alert) return;
+        var expired = _alert?.Expired;
         _alert = null;
+        expired?.Invoke(); // left alone until it went away: the alert's default answer
         Settle();
     }
 

@@ -29,7 +29,7 @@ public sealed partial class IslandWindow : Window
     Geo GeoOf(Mode m) => m switch
     {
         Mode.Compact => new(214, 32, 16, 8),
-        Mode.Alert => new(_alert?.Action2Label is null ? 304 : 384, 50, 25, 8), // a question with two answers needs room
+        Mode.Alert => new(_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50, 25, 8), // longer text or two answers
         Mode.Game => new(288, 66, 33, 8),
         Mode.Expanded => new(384, _tab switch
         {
@@ -174,7 +174,8 @@ public sealed partial class IslandWindow : Window
         if (_setup != null) return;
         if (_game != null)
         {
-            if (GamePolicy == GameMode.Music) ToggleGameCard();
+            if (_asking == _game) AnswerMusic();
+            else if (GamePolicy == GameMode.Music) ToggleGameCard();
             return;
         }
         if (_mode == Mode.Expanded)
@@ -204,6 +205,7 @@ public sealed partial class IslandWindow : Window
     // the shape follows 90 ms later, and the new content appears once it has mostly settled.
     async void SetMode(Mode mode, Via via = Via.None)
     {
+        if (mode == Mode.Expanded && _game != null) return; // never a panel over a game, whatever asked for it
         var prev = _mode;
         var t = ++_token;
         (_mode, _via) = (mode, via);

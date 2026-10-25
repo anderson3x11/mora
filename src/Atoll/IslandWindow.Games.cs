@@ -9,8 +9,10 @@ namespace Atoll;
 public sealed partial class IslandWindow
 {
     readonly List<Alert> _held = [];
+    readonly HashSet<string> _asked = []; // asked once per game per run, even if left unanswered
     DispatcherQueueTimer? _gameWatch;
-    string? _game; // executable of the fullscreen app in front
+    string? _game;   // executable of the fullscreen app in front
+    string? _asking; // game whose "first time" question is on screen
     int _cardToken;
     bool _hotkeyOn = true;
 
@@ -39,24 +41,37 @@ public sealed partial class IslandWindow
         _alerts.Clear();
         _alertToken++;
         _alert = null;
+        if (_settings.Games == GameMode.Ask && GamePolicy is null && _asked.Add(exe)) _asking = exe;
         UpdateHotkey();
         SetMode(Mode.Hidden);
-        if (_settings.Games == GameMode.Ask && GamePolicy is null)
-            Notify(new Alert(Pop.Music, "", $"First time in {exe}", "Atoll remembers your choice", Seconds: 12,
-                Action2Label: "Stay out", Action2: () => Remember(exe, GameMode.Quiet),
-                ActionLabel: "Music on Alt+Q", Action: () => Remember(exe, GameMode.Music)), force: true);
+        // Answered with the keyboard: games usually capture the mouse, so a click may never reach the island.
+        if (_asking != null)
+            Notify(new Alert(Pop.Music, "", $"First time in {exe}", "Press Alt+Q for music controls here, or Atoll stays out",
+                Seconds: 8, Wide: true, Expired: () => Remember(exe, GameMode.Quiet)), force: true);
     }
 
     void Remember(string exe, GameMode mode)
     {
+        _asking = null;
         _settings.PerGame[exe] = mode;
         _settings.Save();
         UpdateHotkey();
     }
 
+    // Alt+Q while the question shows: music it is, and the card opens right away as proof.
+    void AnswerMusic()
+    {
+        var exe = _asking!;
+        _alertToken++;
+        _alert = null;
+        Remember(exe, GameMode.Music);
+        ToggleGameCard();
+    }
+
     void LeaveGame()
     {
         _game = null;
+        _asking = null; // unanswered: stays out for this run, asked again next time Atoll starts
         UpdateHotkey();
         if (_held.Count == 0)
         {
@@ -72,7 +87,7 @@ public sealed partial class IslandWindow
     // Quiet games get Alt+Q back: Atoll lets go of the shortcut instead of swallowing it.
     void UpdateHotkey()
     {
-        bool want = _game is null || GamePolicy == GameMode.Music;
+        bool want = _game is null || GamePolicy == GameMode.Music || _asking == _game;
         if (want == _hotkeyOn) return;
         _hotkeyOn = want;
         if (want) RegisterHotKey(_hwnd, HotkeyId, MOD_ALT | MOD_NOREPEAT, 'Q');
