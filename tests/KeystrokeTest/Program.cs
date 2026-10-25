@@ -33,8 +33,8 @@ var ui = new Thread(() =>
     {
         var fg = form.Handle;
         var outside = new Point(form.Left + form.Width / 2, form.Bottom - Px(40)); // form area below the text box
-        // Points inside the open panel, in DIPs from its top-left corner (384 wide, 8 below the screen edge).
-        Point Panel(int x, int y) => new(mon.Left + mon.Width / 2 - Px(192) + Px(x), mon.Top + Px(8 + y));
+        // Points inside the open panel, in DIPs from its top-left corner (430 wide, 8 below the screen edge).
+        Point Panel(int x, int y) => new(mon.Left + mon.Width / 2 - Px(215) + Px(x), mon.Top + Px(8 + y));
 
         // The test copies text, so put the user's clipboard back afterwards.
         var savedText = Clipboard.ContainsText() ? Clipboard.GetText() : null;
@@ -71,8 +71,8 @@ return exit;
 
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
-    var play = panel(192, 123);
-    Point mediaTab = panel(40, 22), clipboardTab = panel(260, 22), pasteFirst = panel(349, 56), firstShelfRow = panel(100, 56);
+    var play = panel(215, 123);
+    Point mediaTab = panel(40, 22), clipboardTab = panel(260, 22), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)
@@ -147,7 +147,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         File.WriteAllText(file, "shelf");
         AltQ(); Type(30); Expect("panel", "Alt+Q");
         MoveTo(outside); Down(); host.StartDrag(file); Thread.Sleep(150);
-        DragTo(panel(192, 60)); Thread.Sleep(400); Up(); Thread.Sleep(600);
+        DragTo(panel(215, 60)); Thread.Sleep(400); Up(); Thread.Sleep(600);
         Expect("panel", "a file dropped on it");                   // the press started outside, the panel stays
         MoveTo(firstShelfRow); Down(); DragTo(outside); Thread.Sleep(400); Up(); Thread.Sleep(600);
         if (!string.Equals(host.Dropped(), file, StringComparison.OrdinalIgnoreCase))

@@ -22,6 +22,8 @@ sealed class Media(DispatcherQueue ui)
     public string Title { get; private set; } = "";
     public string Artist { get; private set; } = "";
     public BitmapImage? Art { get; private set; }
+    public string? Site { get; private set; }   // YouTube, Twitch... when it can be told
+    public string Source { get; private set; } = ""; // badge: the site, else the app
     public bool Playing { get; private set; }
     public TimeSpan Duration { get; private set; }
 
@@ -72,7 +74,7 @@ sealed class Media(DispatcherQueue ui)
         var s = _session;
         if (s == null)
         {
-            (Title, Artist, Art, Playing, _artKey) = ("", "", null, false, "");
+            (Title, Artist, Art, Playing, _artKey, Site, Source) = ("", "", null, false, "", null, "");
             _primed = true;
             Changed?.Invoke();
             return;
@@ -96,10 +98,11 @@ sealed class Media(DispatcherQueue ui)
             {
                 newTrack = Title != "";
                 _artKey = key;
+                (Site, Source) = MediaSource.Identify(s.SourceAppUserModelId, Title, Artist);
                 Art = null;
                 if (props.Thumbnail != null)
                 {
-                    var bmp = new BitmapImage { DecodePixelWidth = 144 };
+                    var bmp = new BitmapImage { DecodePixelHeight = 128 }; // by height: video thumbnails are wide
                     await bmp.SetSourceAsync(await props.Thumbnail.OpenReadAsync());
                     if (s != _session) return;
                     Art = bmp;

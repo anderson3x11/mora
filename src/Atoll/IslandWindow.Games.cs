@@ -121,6 +121,7 @@ public sealed partial class IslandWindow
         GameArtist.Text = _media.Artist;
         GamePlayIcon.Glyph = PlayIcon.Glyph;
         SetArt(GameArt, GameArtIcon);
+        ShapeArt(GameArt, GameArtColumn, 45);
     }
 
     // The foreground window fills its whole monitor without being a maximized window:

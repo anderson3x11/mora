@@ -89,11 +89,11 @@
                         <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
                     </Grid.RenderTransform>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="45" />
+                        <ColumnDefinition x:Name="GameArtColumn" Width="45" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Border x:Name="GameArt" Width="45" Height="45" CornerRadius="11" Background="{StaticResource Line}">
+                    <Border x:Name="GameArt" Height="45" CornerRadius="11" Background="{StaticResource Line}">
                         <FontIcon x:Name="GameArtIcon" Glyph="&#xEC4F;" FontSize="18" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -117,7 +117,7 @@
                 </Grid>
 
                 <!-- Expanded panel: tabs on top, one pane below. Media fits 170 high, the others 190. -->
-                <Grid x:Name="ExpandedLayer" Width="384" Height="190" Padding="14,11,14,13" Opacity="0"
+                <Grid x:Name="ExpandedLayer" Width="430" Height="190" Padding="14,11,14,13" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
                     <Grid.RenderTransform>
                         <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
@@ -126,6 +126,7 @@
                         <RowDefinition Height="22" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
+                    <TextBlock x:Name="SourceBadge" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <StackPanel x:Name="Tabs" Orientation="Horizontal" Spacing="3">
                         <Grid Tag="Media" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
@@ -165,7 +166,7 @@
                                 </Grid.RowDefinitions>
                                 <Grid ColumnSpacing="11">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition x:Name="ArtColumn" Width="58" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <Border x:Name="ExpandedArt" CornerRadius="11" Background="{StaticResource Line}">

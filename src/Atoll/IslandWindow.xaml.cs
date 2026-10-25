@@ -31,7 +31,7 @@ public sealed partial class IslandWindow : Window
         Mode.Compact => new(214, 32, 16, 8),
         Mode.Alert => new(_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50, 25, 8), // longer text or two answers
         Mode.Game => new(288, 66, 33, 8),
-        Mode.Expanded => new(384, _tab switch
+        Mode.Expanded => new(430, _tab switch
         {
             Tab.Media => 170,
             Tab.Timers => 124,
@@ -263,6 +263,8 @@ public sealed partial class IslandWindow : Window
         PlayIcon.Glyph = _media.Playing ? "" : "";
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
+        ShapeArt(ExpandedArt, ArtColumn, 58);
+        SourceBadge.Text = _media.Source;
         FillGameCard();
         UpdateProgress();
         UpdateWave();
@@ -275,6 +277,19 @@ public sealed partial class IslandWindow : Window
             ? new ImageBrush { ImageSource = art, Stretch = Stretch.UniformToFill }
             : (Brush)((FrameworkElement)Content).Resources["Line"];
         fallback.Visibility = _media.Art is null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // The frame follows the artwork: wide for video thumbnails (YouTube), round for a Twitch
+    // streamer's picture, square for album covers (Spotify) and anything else.
+    void ShapeArt(Microsoft.UI.Xaml.Controls.Border frame, Microsoft.UI.Xaml.Controls.ColumnDefinition column, double height)
+    {
+        var art = _media.Art;
+        bool wide = art is { PixelHeight: > 0 } && (double)art.PixelWidth / art.PixelHeight >= 1.3;
+        bool round = !wide && art != null && _media.Site is "Twitch" or "Kick";
+        double width = wide ? Math.Round(height * 16 / 9) : height;
+        frame.Width = width;
+        column.Width = new GridLength(width);
+        frame.CornerRadius = new CornerRadius(round ? height / 2 : height * 0.19);
     }
 
     void UpdateProgress()
@@ -370,6 +385,7 @@ public sealed partial class IslandWindow : Window
         TimersTab.Visibility = _tab == Tab.Timers ? Visibility.Visible : Visibility.Collapsed;
         ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
         ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
+        SourceBadge.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
         var res = ((FrameworkElement)Content).Resources;
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
         {
