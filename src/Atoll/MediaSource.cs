@@ -23,14 +23,19 @@ static class MediaSource
         if (appId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && !Browsers.ContainsKey(app))
             return (null, app); // a desktop player: Spotify.exe
 
-        foreach (var (window, process) in Windows())
+        var windows = Windows();
+        foreach (var (window, process) in windows)
         {
             if (!Browsers.TryGetValue(process, out var browser)) continue;
             if (!(title.Length > 3 && window.Contains(title)) && !(artist.Length > 2 && window.Contains(artist))) continue;
             var site = Sites.FirstOrDefault(s => window.Contains(" - " + s) || window.Contains(" | " + s));
             return (site, site ?? browser);
         }
-        return (null, appId switch { "Chrome" => "Chrome", "MSEdge" => "Edge", _ => "" });
+        if (appId == "Chrome") return (null, "Chrome");
+        if (appId == "MSEdge") return (null, "Edge");
+        // Playing in a background tab, from a browser with an opaque id (Firefox): name it if it is the only one open.
+        var open = windows.Select(w => Browsers.GetValueOrDefault(w.Process)).OfType<string>().Distinct().ToList();
+        return (null, open.Count == 1 ? open[0] : "");
     }
 
     static List<(string Title, string Process)> Windows()

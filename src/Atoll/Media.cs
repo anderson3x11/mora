@@ -18,6 +18,7 @@ sealed class Media(DispatcherQueue ui)
     public event Action? Changed;
     public event Action? TrackChanged; // not raised for what was already playing at startup
     bool _primed;
+    int _propertiesSeq;
     public bool HasSession => _session != null;
     public string Title { get; private set; } = "";
     public string Artist { get; private set; } = "";
@@ -53,23 +54,27 @@ sealed class Media(DispatcherQueue ui)
     {
         if (_session != null)
         {
-            _session.MediaPropertiesChanged -= OnSessionChanged;
+            _session.MediaPropertiesChanged -= OnPropertiesChanged;
             _session.PlaybackInfoChanged -= OnSessionChanged;
             _session.TimelinePropertiesChanged -= OnSessionChanged;
         }
         _session = _manager!.GetCurrentSession();
         if (_session != null)
         {
-            _session.MediaPropertiesChanged += OnSessionChanged;
+            _session.MediaPropertiesChanged += OnPropertiesChanged;
             _session.PlaybackInfoChanged += OnSessionChanged;
             _session.TimelinePropertiesChanged += OnSessionChanged;
         }
-        _ = Refresh();
+        _ = Refresh(properties: true);
     }
 
-    void OnSessionChanged(GlobalSystemMediaTransportControlsSession s, object e) => ui.TryEnqueue(() => _ = Refresh());
+    void OnSessionChanged(GlobalSystemMediaTransportControlsSession s, object e) => ui.TryEnqueue(() => _ = Refresh(properties: false));
+    void OnPropertiesChanged(GlobalSystemMediaTransportControlsSession s, object e) => ui.TryEnqueue(() => _ = Refresh(properties: true));
 
-    async Task Refresh()
+    // properties: the title, artist or artwork changed. Browsers send these in steps when switching
+    // tabs (title first, artwork later), so the artwork and source are re-read every time, not only
+    // when the title changes.
+    async Task Refresh(bool properties)
     {
         var s = _session;
         if (s == null)
@@ -88,25 +93,27 @@ sealed class Media(DispatcherQueue ui)
         _positionAt = t.LastUpdatedTime.Year < 2000 ? DateTimeOffset.Now : t.LastUpdatedTime;
 
         bool newTrack = false;
+        var seq = properties ? ++_propertiesSeq : _propertiesSeq;
         try
         {
             var props = await s.TryGetMediaPropertiesAsync();
-            if (s != _session) return;
+            if (s != _session || seq != _propertiesSeq) return; // a newer read is under way
             (Title, Artist) = (props.Title, props.Artist);
             var key = Title + "\n" + Artist;
-            if (key != _artKey)
+            newTrack = key != _artKey && Title != "";
+            if (properties || newTrack)
             {
-                newTrack = Title != "";
                 _artKey = key;
                 (Site, Source) = MediaSource.Identify(s.SourceAppUserModelId, Title, Artist);
-                Art = null;
+                BitmapImage? art = null; // the old artwork stays up until the new one is decoded: no blank flash
                 if (props.Thumbnail != null)
                 {
-                    var bmp = new BitmapImage { DecodePixelHeight = 128 }; // by height: video thumbnails are wide
-                    await bmp.SetSourceAsync(await props.Thumbnail.OpenReadAsync());
-                    if (s != _session) return;
-                    Art = bmp;
+                    art = new BitmapImage { DecodePixelHeight = 128 }; // by height: video thumbnails are wide
+                    await art.SetSourceAsync(await props.Thumbnail.OpenReadAsync());
+                    if (s != _session || seq != _propertiesSeq) return;
                 }
+                Art = art;
+                if (Source == "" || Site is null) _ = IdentifyLater(s, key);
             }
         }
         catch (COMException) { } // the player closed while we were reading it
@@ -114,5 +121,16 @@ sealed class Media(DispatcherQueue ui)
         Changed?.Invoke();
         if (newTrack && _primed) TrackChanged?.Invoke();
         _primed = true;
+    }
+
+    // The browser window title can lag the media title by a moment after a tab switch: look once more.
+    async Task IdentifyLater(GlobalSystemMediaTransportControlsSession s, string key)
+    {
+        await Task.Delay(1500);
+        if (s != _session || key != _artKey) return;
+        var found = MediaSource.Identify(s.SourceAppUserModelId, Title, Artist);
+        if (found == (Site, Source)) return;
+        (Site, Source) = found;
+        Changed?.Invoke();
     }
 }
