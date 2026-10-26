@@ -32,6 +32,7 @@ sealed class Settings
 
     // Off by default: unlike a Mac notch, a resting pill covers real content (browser tabs).
     public bool ShowCompactPill { get; set; }
+    public bool ShowTimerPill { get; set; } // a small countdown while a timer runs, the bubble beside music
 
     // What may pop up on its own. Volume is opt-in: Windows shows its own flyout too.
     public bool PopMusic { get; set; } = true;

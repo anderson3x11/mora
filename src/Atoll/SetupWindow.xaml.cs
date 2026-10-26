@@ -97,6 +97,7 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(Card(
                     Row("Start Atoll when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
                     Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
+                    Row("Show a small countdown while a timer runs", "With the music pill on too, it splits into a round bubble beside it.", Toggle(() => _working.ShowTimerPill, v => _working.ShowTimerPill = v)),
                     Row("Open the island", "Click, then press the shortcut you want. It works from any app.", ShortcutPicker())));
                 break;
             case Tab.Popups:

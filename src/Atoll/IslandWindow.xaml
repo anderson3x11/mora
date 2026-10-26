@@ -29,6 +29,9 @@
               PointerEntered="Pill_PointerEntered" PointerExited="Pill_PointerExited" Tapped="Pill_Tapped"
               AllowDrop="True" DragEnter="Pill_DragEnter" DragOver="Pill_DragOver" DragLeave="Pill_DragLeave" Drop="Pill_Drop">
             <Border x:Name="ShapeHost" />
+            <!-- The split bubble's countdown: placed by Render beside the pill, outside the clipped layers -->
+            <TextBlock x:Name="BubbleText" Width="32" Height="32" Padding="0,9,0,0" TextAlignment="Center" FontFamily="{StaticResource Mono}" FontSize="9.5"
+                       Foreground="#FFB454" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0" IsHitTestVisible="False" />
             <Grid x:Name="Layers" Margin="0,8,0,0">
                 <!-- Compact pill: artwork left, waveform right -->
                 <Grid x:Name="CompactLayer" Width="214" Height="32" Padding="8,0,12,0" Opacity="0"
@@ -36,15 +39,22 @@
                     <Grid.RenderTransform>
                         <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
                     </Grid.RenderTransform>
-                    <Border x:Name="CompactArt" Width="22" Height="22" CornerRadius="6" Background="{StaticResource Line}" HorizontalAlignment="Left">
-                        <FontIcon x:Name="CompactArtIcon" Glyph="&#xEC4F;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
-                    </Border>
-                    <StackPanel x:Name="Wave" Orientation="Horizontal" Spacing="2" Height="16" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                        <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                    </StackPanel>
+                    <Grid x:Name="CompactMedia">
+                        <Border x:Name="CompactArt" Width="22" Height="22" CornerRadius="6" Background="{StaticResource Line}" HorizontalAlignment="Left">
+                            <FontIcon x:Name="CompactArtIcon" Glyph="&#xEC4F;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                        </Border>
+                        <StackPanel x:Name="Wave" Orientation="Horizontal" Spacing="2" Height="16" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                        </StackPanel>
+                    </Grid>
+                    <!-- A timer alone: its countdown -->
+                    <Grid x:Name="CompactTimer" Visibility="Collapsed">
+                        <FontIcon Glyph="&#xE916;" FontSize="14" FontFamily="{StaticResource Icons}" Foreground="#FFB454" HorizontalAlignment="Left" />
+                        <TextBlock x:Name="CompactTimerText" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="#FFB454" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
                 </Grid>
 
                 <!-- Alert: icon, two lines or a level bar, optional action -->

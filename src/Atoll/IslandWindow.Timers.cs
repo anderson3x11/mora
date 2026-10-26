@@ -25,6 +25,7 @@ public sealed partial class IslandWindow
         }
         _timerTick.Start();
         FillTimer();
+        EvaluateRest(); // the countdown pill or bubble, when enabled
     }
 
     void OnTimerTick()
@@ -38,6 +39,7 @@ public sealed partial class IslandWindow
         _timer = null;
         _timerTick!.Stop();
         FillTimer();
+        EvaluateRest();
         Notify(new Alert(Pop.Timers, "", t.Label, "Timer finished", Amber, ActionLabel: "Again", Action: () => StartTimer(t.Seconds)));
     }
 
@@ -47,7 +49,7 @@ public sealed partial class IslandWindow
         TimerRunning.Visibility = _timer is null ? Visibility.Collapsed : Visibility.Visible;
         if (_timer is not { } t) return;
         TimerLabel.Text = t.Label;
-        TimerLeft.Text = Format(TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds)));
+        TimerLeft.Text = CompactTimerText.Text = BubbleText.Text = Format(TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds)));
     }
 
     void TimerStart_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) =>
@@ -64,5 +66,6 @@ public sealed partial class IslandWindow
         _timer = null;
         _timerTick?.Stop();
         FillTimer();
+        EvaluateRest();
     }
 }

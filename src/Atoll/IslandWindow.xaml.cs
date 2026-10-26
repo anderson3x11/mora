@@ -28,7 +28,7 @@ public sealed partial class IslandWindow : Window
 
     Geo GeoOf(Mode m) => m switch
     {
-        Mode.Compact => new(214, 32, 16, 8),
+        Mode.Compact => new(MediaPill ? 214 : 132, 32, 16, 8),
         Mode.Alert => new(_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50, 25, 8), // longer text or two answers
         Mode.Game => new(288, 66, 33, 8),
         Mode.Expanded => new(430, _tab switch
@@ -205,8 +205,38 @@ public sealed partial class IslandWindow : Window
         SetMode(Mode.Expanded, Via.Hotkey);
     }
 
-    // The resting pill, when enabled, stays while media exists (paused included), never over a game.
-    bool RestingPill => _settings.ShowCompactPill && _media.HasSession && _game is null;
+    // The resting pill, each part opt-in: music while media exists (paused included), a countdown while a
+    // timer runs. Both at once split into the pill and a round bubble beside it. Never over a game.
+    bool MediaPill => _settings.ShowCompactPill && _media is { HasSession: true };
+    bool TimerPill => _settings.ShowTimerPill && _timer != null;
+    bool RestingPill => (MediaPill || TimerPill) && _game is null;
+
+    // After media or a timer changed: show, hide or refill the resting pill.
+    void EvaluateRest()
+    {
+        if (_mode == Mode.Hidden && RestingPill) SetMode(Mode.Compact);
+        else if (_mode == Mode.Compact && !RestingPill) SetMode(Mode.Hidden);
+        else if (_mode == Mode.Compact)
+        {
+            Retarget(GeoOf(Mode.Compact), OpenSpring); // a timer alone is a shorter pill than music
+            FillCompact();
+        }
+        UpdateBubble();
+    }
+
+    void FillCompact()
+    {
+        CompactMedia.Visibility = MediaPill ? Visibility.Visible : Visibility.Collapsed;
+        CompactTimer.Visibility = MediaPill ? Visibility.Collapsed : Visibility.Visible;
+        CompactLayer.Width = GeoOf(Mode.Compact).W;
+        UpdateWave();
+    }
+
+    void UpdateBubble()
+    {
+        _bubble.T = _mode == Mode.Compact && MediaPill && TimerPill ? 1 : 0;
+        if (_bubble.T != _bubble.X) Animate();
+    }
 
     // Back to rest, unless alerts waited while the panel was open.
     void Settle()
@@ -224,6 +254,8 @@ public sealed partial class IslandWindow : Window
         var t = ++_token;
         (_mode, _via) = (mode, via);
         GameKeys.CardOpen = mode == Mode.Game;
+        UpdateBubble();
+        if (mode == Mode.Compact) FillCompact();
         if (prev == Mode.Hidden || mode == Mode.Expanded) Place();
         HookMouse(mode == Mode.Expanded);
         Fade(CompactLayer, false);
@@ -264,8 +296,7 @@ public sealed partial class IslandWindow : Window
     void OnMediaChanged()
     {
         Fill();
-        if (_mode == Mode.Hidden && RestingPill) SetMode(Mode.Compact);
-        else if (_mode == Mode.Compact && !RestingPill) SetMode(Mode.Hidden);
+        EvaluateRest();
     }
 
     void Fill()
@@ -355,7 +386,7 @@ public sealed partial class IslandWindow : Window
     {
         int set = _mode switch
         {
-            Mode.Compact => 0,
+            Mode.Compact when MediaPill => 0,
             Mode.Alert when _alert?.Kind == Pop.Music => 1,
             Mode.Expanded when _tab == Tab.Media => 2,
             _ => -1,
@@ -465,6 +496,11 @@ public sealed partial class IslandWindow : Window
     {
         (_w.T, _h.T, _r.T, _y.T) = (g.W, g.H, g.R, g.Y);
         _spring = _motion ? spring : Reduced;
+        Animate();
+    }
+
+    void Animate()
+    {
         if (_animating) return;
         _animating = true;
         _last = 0;
@@ -480,29 +516,40 @@ public sealed partial class IslandWindow : Window
         if (dt <= 0) return;
         int n = (int)Math.Ceiling(dt * 240);
         var (k, c) = _spring;
-        bool moving = _w.Step(k, c, dt, n) | _h.Step(k, c, dt, n) | _r.Step(k, c, dt, n) | _y.Step(k, c, dt, n);
+        bool moving = _w.Step(k, c, dt, n) | _h.Step(k, c, dt, n) | _r.Step(k, c, dt, n) | _y.Step(k, c, dt, n)
+            | _bubble.Step(_motion ? 300 : 900, _motion ? 18 : 60, dt, n); // underdamped: the bubble pops in with a bounce
         Render();
         if (moving) return;
         CompositionTarget.Rendering -= OnRendering;
-        _animating = false;        SetRegion(ShapeRect(_w.X, _h.X, _y.X, 0)); // exact again, now that it rests
+        _animating = false;
+        Render(); // exact hit region again, now that everything rests
     }
 
     // The black shape is a compositor rounded rectangle: changing it touches no XAML layout, which at
     // 240 frames a second was most of an animation's cost. The same geometry clips the layers.
-    CompositionRoundedRectangleGeometry? _shape;
+    // The split bubble is a second, round one beside it.
+    CompositionRoundedRectangleGeometry? _shape, _bubbleShape;
+    readonly Spring _bubble = new(0); // bubble scale, 0 hidden, 1 shown
 
     void BuildShape()
     {
         var c = ElementCompositionPreview.GetElementVisual(Pill).Compositor;
+        var black = c.CreateColorBrush(Windows.UI.Color.FromArgb(255, 0x08, 0x08, 0x0A));
         _shape = c.CreateRoundedRectangleGeometry();
-        var fill = c.CreateSpriteShape(_shape);
-        fill.FillBrush = c.CreateColorBrush(Windows.UI.Color.FromArgb(255, 0x08, 0x08, 0x0A));
+        _bubbleShape = c.CreateRoundedRectangleGeometry();
         var visual = c.CreateShapeVisual();
         visual.Size = new Vector2((float)CanvasW, (float)CanvasH);
-        visual.Shapes.Add(fill);
-        ElementCompositionPreview.SetElementChildVisual(ShapeHost, visual);        var clip = c.CreateGeometricClip(_shape);
+        foreach (var geometry in new[] { _shape, _bubbleShape })
+        {
+            var fill = c.CreateSpriteShape(geometry);
+            fill.FillBrush = black;
+            visual.Shapes.Add(fill);
+        }
+        ElementCompositionPreview.SetElementChildVisual(ShapeHost, visual);
+        var clip = c.CreateGeometricClip(_shape);
         clip.Offset = new Vector2(0, -8); // the layers start 8 below the island's top
         ElementCompositionPreview.GetElementVisual(Layers).Clip = clip;
+        ElementCompositionPreview.SetIsTranslationEnabled(BubbleText, true);
     }
 
     void Render()
@@ -511,12 +558,24 @@ public sealed partial class IslandWindow : Window
         _shape!.Size = new Vector2(w, h);
         _shape.CornerRadius = new Vector2(r, r);
         _shape.Offset = new Vector2(((float)CanvasW - w) / 2, (float)_y.X);
-        // While moving, the hit region follows the shape in 16 px steps, a little larger than it: Windows
-        // hears about it a few times per animation instead of every frame. Exact again once it rests.
-        if (!_animating) SetRegion(ShapeRect(w, h, _y.X, 0));
-        else if (ShapeRect(w, h, _y.X, 0.04) is { Bottom: > 0 } b)
-            SetRegion(new RECT { Left = b.Left & ~15, Top = b.Top & ~15, Right = (b.Right + 15) & ~15, Bottom = (b.Bottom + 15) & ~15 });
-        else SetRegion(default);
+
+        // Bubble: 32 px round, 6 px right of the pill, scaled from its center.
+        float s = (float)Math.Max(0, _bubble.X), size = 32 * s;
+        var center = new Vector2(((float)CanvasW + w) / 2 + 6 + 16, (float)_y.X + 16);
+        _bubbleShape!.Size = new Vector2(size, size);
+        _bubbleShape.CornerRadius = new Vector2(size / 2, size / 2);
+        _bubbleShape.Offset = center - new Vector2(size / 2, size / 2);
+        ElementCompositionPreview.GetElementVisual(BubbleText).Properties.InsertVector3("Translation", new Vector3(center.X - 16, center.Y - 16, 0));
+        BubbleText.Opacity = Math.Clamp(s, 0, 1);
+
+        // While moving, the hit region follows the shapes in 16 px steps, a little larger than them: Windows
+        // hears about it a few times per animation instead of every frame. Exact again once all rests.
+        var region = ShapeRect(w, h, _y.X, _animating ? 0.04 : 0);
+        if (s > 0.01 && region.Bottom > 0)
+            region.Right = Math.Max(region.Right, (int)Math.Ceiling((center.X + 16) * _scale));
+        if (_animating && region.Bottom > 0)
+            region = new RECT { Left = region.Left & ~15, Top = region.Top & ~15, Right = (region.Right + 15) & ~15, Bottom = (region.Bottom + 15) & ~15 };
+        SetRegion(region);
     }
 
     // The shape's bounds in window pixels, grown by a fraction of its size on each side.
