@@ -6,7 +6,8 @@ $root = Split-Path $PSScriptRoot
 $data = Join-Path $env:TEMP 'atoll-keystroke-test'
 New-Item -ItemType Directory -Force $data | Out-Null
 Remove-Item (Join-Path $data '*') -Force -ErrorAction SilentlyContinue
-'{ "StartWithWindows": false }' | Set-Content (Join-Path $data 'settings.json') -Encoding utf8 # not a first run: no setup window
+# Not a first run: no setup window. The test's fullscreen window counts as a game through its own profile.
+'{ "StartWithWindows": false, "GameProfiles": { "KeystrokeTest": {} } }' | Set-Content (Join-Path $data 'settings.json') -Encoding utf8
 
 Get-Process Atoll -ErrorAction SilentlyContinue | Stop-Process # a running Atoll locks the build output
 Start-Sleep -Milliseconds 500

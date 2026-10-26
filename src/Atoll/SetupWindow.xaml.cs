@@ -105,7 +105,7 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(PopupsCard());
                 break;
             case Tab.Games:
-                Heading("Games", "What Atoll does while a fullscreen game or video is in front. Anything not allowed waits, and shows up as one summary when you leave the game.");
+                Heading("Games", "What Atoll does while a fullscreen game is in front (games Windows knows, or installed by Steam, Riot, Epic, GOG, Ubisoft, EA or Xbox). Anything not allowed waits, and shows up as one summary when you leave the game.");
                 Page.Children.Add(Subheading("Any game", "For every game without its own settings below."));
                 Page.Children.Add(ProfileCard(_working.AnyGame, Row("Ask the first time I launch a new game",
                     $"Press {_working.HotkeyName} for music controls, or do nothing and Atoll stays out.",

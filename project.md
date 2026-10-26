@@ -243,4 +243,6 @@ Decisions taken while building:
 - Dragging a file toward the top center opens the shelf even while hidden: once the left button has been held 250 ms and moved, a 300 x 24 strip there joins the hit region. Only file drags open it; any other drag (text, links, browser tabs) makes the strip step aside at once. A click never arms it, so title bars and tabs at the top keep their clicks and double-clicks.
 - Microphone and camera use come from active audio capture sessions and the Media Foundation camera activity monitor: Windows 11 26H2 stopped updating the usage keys of the registry.
 
+- Only games count as games: a fullscreen window whose executable is in Windows' Game Bar list (GameConfigStore), in a game launcher library (Steam, Riot, Epic, GOG, Ubisoft, EA, Xbox), in exclusive fullscreen, or has its own profile. Snipping Tool's capture overlay, fullscreen video and slideshows used to be treated as games and silenced every pop-up (founder's report).
+
 Open follow-ups: output-device picker, mixed-DPI testing.

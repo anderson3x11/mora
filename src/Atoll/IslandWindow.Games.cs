@@ -4,8 +4,7 @@ using static Atoll.Native;
 
 namespace Atoll;
 
-// Fullscreen games (and any fullscreen app, a movie included): nothing pops up, alerts are held
-// and summarised once on exit. The user picks what the shortcut does there: nothing, or a small music card.
+// Fullscreen games: nothing pops up unless their profile allows it, alerts are held and summarised once on exit. The user picks what the shortcut does there: nothing, or a small music card.
 public sealed partial class IslandWindow
 {
     readonly List<Alert> _held = [];
@@ -162,9 +161,12 @@ public sealed partial class IslandWindow
         ShapeArt(GameArt, GameArtColumn, 45);
     }
 
-    // The foreground window fills its whole monitor without being a maximized window:
-    // exclusive or borderless fullscreen games, fullscreen video, presentations.
-    static string? FullscreenApp()
+    readonly HashSet<string> _gamePaths = []; // recognised this run; KnownGames reads the registry
+
+    // The foreground window fills its whole monitor without being a maximized window, and is a game
+    // (KnownGames, or one with its own profile). Snipping Tool's capture overlay, fullscreen video and
+    // slideshows fill the monitor too, and are left alone.
+    string? FullscreenApp()
     {
         var fg = GetForegroundWindow();
         if (fg == 0 || IsZoomed(fg) != 0 || GetWindowRect(fg, out var r) == 0) return null;
@@ -181,11 +183,40 @@ public sealed partial class IslandWindow
         if (r.Left > m.Left || r.Top > m.Top || r.Right < m.Right || r.Bottom < m.Bottom) return null;
         GetWindowThreadProcessId(fg, out var pid);
         if (pid == Environment.ProcessId) return null;
-        try
-        {
-            var exe = Process.GetProcessById((int)pid).ProcessName;
-            return exe == "LockApp" ? null : exe; // the lock screen fills the monitor too
-        }
+        string exe;
+        try { exe = Process.GetProcessById((int)pid).ProcessName; } // works where the path is denied (anti-cheat)
         catch (Exception e) when (e is ArgumentException or InvalidOperationException) { return null; } // exited meanwhile
+        if (_settings.GameProfiles.ContainsKey(exe)) return exe;
+        var path = MediaSource.ProcessPath(pid);
+        return path != "" && (_gamePaths.Contains(path) || KnownGames.Contains(path) && _gamePaths.Add(path)) ? exe : null;
     }
+}
+
+// What counts as a game: Windows' own list (the Game Bar's GameConfigStore, which knows emulators too),
+// anything installed in a game launcher's library, and anything in exclusive fullscreen.
+static class KnownGames
+{
+    static readonly string[] Libraries =
+    [
+        @"\steamapps\common\", @"\Riot Games\", @"\Epic Games\", @"\GOG Galaxy\Games\", @"\GOG Games\",
+        @"\Ubisoft Game Launcher\games\", @"\EA Games\", @"\XboxGames\",
+    ];
+
+    public static bool Contains(string path) =>
+        Libraries.Any(l => path.Contains(l, StringComparison.OrdinalIgnoreCase))
+        || ByWindows().Any(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase))
+        || SHQueryUserNotificationState(out var state) == 0 && state == 3; // QUNS_RUNNING_D3D_FULL_SCREEN
+
+    public static IEnumerable<string> ByWindows()
+    {
+        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"System\GameConfigStore\Children");
+        if (key is null) yield break;
+        foreach (var id in key.GetSubKeyNames())
+        {
+            using var game = key.OpenSubKey(id);
+            if (game?.GetValue("MatchedExeFullPath") is string path) yield return path;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("shell32.dll")] static extern int SHQueryUserNotificationState(out int state);
 }

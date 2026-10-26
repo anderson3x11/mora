@@ -49,6 +49,7 @@ sealed class Settings
     public bool AskNewGames { get; set; }
     public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
     public List<string> SeenGames { get; set; } = [];
+    public int GameListVersion { get; set; }
 
     // Before per-game profiles. Converted on load, then no longer written.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public GameMode? Games { get; set; }
@@ -69,6 +70,12 @@ sealed class Settings
         }
         foreach (var exe in GameProfiles.Keys)
             if (!SeenGames.Contains(exe)) SeenGames.Add(exe);
+        if (GameListVersion < 1) // once: any fullscreen app used to count as a game (Snipping Tool, Explorer)
+        {
+            var known = KnownGames.ByWindows().Select(Path.GetFileNameWithoutExtension).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            SeenGames.RemoveAll(exe => !GameProfiles.ContainsKey(exe) && !known.Contains(exe));
+            GameListVersion = 1;
+        }
     }
 
     public bool Allows(Pop kind) => kind switch
