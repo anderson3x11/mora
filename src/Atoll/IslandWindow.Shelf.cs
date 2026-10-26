@@ -8,15 +8,58 @@ using static Atoll.Native;
 namespace Atoll;
 
 // Shelf: files dropped on the island stay listed (the files themselves are not moved or copied)
-// and can be dragged out into any app. A file dragged over the island opens it on this tab.
-// The list of paths is kept in shelf.json next to the settings.
-// ponytail: dragging toward the top of the screen while the island is hidden does not open it yet
-// (that needs a global drag watcher that ignores browser tab and window drags).
+// and can be dragged out into any app. A file dragged over the island, or toward the top center of the
+// screen while it is hidden, opens it on this tab. The list of paths is kept in shelf.json next to the settings.
 public sealed partial class IslandWindow
 {
     static readonly string ShelfFile = Path.Combine(Path.GetDirectoryName(Settings.FilePath)!, "shelf.json");
     readonly List<string> _shelf = [];
     int _dragToken;
+    bool _dropStrip;
+    RECT _shapeHit; // the hit region of the shapes alone, without the drop strip
+
+    // During a drag (left button held a moment and moved), a strip at the top center joins the hit region,
+    // so files dragged there reach Pill_DragEnter. Other drags (text, links, browser tabs) make it step
+    // aside at once. Never armed by a click: clicks and double-clicks on title bars and tabs at the top of
+    // the screen always reach them, and a drag already under way keeps its mouse capture.
+    void WatchDrags() => new Thread(() =>
+    {
+        long down = 0;
+        POINT start = default;
+        bool armed = false;
+        while (true)
+        {
+            Thread.Sleep(armed ? 30 : 100); // a key state read: nothing measurable
+            if (GetAsyncKeyState(0x01) >= 0) // VK_LBUTTON up
+            {
+                if (armed) DispatcherQueue.TryEnqueue(() => ArmDropStrip(false));
+                armed = false;
+                down = 0;
+                continue;
+            }
+            GetCursorPos(out var pt);
+            if (down == 0) (down, start) = (Environment.TickCount64, pt);
+            else if (!armed && Environment.TickCount64 - down >= 250 && Math.Abs(pt.X - start.X) + Math.Abs(pt.Y - start.Y) >= 12)
+            {
+                armed = true;
+                DispatcherQueue.TryEnqueue(() => ArmDropStrip(true));
+            }
+        }
+    }) { IsBackground = true, Name = "Atoll drag watch" }.Start();
+
+    void ArmDropStrip(bool on)
+    {
+        if (on && (_game != null || _setup != null || _mode == Mode.Expanded)) return;
+        if (on && _mode == Mode.Hidden) Place(); // the monitor of the window the drag started in
+        _dropStrip = on;
+        SetRegion(_shapeHit);
+    }
+
+    // 300 x 24 at the top center, in window pixels.
+    RECT DropStrip() => new()
+    {
+        Left = (int)((CanvasW - 300) / 2 * _scale), Right = (int)((CanvasW + 300) / 2 * _scale), Bottom = (int)(24 * _scale),
+    };
 
     void LoadShelf()
     {
@@ -40,6 +83,7 @@ public sealed partial class IslandWindow
 
     void Pill_DragEnter(object sender, DragEventArgs e)
     {
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems) && _dropStrip) ArmDropStrip(false); // to the window underneath
         if (!e.DataView.Contains(StandardDataFormats.StorageItems) || _game != null || _setup != null) return;
         _dragToken++;
         if (_mode == Mode.Expanded && _tab == Tab.Shelf) return;

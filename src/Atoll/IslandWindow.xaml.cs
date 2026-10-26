@@ -110,6 +110,7 @@ public sealed partial class IslandWindow : Window
         FillClipboard();
         LoadShelf();
         FillShelf();
+        WatchDrags();
         WatchGames();
         _media = new Media(DispatcherQueue);
         _media.Changed += OnMediaChanged;
@@ -595,6 +596,12 @@ public sealed partial class IslandWindow : Window
 
     void SetRegion(RECT r)
     {
+        _shapeHit = r;
+        if (_dropStrip)
+        {
+            var s = DropStrip();
+            r = r.Bottom <= r.Top ? s : new RECT { Left = Math.Min(r.Left, s.Left), Right = Math.Max(r.Right, s.Right), Bottom = Math.Max(r.Bottom, s.Bottom) };
+        }
         if (r.Equals(_hit)) return;
         _hit = r;
         SetWindowRgn(_hwnd, CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom), 1);

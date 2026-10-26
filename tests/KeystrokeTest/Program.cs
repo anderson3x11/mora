@@ -49,7 +49,7 @@ var ui = new Thread(() =>
                     form.FormBorderStyle = on ? FormBorderStyle.None : FormBorderStyle.Sizable;
                     form.Bounds = on ? mon : new Rectangle(mon.Left + mon.Width / 2 - Px(300), mon.Top + Px(360), Px(600), Px(300));
                 }),
-                StartDrag: path => form.BeginInvoke(() => form.DoDragDrop(new DataObject(DataFormats.FileDrop, new[] { path }), DragDropEffects.Copy)),
+                StartDrag: data => form.BeginInvoke(() => form.DoDragDrop(data, DragDropEffects.Copy)),
                 Dropped: () => (string?)form.Invoke(() => dropped));
             exit = await Task.Run(() => Run(fg, outside, Panel, s, host));
         }
@@ -144,8 +144,20 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         // Shelf: drag a file from this window onto the open panel, then drag it back out of the shelf.
         var file = Path.Combine(Path.GetTempPath(), "atoll-shelf-test.txt");
         File.WriteAllText(file, "shelf");
+        var fileDrag = new DataObject(DataFormats.FileDrop, new[] { file });
+
+        // Toward the top with the island hidden: text steps aside (cancelled with Escape, nothing dropped
+        // on the user's windows up there), a file opens the shelf and drops on it.
+        MoveTo(outside); Down(); host.StartDrag(new DataObject(DataFormats.UnicodeText, "atoll")); Thread.Sleep(150);
+        DragTo(panel(215, 4)); Thread.Sleep(500); Expect("hidden", "text dragged to the top");
+        Key(0x1B, '\0', 0); Thread.Sleep(100); Up(); Key(0x1B, '\0', 2); Thread.Sleep(300);
+        MoveTo(outside); Down(); host.StartDrag(fileDrag); Thread.Sleep(150);
+        DragTo(panel(215, 4)); Thread.Sleep(500); Expect("panel", "a file dragged to the top");
+        DragTo(panel(215, 60)); Thread.Sleep(300); Up(); Thread.Sleep(600); Expect("panel", "a file dropped after dragging it to the top");
+        Click(outside); Type(40); Expect("hidden", "outside click");
+
         Shortcut(); Type(30); Expect("panel", "the shortcut");
-        MoveTo(outside); Down(); host.StartDrag(file); Thread.Sleep(150);
+        MoveTo(outside); Down(); host.StartDrag(fileDrag); Thread.Sleep(150);
         DragTo(panel(215, 60)); Thread.Sleep(400); Up(); Thread.Sleep(600);
         Expect("panel", "a file dropped on it");                   // the press started outside, the panel stays
         MoveTo(firstShelfRow); Down(); DragTo(outside); Thread.Sleep(400); Up(); Thread.Sleep(600);
@@ -245,7 +257,7 @@ struct INPUT
     [FieldOffset(8)] public MOUSEINPUT Mi;
     [FieldOffset(8)] public KEYBDINPUT Ki;
 }
-record Host(Func<string> Text, Action<string> Copy, Action<bool> Fullscreen, Action<string> StartDrag, Func<string?> Dropped);
+record Host(Func<string> Text, Action<string> Copy, Action<bool> Fullscreen, Action<DataObject> StartDrag, Func<string?> Dropped);
 struct RECT { public int Left, Top, Right, Bottom; }
 struct MOUSEINPUT { public int Dx, Dy; public uint Data, Flags, Time; public nint Extra; }
 struct KEYBDINPUT { public ushort Vk; public char Scan; public uint Flags, Time; public nint Extra; }
