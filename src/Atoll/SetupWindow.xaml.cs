@@ -104,12 +104,13 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(PopupsCard());
                 break;
             case Tab.Games:
-                Heading("Games", "What Atoll does while a fullscreen game or video is in front.");
-                Page.Children.Add(GameModeCard());
-                Page.Children.Add(Subheading("Games Atoll remembers", _working.Games == GameMode.Ask
-                    ? "Answers to the first-time question. Change one here, or forget it to be asked again."
-                    : "Used when \"Decide per game\" is on."));
-                Page.Children.Add(RememberedGames());
+                Heading("Games", "What Atoll does while a fullscreen game or video is in front. Anything not allowed waits, and shows up as one summary when you leave the game.");
+                Page.Children.Add(Subheading("Any game", "For every game without its own settings below."));
+                Page.Children.Add(ProfileCard(_working.AnyGame, Row("Ask the first time I launch a new game",
+                    $"Press {_working.HotkeyName} for music controls, or do nothing and Atoll stays out.",
+                    Toggle(() => _working.AskNewGames, v => _working.AskNewGames = v))));
+                Page.Children.Add(Subheading("Per game", "Games Atoll has seen. Give one its own settings, like everything on for a chill game and nothing for a nervous one."));
+                Page.Children.Add(PerGame());
                 break;
             default:
                 Heading("About", $"Atoll {typeof(App).Assembly.GetName().Version?.ToString(3)}, a Dynamic Island for Windows.");
@@ -121,30 +122,70 @@ public sealed partial class SetupWindow : Window
         }
     }
 
-    StackPanel RememberedGames()
+    // One folded row per game seen: customized games open on their own settings, the others offer to start
+    // from the "Any game" ones. Folded, a long list of games stays short.
+    StackPanel PerGame()
     {
-        var list = new StackPanel { Spacing = 8 };
-        if (_working.PerGame.Count == 0)
+        var list = new StackPanel { Spacing = 6 };
+        var games = _working.SeenGames.Union(_working.GameProfiles.Keys).Order(StringComparer.OrdinalIgnoreCase).ToList();
+        if (games.Count == 0)
         {
-            list.Children.Add(new TextBlock { Text = "No game yet. Atoll asks the first time you launch one.", Foreground = Brush("Muted") });
+            list.Children.Add(new TextBlock { Text = "No game yet. They show up here after you play them.", Foreground = Brush("Muted") });
             return list;
         }
-        var rows = new List<UIElement>();
-        foreach (var exe in _working.PerGame.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList())
+        foreach (var exe in games)
         {
-            var choice = new ComboBox { Items = { "Music on " + _working.HotkeyName, "Stays out" }, MinWidth = 160 };
-            choice.SelectedIndex = _working.PerGame[exe] == GameMode.Music ? 0 : 1;
-            choice.SelectionChanged += (_, _) => _working.PerGame[exe] = choice.SelectedIndex == 0 ? GameMode.Music : GameMode.Quiet;
-            var forget = new Button { Content = new FontIcon { Glyph = "", FontSize = 14 }, Padding = new Thickness(10, 8, 10, 8) };
-            ToolTipService.SetToolTip(forget, "Forget: ask again next time");
-            forget.Click += (_, _) => { _working.PerGame.Remove(exe); Show(); };
-            var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            controls.Children.Add(choice);
-            controls.Children.Add(forget);
-            rows.Add(Row(exe, null, controls));
+            if (!_working.GameProfiles.TryGetValue(exe, out var profile))
+            {
+                var customize = new Button { Content = "Customize" };
+                customize.Click += (_, _) => { _working.GameProfiles[exe] = _working.AnyGame.Clone(); _expanded = exe; Show(); };
+                list.Children.Add(Card(Row(exe, "Uses the \"Any game\" settings.", customize)));
+                continue;
+            }
+            var header = new StackPanel { Margin = new Thickness(0, 6, 0, 6) };
+            header.Children.Add(new TextBlock { Text = exe });
+            header.Children.Add(new TextBlock { Text = Summary(profile), Foreground = Brush("Muted"), FontSize = 12.5 });
+            var reset = new HyperlinkButton { Content = "Use the \"Any game\" settings instead", Padding = new Thickness(0), Margin = new Thickness(0, 8, 0, 0) };
+            reset.Click += (_, _) => { _working.GameProfiles.Remove(exe); Show(); };
+            var body = new StackPanel();
+            body.Children.Add(ProfileCard(profile));
+            body.Children.Add(reset);
+            list.Children.Add(new Expander
+            {
+                Header = header, Content = body, IsExpanded = exe == _expanded,
+                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            });
         }
-        list.Children.Add(Card([.. rows]));
         return list;
+    }
+
+    string? _expanded; // the game just customized opens unfolded
+
+    string Summary(GameProfile p)
+    {
+        var shows = p.Pops.Count == 0 ? "nothing pops up" : $"{p.Pops.Count} kind{(p.Pops.Count > 1 ? "s" : "")} of pop-up";
+        return (p.MusicCard ? $"Music on {_working.HotkeyName}" : $"{_working.HotkeyName} left to the game") + ", " + shows;
+    }
+
+    // The shortcut's role and what may pop up during a game.
+    Border ProfileCard(GameProfile p, params UIElement[] extra)
+    {
+        Grid PopRow(Pop kind, string title) => Row(title, null, Toggle(() => p.Shows(kind), v =>
+        {
+            p.Pops.Remove(kind);
+            if (v) p.Pops.Add(kind);
+        }));
+        return Card([
+            Row($"{_working.HotkeyName} opens music controls", "Otherwise the game keeps the shortcut. While the card shows, the arrow keys switch tracks and set the volume.",
+                Toggle(() => p.MusicCard, v => p.MusicCard = v)),
+            PopRow(Pop.Music, "Show music changes"),
+            PopRow(Pop.Timers, "Show finished timers"),
+            PopRow(Pop.Downloads, "Show finished downloads"),
+            PopRow(Pop.Devices, "Show headphones and battery"),
+            PopRow(Pop.Clipboard, "Show clipboard copies"),
+            PopRow(Pop.Volume, "Show volume changes"),
+            .. extra,
+        ]);
     }
 
     // ---------- first run: four steps ----------
@@ -198,8 +239,13 @@ public sealed partial class SetupWindow : Window
             var label = new StackPanel { Margin = new Thickness(4, 0, 0, 0) };
             label.Children.Add(new TextBlock { Text = c.Title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
             label.Children.Add(new TextBlock { Text = c.Description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
-            var radio = new RadioButton { GroupName = "games", Content = label, IsChecked = _working.Games == c.Mode, Margin = new Thickness(0, 10, 0, 10) };
-            radio.Checked += (_, _) => _working.Games = c.Mode;
+            var current = _working.AskNewGames ? GameMode.Ask : _working.AnyGame.MusicCard ? GameMode.Music : GameMode.Quiet;
+            var radio = new RadioButton { GroupName = "games", Content = label, IsChecked = current == c.Mode, Margin = new Thickness(0, 10, 0, 10) };
+            radio.Checked += (_, _) =>
+            {
+                _working.AnyGame.MusicCard = c.Mode == GameMode.Music;
+                _working.AskNewGames = c.Mode == GameMode.Ask;
+            };
             return (UIElement)radio;
         }).ToArray();
         return Card(rows);

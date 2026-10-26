@@ -5,8 +5,18 @@ namespace Atoll;
 
 enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard }
 
-// During fullscreen games: hidden with the shortcut off, music card on the shortcut, or ask once per game.
+// The game setting before per-game profiles; only read to convert old settings files.
 enum GameMode { Quiet, Music, Ask }
+
+// What Atoll does during one fullscreen game (or any game without its own profile).
+sealed class GameProfile
+{
+    public bool MusicCard { get; set; }        // the shortcut opens music controls; otherwise the game keeps it
+    public List<Pop> Pops { get; set; } = []; // what may pop up over the game; the rest waits for the summary
+
+    public bool Shows(Pop kind) => Pops.Contains(kind);
+    public GameProfile Clone() => new() { MusicCard = MusicCard, Pops = [.. Pops] };
+}
 
 // User preferences in %LOCALAPPDATA%\Atoll\settings.json, written by the setup and settings window.
 sealed class Settings
@@ -31,8 +41,33 @@ sealed class Settings
     public bool PopVolume { get; set; }
     public bool PopClipboard { get; set; } = true;
 
-    public GameMode Games { get; set; } = GameMode.Quiet;
-    public Dictionary<string, GameMode> PerGame { get; set; } = []; // executable name -> Quiet or Music, for Ask
+    // Games: one profile for any game, own profiles by executable name, and every game seen so far
+    // (listed in Settings so it can be customized later).
+    public GameProfile AnyGame { get; set; } = new();
+    public bool AskNewGames { get; set; }
+    public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
+    public List<string> SeenGames { get; set; } = [];
+
+    // Before per-game profiles. Converted on load, then no longer written.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public GameMode? Games { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public Dictionary<string, GameMode>? PerGame { get; set; }
+
+    void Upgrade()
+    {
+        if (Games is { } mode)
+        {
+            AnyGame.MusicCard = mode == GameMode.Music;
+            AskNewGames = mode == GameMode.Ask;
+            Games = null;
+        }
+        if (PerGame != null)
+        {
+            foreach (var (exe, m) in PerGame) GameProfiles.TryAdd(exe, new() { MusicCard = m == GameMode.Music });
+            PerGame = null;
+        }
+        foreach (var exe in GameProfiles.Keys)
+            if (!SeenGames.Contains(exe)) SeenGames.Add(exe);
+    }
 
     public bool Allows(Pop kind) => kind switch
     {
@@ -61,7 +96,9 @@ sealed class Settings
     {
         try
         {
-            return JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath), Json) ?? new();
+            var settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath), Json) ?? new();
+            settings.Upgrade();
+            return settings;
         }
         catch (Exception e) when (e is IOException or JsonException)
         {

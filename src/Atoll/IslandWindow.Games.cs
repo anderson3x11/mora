@@ -16,10 +16,8 @@ public sealed partial class IslandWindow
     int _cardToken;
     bool _hotkeyOn = true;
 
-    // null while a game set to "Decide per game" has not been decided yet: treated as Quiet.
-    GameMode? GamePolicy => _game is null ? null
-        : _settings.Games != GameMode.Ask ? _settings.Games
-        : _settings.PerGame.TryGetValue(_game, out var m) ? m : null;
+    // The rules for the game in front: its own profile, else the one for any game.
+    GameProfile? Profile => _game is null ? null : _settings.GameProfiles.GetValueOrDefault(_game) ?? _settings.AnyGame;
 
     void WatchGames()
     {
@@ -41,19 +39,25 @@ public sealed partial class IslandWindow
         _alerts.Clear();
         _alertToken++;
         _alert = null;
-        if (_settings.Games == GameMode.Ask && GamePolicy is null && _asked.Add(exe)) _asking = exe;
+        if (!_settings.SeenGames.Contains(exe))
+        {
+            _settings.SeenGames.Add(exe); // listed in Settings from now on, ready to customize
+            _settings.Save();
+        }
+        if (_settings.AskNewGames && !_settings.GameProfiles.ContainsKey(exe) && _asked.Add(exe)) _asking = exe;
         UpdateHotkey();
         SetMode(Mode.Hidden);
         // Answered with the keyboard: games usually capture the mouse, so a click may never reach the island.
         if (_asking != null)
             Notify(new Alert(Pop.Music, "", $"First time in {exe}", $"Press {_settings.HotkeyName} for music controls here, or Atoll stays out",
-                Seconds: 8, Wide: true, Expired: () => Remember(exe, GameMode.Quiet)), force: true);
+                Seconds: 8, Wide: true, Expired: () => Remember(exe, musicCard: false)), force: true);
     }
 
-    void Remember(string exe, GameMode mode)
+    // The answer to the first-time question becomes the game's own profile, editable in Settings.
+    void Remember(string exe, bool musicCard)
     {
         _asking = null;
-        _settings.PerGame[exe] = mode;
+        _settings.GameProfiles[exe] = new() { MusicCard = musicCard };
         _settings.Save();
         UpdateHotkey();
     }
@@ -64,7 +68,7 @@ public sealed partial class IslandWindow
         var exe = _asking!;
         _alertToken++;
         _alert = null;
-        Remember(exe, GameMode.Music);
+        Remember(exe, musicCard: true);
         ToggleGameCard();
     }
 
@@ -90,8 +94,9 @@ public sealed partial class IslandWindow
     void UpdateHotkey()
     {
         bool hotkey = _game is null;
-        bool hook = _game != null && (GamePolicy == GameMode.Music || _asking == _game);
-        if (hook) GameKeys.Start(() => DispatcherQueue.TryEnqueue(Toggle), _settings.HotkeyModifiers, _settings.HotkeyKey);
+        bool hook = _game != null && (Profile!.MusicCard || _asking == _game);
+        if (hook) GameKeys.Start(() => DispatcherQueue.TryEnqueue(Toggle), vk => DispatcherQueue.TryEnqueue(() => OnCardArrow(vk)),
+            _settings.HotkeyModifiers, _settings.HotkeyKey);
         else GameKeys.Stop();
         if (hotkey == _hotkeyOn) return;
         _hotkeyOn = hotkey;
@@ -120,10 +125,38 @@ public sealed partial class IslandWindow
         if (t == _cardToken && _mode == Mode.Game) Settle();
     }
 
+    // Arrow keys while the card shows: right next track, left back to the start (previous track in
+    // the first 3 seconds), up and down the Windows volume. Each one keeps the card up a bit longer.
+    async void OnCardArrow(uint vk)
+    {
+        if (_mode != Mode.Game) return;
+        ArmGameCard();
+        switch (vk)
+        {
+            case 0x27: _media.Next(); return;
+            case 0x25:
+                if (_media.Duration > TimeSpan.Zero && _media.Position > TimeSpan.FromSeconds(3)) _media.Seek(0);
+                else _media.Previous();
+                return;
+        }
+        if (_audio is null) return;
+        _audio.Level = Math.Clamp(MathF.Round(_audio.Level * 20) / 20 + (vk == 0x26 ? 0.05f : -0.05f), 0, 1);
+        var t = ++_cardNoteToken;
+        _cardNote = $"Volume {Math.Round(_audio.Level * 100)}";
+        FillGameCard();
+        await Task.Delay(1500);
+        if (t != _cardNoteToken) return;
+        _cardNote = null;
+        FillGameCard();
+    }
+
+    string? _cardNote; // shown instead of the artist for a moment (volume level)
+    int _cardNoteToken;
+
     void FillGameCard()
     {
         GameTitle.Text = _media.HasSession ? _media.Title : "Nothing playing";
-        GameArtist.Text = _media.Artist;
+        GameArtist.Text = _cardNote ?? _media.Artist;
         GamePlayIcon.Glyph = PlayIcon.Glyph;
         SetArt(GameArt, GameArtIcon);
         ShapeArt(GameArt, GameArtColumn, 45);

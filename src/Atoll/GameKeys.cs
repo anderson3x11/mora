@@ -14,14 +14,19 @@ static class GameKeys
     const uint WM_QUIT = 0x12;
 
     static Action? _onShortcut;
+    static Action<uint>? _onArrow;
     static uint _mods, _vk;
     static Thread? _thread;
     static uint _threadId;
     static bool _swallowing;
+    static int _arrowsDown; // bit per arrow whose key-down was swallowed, so only its key-up is too
 
-    public static void Start(Action onShortcut, uint mods, uint vk)
+    // True while the music card shows: the four arrows then control the music instead of the game.
+    public static volatile bool CardOpen;
+
+    public static void Start(Action onShortcut, Action<uint> onArrow, uint mods, uint vk)
     {
-        (_onShortcut, _mods, _vk) = (onShortcut, mods, vk);
+        (_onShortcut, _onArrow, _mods, _vk) = (onShortcut, onArrow, mods, vk);
         if (_thread != null) return;
         using var ready = new ManualResetEventSlim();
         _thread = new Thread(() =>
@@ -63,6 +68,23 @@ static class GameKeys
                 {
                     _swallowing = false;
                     return 1; // the matching key-up, so the game never sees half a key press
+                }
+            }
+            else if (key->Vk is >= 0x25 and <= 0x28) // left, up, right, down
+            {
+                int bit = 1 << (int)(key->Vk - 0x25);
+                bool down = wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN;
+                if (down && CardOpen && Hotkey.Held() == 0)
+                {
+                    // Held up/down keeps changing the volume; left/right act once per press.
+                    if ((_arrowsDown & bit) == 0 || key->Vk is 0x26 or 0x28) _onArrow?.Invoke(key->Vk);
+                    _arrowsDown |= bit;
+                    return 1;
+                }
+                if (!down && (_arrowsDown & bit) != 0)
+                {
+                    _arrowsDown &= ~bit;
+                    return 1;
                 }
             }
         }

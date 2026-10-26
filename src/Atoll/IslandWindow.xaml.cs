@@ -188,7 +188,7 @@ public sealed partial class IslandWindow : Window
         if (_game != null)
         {
             if (_asking == _game) AnswerMusic();
-            else if (GamePolicy == GameMode.Music) ToggleGameCard();
+            else if (Profile!.MusicCard) ToggleGameCard();
             return;
         }
         if (_mode == Mode.Expanded)
@@ -222,6 +222,7 @@ public sealed partial class IslandWindow : Window
         var prev = _mode;
         var t = ++_token;
         (_mode, _via) = (mode, via);
+        GameKeys.CardOpen = mode == Mode.Game;
         if (prev == Mode.Hidden || mode == Mode.Expanded) Place();
         HookMouse(mode == Mode.Expanded);
         Fade(CompactLayer, false);

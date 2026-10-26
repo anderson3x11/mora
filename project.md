@@ -235,6 +235,8 @@ Decisions taken while building:
 - During a game set to "Stay out of my way", Atoll releases Alt+Q so the game receives it.
 - During a game where Alt+Q belongs to Atoll, it is read with a low-level keyboard hook on its own thread: games such as League of Legends read raw input with RIDEV_NOHOTKEYS, which silently disables RegisterHotKey. The hook exists only while such a game is in front and swallows only Alt+Q.
 - The per-game question is answered with the keyboard (Alt+Q) because games capture the mouse; left alone it means "stay out".
+- Games have profiles: one for any game, and one per game for those the user customizes (founder's request: nothing over League of Legends, everything over TFT). A profile says whether the shortcut opens the music card and which pop-up kinds may show over the game. Every game seen is listed in Settings so it can be customized later.
+- While the game music card shows, the arrow keys control music (right next, left restart or previous, up and down the volume). They are read by the game keyboard hook, swallowed only while the card is up.
 - The shortcut is configurable in Settings (General). A new one must include a modifier, cannot be Ctrl+Alt (AltGr on many keyboards) and is checked as free before it is kept. The default is Alt + the key above Tab (² on AZERTY, ` on QWERTY), picked by position: Alt + a letter collides with game binds (Alt+Q is self-cast in League of Legends).- Clipboard history skips copies flagged private (password managers) and never touches disk.
 
 Open follow-ups: dragging toward the top opens the shelf while hidden (needs a global drag watcher without false positives on tab and window drags), split bubble, output-device picker, mixed-DPI testing.

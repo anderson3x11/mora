@@ -27,7 +27,7 @@ public sealed partial class IslandWindow
     {
         _media.TrackChanged += () =>
         {
-            if (_mode == Mode.Expanded) return; // already on screen, likely the user's own skip
+            if (_mode is Mode.Expanded or Mode.Game) return; // already on screen, likely the user's own skip
             var sub = _media.Artist == "" ? "Now playing" : "Now playing · " + _media.Artist;
             Notify(new Alert(Pop.Music, "", _media.Title, sub, Art: _media.Art));
         };
@@ -35,9 +35,9 @@ public sealed partial class IslandWindow
         try
         {
             _audio = new Audio(DispatcherQueue);
-            _audio.VolumeChanged += (level, muted) => Notify(muted
+            _audio.VolumeChanged += (level, muted) => { if (_mode != Mode.Game) Notify(muted // the music card shows its own level
                 ? new Alert(Pop.Volume, "", "Muted", Level: 0)
-                : new Alert(Pop.Volume, "", $"Volume {Math.Round(level * 100)}", Level: level));
+                : new Alert(Pop.Volume, "", $"Volume {Math.Round(level * 100)}", Level: level)); };
             _audio.OutputChanged += name => Notify(new Alert(Pop.Devices, "", name, "Audio output"));
         }
         catch (System.Runtime.InteropServices.COMException) { } // audio service stopped: no audio alerts
@@ -85,7 +85,7 @@ public sealed partial class IslandWindow
     void Notify(Alert a, bool force = false)
     {
         if (!force && (!_settings.Allows(a.Kind) || _setup != null)) return;
-        if (!force && _game != null)
+        if (!force && _game != null && !Profile!.Shows(a.Kind))
         {
             if (a.Kind != Pop.Volume) _held.Add(a); // shown as one summary after the game; a stale volume level is noise
             return;
