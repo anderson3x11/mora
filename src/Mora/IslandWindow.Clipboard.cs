@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage.Streams;
 
-namespace Atoll;
+namespace Mora;
 
 // Clipboard tab: the last few copies of text and images, each with a Paste button that types into the app the user is in.
 public sealed partial class IslandWindow

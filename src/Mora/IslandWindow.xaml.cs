@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
@@ -7,9 +7,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using static Atoll.Native;
+using static Mora.Native;
 
-namespace Atoll;
+namespace Mora;
 
 // The island never activates: WS_EX_NOACTIVATE + MA_NOACTIVATE, shown with SW_SHOWNOACTIVATE,
 // and the window region follows the pill so everything around it is click-through.
@@ -84,7 +84,7 @@ public sealed partial class IslandWindow : Window
         var g = GeoOf(Mode.Hidden);
         (_w, _h, _r, _y) = (new(g.W), new(g.H), new(g.R), new(g.Y));
         SystemBackdrop = new TransparentBackdrop();
-        Title = "Atoll";
+        Title = "Mora";
 
         var p = OverlappedPresenter.Create();
         p.SetBorderAndTitleBar(false, false);
@@ -126,12 +126,12 @@ public sealed partial class IslandWindow : Window
         _media.Changed += OnMediaChanged;
         _ = _media.StartAsync();
         WireAlerts();
-        _tray = new Tray(_hwnd, $"Atoll ({_settings.HotkeyName})");
+        _tray = new Tray(_hwnd, $"Mora ({_settings.HotkeyName})");
         _trayMenu =
         [
-            ("Open Atoll", () => SetMode(Mode.Expanded, Via.Click)),
+            ("Open Mora", () => SetMode(Mode.Expanded, Via.Click)),
             ("Settings…", () => OpenSetup(firstRun: false)),
-            ("Quit Atoll", () =>
+            ("Quit Mora", () =>
             {
                 _tray.Remove();
                 HookMouse(false);
@@ -163,17 +163,17 @@ public sealed partial class IslandWindow : Window
                     // Taken since it was picked: keep the old shortcut rather than none.
                     (chosen.HotkeyModifiers, chosen.HotkeyKey) = (old.HotkeyModifiers, old.HotkeyKey);
                     RegisterHotKey(_hwnd, HotkeyId, old.HotkeyModifiers | MOD_NOREPEAT, old.HotkeyKey);
-                    Notify(new Alert(Pop.Music, "", "Shortcut already in use", $"Atoll keeps {old.HotkeyName}", Seconds: 4), force: true);
+                    Notify(new Alert(Pop.Music, "", "Shortcut already in use", $"Mora keeps {old.HotkeyName}", Seconds: 4), force: true);
                 }
             }
-            _tray.SetTip($"Atoll ({_settings.HotkeyName})");
+            _tray.SetTip($"Mora ({_settings.HotkeyName})");
             _settings.Save();
             if (old.Theme != chosen.Theme) ApplyTheme();
             Startup.Apply(_settings.StartWithWindows);
             UpdateHotkey();
             OnMediaChanged(); // the resting pill may have been switched on or off
             if (firstRun)
-                Notify(new Alert(Pop.Music, "", $"Press {_settings.HotkeyName} any time", "Atoll never takes your keyboard", Seconds: 5), force: true);
+                Notify(new Alert(Pop.Music, "", $"Press {_settings.HotkeyName} any time", "Mora never takes your keyboard", Seconds: 5), force: true);
         });
         _setup.Closed += (_, _) => _setup = null;
     }

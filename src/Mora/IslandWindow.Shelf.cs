@@ -3,9 +3,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
-using static Atoll.Native;
+using static Mora.Native;
 
-namespace Atoll;
+namespace Mora;
 
 // Shelf: files dropped on the island stay listed (the files themselves are not moved or copied)
 // and can be dragged out into any app. A file dragged over the island, or toward the top center of the
@@ -45,7 +45,7 @@ public sealed partial class IslandWindow
                 DispatcherQueue.TryEnqueue(() => ArmDropStrip(true));
             }
         }
-    }) { IsBackground = true, Name = "Atoll drag watch" }.Start();
+    }) { IsBackground = true, Name = "Mora drag watch" }.Start();
 
     void ArmDropStrip(bool on)
     {

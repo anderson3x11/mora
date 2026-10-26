@@ -1,6 +1,6 @@
-﻿# Atoll: a Dynamic Island for Windows
+# Mora: a Dynamic Island for Windows
 
-Working name: **Atoll**. This file is the project brief. Read it fully before writing code, and treat the "Non-negotiable rules" section as hard requirements.
+Name: **Mora** (formerly Atoll, renamed by the founder: the word evokes the optician chain Atol in France; backup name Ilamora). This file is the project brief. Read it fully before writing code, and treat the "Non-negotiable rules" section as hard requirements.
 
 ---
 
@@ -20,7 +20,7 @@ The bar for quality is "feels like Apple made it for Windows". Polish, motion an
 
 ### Reference prototype
 
-An interactive HTML prototype exists (published as a claude.ai artifact named "Atoll for Windows"). It defines the intended feel: spring animations, states, setup flow, gaming modes, shelf, clipboard, the no-input-stealing test. When in doubt about behavior or motion, match the prototype. Its key parameters are copied into section 7.
+An interactive HTML prototype exists (published as a claude.ai artifact named "Atoll for Windows", from before the rename). It defines the intended feel: spring animations, states, setup flow, gaming modes, shelf, clipboard, the no-input-stealing test. When in doubt about behavior or motion, match the prototype. Its key parameters are copied into section 7.
 
 ---
 
@@ -74,7 +74,7 @@ Existing Windows apps (as of October 2026):
 
 None dominates. Feature lists are converging, so features alone will not win. Our differentiation:
 
-1. **Input safety as a headline promise.** "Atoll never takes your keyboard." Marketed, demoed (live keystroke counter), and engineered at the OS level. Competitors don't make this promise.
+1. **Input safety as a headline promise.** "Mora never takes your keyboard." Marketed, demoed (live keystroke counter), and engineered at the OS level. Competitors don't make this promise.
 2. **Gamer-aware by design.** The fullscreen game choice is part of setup, with per-game memory and a mid-game music card. Windows has a huge gaming audience, Mac apps never had to solve this.
 3. **Apple-level motion.** Interruptible spring physics, content fading before shape changes, the split bubble. The 10 second demo video must make people ask "what is that?".
 4. **Smart pop-up discipline.** Pop-ups are opt-in per type, short, held during games and summarized once on exit.
@@ -233,8 +233,8 @@ Decisions taken while building:
 - A click outside closes the panel on release, so a file dragged from Explorer onto the open panel does not close it.
 - The waveform animates at 30 fps: per-frame animation cost about 10% of a core at 240 Hz. It follows the real output level (Windows peak meter, no audio capture), only while a waveform is visible and music plays.
 - The island's black shape is a compositor rounded rectangle, not a XAML element: resizing it every frame costs no layout. With the hit region updated in 16 px steps while moving, an open plus close went from 0.53 s to 0.24 s of CPU.
-- During a game set to "Stay out of my way", Atoll releases Alt+Q so the game receives it.
-- During a game where Alt+Q belongs to Atoll, it is read with a low-level keyboard hook on its own thread: games such as League of Legends read raw input with RIDEV_NOHOTKEYS, which silently disables RegisterHotKey. The hook exists only while such a game is in front and swallows only Alt+Q.
+- During a game set to "Stay out of my way", Mora releases Alt+Q so the game receives it.
+- During a game where Alt+Q belongs to Mora, it is read with a low-level keyboard hook on its own thread: games such as League of Legends read raw input with RIDEV_NOHOTKEYS, which silently disables RegisterHotKey. The hook exists only while such a game is in front and swallows only Alt+Q.
 - The per-game question is answered with the keyboard (Alt+Q) because games capture the mouse; left alone it means "stay out".
 - Games have profiles: one for any game, and one per game for those the user customizes (founder's request: nothing over League of Legends, everything over TFT). A profile says whether the shortcut opens the music card and which pop-up kinds may show over the game. Every game seen is listed in Settings so it can be customized later.
 - While the game music card shows, the arrow keys control music (right next, left restart or previous, up and down the volume). They are read by the game keyboard hook, swallowed only while the card is up.

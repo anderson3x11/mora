@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Atoll;
+namespace Mora;
 
 // A copied text, or a copied image kept as the clipboard's own DIB bytes.
 sealed class Clip(string? text, byte[]? dib)

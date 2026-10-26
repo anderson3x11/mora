@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
 
-namespace Atoll;
+namespace Mora;
 
 // First-run setup in four steps, and later the settings window (tabs on the left).
 // Unlike the island this is an ordinary window: the user opened it to click and type in it.
@@ -34,9 +34,9 @@ public sealed partial class SetupWindow : Window
     {
         (_working, _original, _firstRun, _done) = (working, original, firstRun, done);
         InitializeComponent();
-        Title = firstRun ? "Atoll Setup" : "Atoll Settings";
+        Title = firstRun ? "Mora Setup" : "Mora Settings";
         WindowTitle.Text = Title;
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Atoll.ico"));
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Mora.ico"));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
         var bar = AppWindow.TitleBar;
@@ -93,9 +93,9 @@ public sealed partial class SetupWindow : Window
         switch (_tab)
         {
             case Tab.General:
-                Heading("General", "How Atoll starts and how it rests on screen.");
+                Heading("General", "How Mora starts and how it rests on screen.");
                 Page.Children.Add(Card(
-                    Row("Start Atoll when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
+                    Row("Start Mora when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
                     Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
                     Row("Show a small countdown while a timer runs", "With the music pill on too, it splits into a round bubble beside it.", Toggle(() => _working.ShowTimerPill, v => _working.ShowTimerPill = v)),
                     Row("Open the island", "Click, then press the shortcut you want. It works from any app.", ShortcutPicker())));
@@ -107,16 +107,16 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(PopupsCard());
                 break;
             case Tab.Games:
-                Heading("Games", "What Atoll does while a fullscreen game is in front (games Windows knows, or installed by Steam, Riot, Epic, GOG, Ubisoft, EA or Xbox). Anything not allowed waits, and shows up as one summary when you leave the game.");
+                Heading("Games", "What Mora does while a fullscreen game is in front (games Windows knows, or installed by Steam, Riot, Epic, GOG, Ubisoft, EA or Xbox). Anything not allowed waits, and shows up as one summary when you leave the game.");
                 Page.Children.Add(Subheading("Any game", "For every game without its own settings below."));
                 Page.Children.Add(ProfileCard(_working.AnyGame, Row("Ask the first time I launch a new game",
-                    $"Press {_working.HotkeyName} for music controls, or do nothing and Atoll stays out.",
+                    $"Press {_working.HotkeyName} for music controls, or do nothing and Mora stays out.",
                     Toggle(() => _working.AskNewGames, v => _working.AskNewGames = v))));
-                Page.Children.Add(Subheading("Per game", "Games Atoll has seen. Give one its own settings, like everything on for a chill game and nothing for a nervous one."));
+                Page.Children.Add(Subheading("Per game", "Games Mora has seen. Give one its own settings, like everything on for a chill game and nothing for a nervous one."));
                 Page.Children.Add(PerGame());
                 break;
             default:
-                Heading("About", $"Atoll {typeof(App).Assembly.GetName().Version?.ToString(3)}, a Dynamic Island for Windows.");
+                Heading("About", $"Mora {typeof(App).Assembly.GetName().Version?.ToString(3)}, a Dynamic Island for Windows.");
                 Page.Children.Add(Card(
                     Row("Never takes your keyboard", "Every key you press keeps going to the app you are in, even while the island opens.", null),
                     Row("No ads, ever", "The island only shows things you are doing. Never promotions, including ours.", null),
@@ -200,10 +200,10 @@ public sealed partial class SetupWindow : Window
         {
             case 0:
                 Heading("A living island at the top of your screen", "Music, timers, downloads and device events show up in a small black island, then get out of the way.");
-                Page.Children.Add(Card(Row("Open it any time", "From any app, or from the Atoll icon next to the clock. You can change the shortcut in Settings.", Key(_working.HotkeyName))));
+                Page.Children.Add(Card(Row("Open it any time", "From any app, or from the Mora icon next to the clock. You can change the shortcut in Settings.", Key(_working.HotkeyName))));
                 break;
             case 1:
-                Heading("When you play fullscreen games", "Pick what Atoll does. You can change it later in Settings.");
+                Heading("When you play fullscreen games", "Pick what Mora does. You can change it later in Settings.");
                 Page.Children.Add(GameModeCard());
                 break;
             case 2:
@@ -215,7 +215,7 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(Card(
                     Row("Never takes your keyboard", "Every key you press keeps going to the app you are in, even while the island opens.", null),
                     Row("No ads, ever", "The island only shows things you are doing. Never promotions, including ours.", null)));
-                Page.Children.Add(Card(Row("Start Atoll when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v))));
+                Page.Children.Add(Card(Row("Start Mora when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v))));
                 break;
         }
         BackButton.Visibility = _step == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -236,7 +236,7 @@ public sealed partial class SetupWindow : Window
         [
             (GameMode.Quiet, "Stay out of my way", $"Nothing pops up and {_working.HotkeyName} is left to the game. Best for shooters, RPGs, anything immersive."),
             (GameMode.Music, "Only when I ask", $"No pop-ups, but {_working.HotkeyName} opens music controls that close by themselves. Best for chill games with music."),
-            (GameMode.Ask, "Decide per game", "The first time you launch a game, Atoll asks which of the two you want."),
+            (GameMode.Ask, "Decide per game", "The first time you launch a game, Mora asks which of the two you want."),
         ];
         var rows = choices.Select(c =>
         {

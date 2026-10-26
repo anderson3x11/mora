@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 
-namespace Atoll;
+namespace Mora;
 
 // A download is finished when the browser renames its temporary file to the final name
 // (Chrome/Edge .crdownload, Firefox .part, Safari .download). Created events are ignored:

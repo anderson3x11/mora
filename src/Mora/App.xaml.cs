@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 
-namespace Atoll;
+namespace Mora;
 
 public partial class App : Application
 {
@@ -28,16 +28,17 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         // One island only: launching again (Start menu, startup) opens the running one instead.
-        _single = new Mutex(true, @"Local\Atoll.Island", out bool first);
+        _single = new Mutex(true, @"Local\Mora.Island", out bool first);
         if (!first)
         {
-            var running = Native.FindWindow(null, "Atoll");
+            var running = Native.FindWindow(null, "Mora");
             var line = Environment.CommandLine;
             int at = line.IndexOf("--simulate ", StringComparison.Ordinal);
             if (running != 0 && at >= 0) SendSimulation(running, line[(at + "--simulate ".Length)..]); // test hook, see IslandWindow.Simulate
             else if (running != 0) Native.PostMessage(running, Tray.Message, 1, 0x202); // as a click on its tray icon
             Environment.Exit(0);
         }
+        Settings.MoveFromAtoll();
         _island = new IslandWindow();
     }
 

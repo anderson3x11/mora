@@ -1,6 +1,6 @@
 using Windows.Devices.Enumeration;
 
-namespace Atoll;
+namespace Mora;
 
 // Battery level that Windows reads from Bluetooth headsets (the one shown in Settings > Bluetooth),
 // found by matching the device name inside the new audio output's name ("Headphones (WH-1000XM4)").

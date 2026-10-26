@@ -3,9 +3,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Windows.System.Power;
 using Windows.UI;
-using static Atoll.Native;
+using static Mora.Native;
 
-namespace Atoll;
+namespace Mora;
 
 record Alert(Pop Kind, string Glyph, string Title, string Sub = "", Color? Tint = null, double? Level = null,
              string? ActionLabel = null, Action? Action = null, ImageSource? Art = null,
@@ -122,7 +122,7 @@ public sealed partial class IslandWindow
         return $"· {b:0.#} {units[i]}";
     }
 
-    // force: Atoll's own questions and summaries, shown whatever the pop-up settings or a running game.
+    // force: Mora's own questions and summaries, shown whatever the pop-up settings or a running game.
     void Notify(Alert a, bool force = false)
     {
         if (!force && (!_settings.Allows(a.Kind) || _setup != null)) return;

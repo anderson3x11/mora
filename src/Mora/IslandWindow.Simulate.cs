@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 
-namespace Atoll;
+namespace Mora;
 
 // Test hook for events a machine cannot produce (no Bluetooth headset, no battery): run
-// `Atoll.exe --simulate <event> ...` while Atoll runs, and the running instance handles the event
+// `Mora.exe --simulate <event> ...` while Mora runs, and the running instance handles the event
 // through the same code as the real one.
 //   headphones "<audio output name>" [percent]    charging <percent>    battery <before> <after>
 //   focus <focus seconds> <break seconds>: a focus session with short rounds

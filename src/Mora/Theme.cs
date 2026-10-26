@@ -1,7 +1,7 @@
 using Windows.UI;
 using Windows.UI.ViewManagement;
 
-namespace Atoll;
+namespace Mora;
 
 // A theme is a whole look, not a palette: the island's shape (floating, or grown out of the top edge of the
 // screen), its corners, surface and border, how it moves, and parts of the layout.
@@ -23,7 +23,7 @@ sealed record Theme(
 {
     static Color Hex(uint argb) => Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);
 
-    // Atoll's own: a black pill floating just below the edge, round ends, a springy entrance.
+    // Mora's own: a black pill floating just below the edge, round ends, a springy entrance.
     public static readonly Theme Island = new("Island", "A black pill floating just below the top of the screen.",
         Attached: false, Top: 8, Radius: r => r, Open: (340, 27), Close: (520, 46),
         Surface: Hex(0xFF08080A), Border: null,

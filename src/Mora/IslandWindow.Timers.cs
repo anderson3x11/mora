@@ -2,7 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 
-namespace Atoll;
+namespace Mora;
 
 // One countdown at a time, started from the Timers tab; it pops an alert when done.
 // A focus session chains rounds by itself: 25 min of focus, a 5 min break, a 15 min one every 4th round,

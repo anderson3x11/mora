@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Atoll;
+namespace Mora;
 
 // Notification area icon: left click toggles the island, right click opens a small menu.
 // Its messages arrive in the island's window procedure as Tray.Message.
@@ -18,8 +18,8 @@ sealed class Tray
     public Tray(nint hwnd, string tip)
     {
         (_hwnd, _tip) = (hwnd, tip);
-        _icon = LoadImage(0, Path.Combine(AppContext.BaseDirectory, "Atoll.ico"), 1, 0, 0, 0x10 | 0x40); // IMAGE_ICON, LR_LOADFROMFILE | LR_DEFAULTSIZE
-        _menuOwner = CreateWindowEx(0, "STATIC", "Atoll menu", 0x80000000, 0, 0, 0, 0, 0, 0, 0, 0); // WS_POPUP, never shown
+        _icon = LoadImage(0, Path.Combine(AppContext.BaseDirectory, "Mora.ico"), 1, 0, 0, 0x10 | 0x40); // IMAGE_ICON, LR_LOADFROMFILE | LR_DEFAULTSIZE
+        _menuOwner = CreateWindowEx(0, "STATIC", "Mora menu", 0x80000000, 0, 0, 0, 0, 0, 0, 0, 0); // WS_POPUP, never shown
         Add();
     }
 

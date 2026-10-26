@@ -1,7 +1,7 @@
 // Types continuously into a text box while driving the island through every state
 // (shortcut open/close, click inside the panel, click outside). Passes only if every
 // typed character arrives and this window stays foreground the whole time.
-// Start Atoll first, then run this.
+// Start Mora first, then run this.
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -18,7 +18,7 @@ var ui = new Thread(() =>
 {
     var form = new Form
     {
-        Text = "Atoll keystroke test",
+        Text = "Mora keystroke test",
         StartPosition = FormStartPosition.Manual,
         Bounds = new Rectangle(mon.Left + mon.Width / 2 - Px(300), mon.Top + Px(360), Px(600), Px(300)),
     };
@@ -72,7 +72,7 @@ return exit;
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
     // Themes with icon-only tabs (Notch) have them narrower, about 33 apart.
-    bool iconTabs = Environment.GetEnvironmentVariable("ATOLL_TEST_THEME") == "Notch";
+    bool iconTabs = Environment.GetEnvironmentVariable("MORA_TEST_THEME") == "Notch";
     Point Tab(int i, int labeled) => panel(iconTabs ? 30 + 33 * i : labeled, 22);
     Point mediaTab = Tab(0, 40), timersTab = Tab(1, 115), clipboardTab = Tab(3, 260), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
     Click(outside);
@@ -83,10 +83,10 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         return 2;
     }
 
-    var island = FindWindow(null, "Atoll");
+    var island = FindWindow(null, "Mora");
     if (island == 0)
     {
-        Console.WriteLine("FAIL: Atoll is not running");
+        Console.WriteLine("FAIL: Mora is not running");
         return 2;
     }
     if (GetWindowRgnBox(island, out _) == 0) // ERROR: no region at all, the whole invisible window eats clicks
@@ -103,11 +103,11 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         if (actual != state) throw new InvalidOperationException($"island should show {state} after {step}, shows {actual}");
     }
 
-    // A browser finishing a download renames its temp file; Atoll answers with an alert.
+    // A browser finishing a download renames its temp file; Mora answers with an alert.
     var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     void FinishDownload(int n)
     {
-        var temp = Path.Combine(downloads, $"atoll-keystroke-test-{n}.txt.crdownload");
+        var temp = Path.Combine(downloads, $"mora-keystroke-test-{n}.txt.crdownload");
         File.WriteAllText(temp, "test");
         File.Move(temp, temp[..^".crdownload".Length]);
     }
@@ -138,20 +138,20 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
             host.Copy(clip); Type(20); Expect("alert", "a copy");    // copy alert, mid-sentence
             Shortcut(); Type(20); Expect("panel", "the shortcut");         // open again
             Click(clipboardTab); Thread.Sleep(400);
-            Click(pasteFirst); Thread.Sleep(300);               // Atoll types Ctrl+V into this window
+            Click(pasteFirst); Thread.Sleep(300);               // Mora types Ctrl+V into this window
             expected.Append(clip);
             Click(mediaTab); Type(30);
             Click(outside); Type(40); Expect("hidden", "outside click"); // click outside closes it
         }
 
         // Shelf: drag a file from this window onto the open panel, then drag it back out of the shelf.
-        var file = Path.Combine(Path.GetTempPath(), "atoll-shelf-test.txt");
+        var file = Path.Combine(Path.GetTempPath(), "mora-shelf-test.txt");
         File.WriteAllText(file, "shelf");
         var fileDrag = new DataObject(DataFormats.FileDrop, new[] { file });
 
         // Toward the top with the island hidden: text steps aside (cancelled with Escape, nothing dropped
         // on the user's windows up there), a file opens the shelf and drops on it.
-        MoveTo(outside); Down(); host.StartDrag(new DataObject(DataFormats.UnicodeText, "atoll")); Thread.Sleep(150);
+        MoveTo(outside); Down(); host.StartDrag(new DataObject(DataFormats.UnicodeText, "mora")); Thread.Sleep(150);
         DragTo(panel(215, 4)); Thread.Sleep(500); Expect("hidden", "text dragged to the top");
         Key(0x1B, '\0', 0); Thread.Sleep(100); Up(); Key(0x1B, '\0', 2); Thread.Sleep(300);
         MoveTo(outside); Down(); host.StartDrag(fileDrag); Thread.Sleep(150);
@@ -171,7 +171,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         Click(outside); Type(40); Expect("hidden", "outside click");
 
         // A borderless fullscreen "game" with the default setting: the island stays out of the way.
-        host.Fullscreen(true); Type(250);                        // Atoll checks every 1.5 s
+        host.Fullscreen(true); Type(250);                        // Mora checks every 1.5 s
         FinishDownload(98); Type(40); Expect("hidden", "a download during a game");
         Shortcut(); Type(40); Expect("hidden", "the shortcut during a game"); // the shortcut is released to the game
         host.Fullscreen(false); Type(200); Expect("alert", "leaving the game"); // one summary of what was held
@@ -183,7 +183,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
     }
     finally
     {
-        foreach (var f in Directory.GetFiles(downloads, "atoll-keystroke-test-*")) File.Delete(f);
+        foreach (var f in Directory.GetFiles(downloads, "mora-keystroke-test-*")) File.Delete(f);
     }
     Thread.Sleep(500);
 
@@ -202,7 +202,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
 
 static string Slice(string t, int i) => t.Substring(i, Math.Min(20, t.Length - i));
 
-// Atoll's default shortcut: Alt + the key above Tab (² on AZERTY, ` on QWERTY).
+// Mora's default shortcut: Alt + the key above Tab (² on AZERTY, ` on QWERTY).
 static void Shortcut()
 {
     var key = (ushort)MapVirtualKey(0x29, 1);

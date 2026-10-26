@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Atoll;
+namespace Mora;
 
 // Windows only says which app is playing, and browsers hide behind an opaque id. The site is read
 // from the browser window whose title contains what is playing: "<video> - YouTube — Mozilla Firefox".

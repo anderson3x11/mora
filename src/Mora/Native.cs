@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Atoll;
+namespace Mora;
 
 static partial class Native
 {

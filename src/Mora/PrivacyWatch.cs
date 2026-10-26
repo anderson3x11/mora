@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 
-namespace Atoll;
+namespace Mora;
 
 // Which apps use the microphone or the camera right now, from the sources behind Windows' own privacy
 // icons: active capture sessions of the audio engine (microphone) and the camera sensor activity
@@ -28,7 +28,7 @@ sealed class PrivacyWatch
             _monitor = monitor;
             _monitor.Start();
         }
-        new Thread(Watch) { IsBackground = true, Name = "Atoll privacy watch" }.Start();
+        new Thread(Watch) { IsBackground = true, Name = "Mora privacy watch" }.Start();
     }
 
     // ponytail: reads the capture sessions every second (a few COM calls, well under a millisecond);

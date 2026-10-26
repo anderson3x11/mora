@@ -1,8 +1,8 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Microsoft.UI.Dispatching;
-using static Atoll.Native;
+using static Mora.Native;
 
-namespace Atoll;
+namespace Mora;
 
 // Fullscreen games: nothing pops up unless their profile allows it, alerts are held and summarised once on exit. The user picks what the shortcut does there: nothing, or a small music card.
 public sealed partial class IslandWindow
@@ -48,7 +48,7 @@ public sealed partial class IslandWindow
         SetMode(Mode.Hidden);
         // Answered with the keyboard: games usually capture the mouse, so a click may never reach the island.
         if (_asking != null)
-            Notify(new Alert(Pop.Music, "", $"First time in {exe}", $"Press {_settings.HotkeyName} for music controls here, or Atoll stays out",
+            Notify(new Alert(Pop.Music, "", $"First time in {exe}", $"Press {_settings.HotkeyName} for music controls here, or Mora stays out",
                 Seconds: 8, Wide: true, Expired: () => Remember(exe, musicCard: false)), force: true);
     }
 
@@ -74,7 +74,7 @@ public sealed partial class IslandWindow
     void LeaveGame()
     {
         _game = null;
-        _asking = null; // unanswered: stays out for this run, asked again next time Atoll starts
+        _asking = null; // unanswered: stays out for this run, asked again next time Mora starts
         UpdateHotkey();
         if (_held.Count == 0)
         {
@@ -87,7 +87,7 @@ public sealed partial class IslandWindow
             string.Join(" · ", held.Select(a => a.Title)), Seconds: 5), force: true);
     }
 
-    // Outside games, the shortcut is a regular hotkey. In a game where it belongs to Atoll (music card, or the
+    // Outside games, the shortcut is a regular hotkey. In a game where it belongs to Mora (music card, or the
     // first-time question), a keyboard hook reads it, since games often disable hotkeys. Quiet games
     // get the shortcut back entirely.
     void UpdateHotkey()

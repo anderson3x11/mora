@@ -1,5 +1,5 @@
 <Window
-    x:Class="Atoll.SetupWindow"
+    x:Class="Mora.SetupWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Island colors whatever the system theme: black surfaces, white text, the icon's teal as accent. -->

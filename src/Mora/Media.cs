@@ -3,7 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Media.Control;
 
-namespace Atoll;
+namespace Mora;
 
 // Whatever Windows reports as the current media session (Spotify, browsers, local players),
 // so no per-app integration. Session events arrive on worker threads; all state lives on the UI thread.

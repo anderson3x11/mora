@@ -1,14 +1,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Atoll;
+namespace Mora;
 
 enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard, Privacy }
 
 // The game setting before per-game profiles; only read to convert old settings files.
 enum GameMode { Quiet, Music, Ask }
 
-// What Atoll does during one fullscreen game (or any game without its own profile).
+// What Mora does during one fullscreen game (or any game without its own profile).
 sealed class GameProfile
 {
     public bool MusicCard { get; set; }        // the shortcut opens music controls; otherwise the game keeps it
@@ -18,7 +18,7 @@ sealed class GameProfile
     public GameProfile Clone() => new() { MusicCard = MusicCard, Pops = [.. Pops] };
 }
 
-// User preferences in %LOCALAPPDATA%\Atoll\settings.json, written by the setup and settings window.
+// User preferences in %LOCALAPPDATA%\Mora\settings.json, written by the setup and settings window.
 sealed class Settings
 {
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
@@ -90,11 +90,11 @@ sealed class Settings
         _ => PopClipboard,
     };
 
-    // ATOLL_DATA points tests and development runs at a folder of their own, so they never touch the
+    // MORA_DATA points tests and development runs at a folder of their own, so they never touch the
     // user's settings, shelf or error log.
     public static readonly string FilePath = Path.Combine(
-        Environment.GetEnvironmentVariable("ATOLL_DATA") is { Length: > 0 } dir ? dir
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Atoll"),
+        Environment.GetEnvironmentVariable("MORA_DATA") is { Length: > 0 } dir ? dir
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Mora"),
         "settings.json");
 
     public void Save()
@@ -106,6 +106,17 @@ sealed class Settings
     public Settings Clone() => JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(this, Json), Json)!;
 
     public static bool FirstRun => !File.Exists(FilePath);
+
+    // The app was called Atoll: its folder (settings, shelf, error log) moves over once, before anything reads it.
+    public static void MoveFromAtoll()
+    {
+        if (Environment.GetEnvironmentVariable("MORA_DATA") is { Length: > 0 }) return;
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string atoll = Path.Combine(local, "Atoll"), mora = Path.GetDirectoryName(FilePath)!;
+        if (!Directory.Exists(atoll) || Directory.Exists(mora)) return;
+        try { Directory.Move(atoll, mora); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } // Atoll still running: next launch
+    }
 
     public static Settings Load()
     {

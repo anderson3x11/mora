@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 
-namespace Atoll;
+namespace Mora;
 
 // Core Audio: master volume of the default output, and switches of the default output
 // (headphones plugged in or connected). Callbacks come from audio threads; events are raised on the UI thread.

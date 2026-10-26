@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Atoll;
+namespace Mora;
 
 // The shortcut that opens the island: modifier flags as RegisterHotKey takes them, plus a virtual key.
 static class Hotkey
@@ -48,7 +48,7 @@ static class Hotkey
 
     public static bool IsModifierKey(uint vk) => vk is 0x10 or 0x11 or 0x12 or 0x5B or 0x5C or >= 0xA0 and <= 0xA5;
 
-    // Free when nothing else (Windows, another app) holds it. Atoll's own current shortcut counts as taken.
+    // Free when nothing else (Windows, another app) holds it. Mora's own current shortcut counts as taken.
     public static bool IsFree(uint mods, uint vk)
     {
         if (!RegisterHotKey(0, 0xBFFE, mods | NoRepeat, vk)) return false;

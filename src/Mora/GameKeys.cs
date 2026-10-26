@@ -1,10 +1,10 @@
 using System.Runtime.InteropServices;
 
-namespace Atoll;
+namespace Mora;
 
 // Many games read the keyboard as raw input with RIDEV_NOHOTKEYS (League of Legends does), which
 // silently turns off every RegisterHotKey shortcut while they have focus. During a game where the
-// shortcut belongs to Atoll, a low-level keyboard hook reads it instead. The hook lives on a thread of
+// shortcut belongs to Mora, a low-level keyboard hook reads it instead. The hook lives on a thread of
 // its own with nothing else to do, so a busy UI thread can never delay the game's keystrokes, and it
 // only exists while such a game is in front. Only the shortcut is swallowed; every other key passes.
 static class GameKeys
@@ -37,7 +37,7 @@ static class GameKeys
             ready.Set();
             while (GetMessage(out _, 0, 0, 0) > 0) { } // LL hooks are called through this thread's message loop
             UnhookWindowsHookEx(hook);
-        }) { IsBackground = true, Name = "Atoll game keys" };
+        }) { IsBackground = true, Name = "Mora game keys" };
         _thread.Start();
         ready.Wait();
     }
