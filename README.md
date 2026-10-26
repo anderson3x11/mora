@@ -1,6 +1,6 @@
 # Atoll
 
-A Dynamic Island for Windows 10 and 11. A black pill at the top of the screen shows what is happening right now (music, timers, downloads, devices), opens into a small panel of quick controls with Alt+Q, and gets out of the way. It never takes your keyboard.
+A Dynamic Island for Windows 10 and 11. A black pill at the top of the screen shows what is happening right now (music, timers, downloads, devices), opens into a small panel of quick controls with a shortcut (Alt + the key above Tab by default, configurable), and gets out of the way. It never takes your keyboard.
 
 The product brief is in [project.md](project.md).
 
@@ -48,13 +48,13 @@ dotnet run --project tests/KeystrokeTest
 | Motion | Damped springs at display rate (open 340/27, close 520/46), interruptible, content fades before the shape shrinks, reduced motion respected |
 | Panel | Media (system media sessions: Spotify, browsers, players), Timers, Shelf, Clipboard |
 | Alerts | Track change, download finished, audio output switch, volume (opt-in), low battery and charging, timer done, clipboard copy. 3 s, held while hovered, queued while the panel is open |
-| Games | Fullscreen detection, three modes (stay out, music card on Alt+Q, ask per game), held alerts summarised on exit |
+| Games | Fullscreen detection, three modes (stay out, music card on the shortcut, ask per game), held alerts summarised on exit |
 | Setup and settings | First-run setup in 4 steps, settings window from the tray, `%LOCALAPPDATA%\Atoll\settings.json` |
 | Cost | Idle CPU 0, about 90 MB private memory (WinUI 3 baseline), about 3% of one core while the resting pill animates its waveform |
 
 ## Known limits
 
-- Dragging a file toward the top of the screen while the island is hidden does not open the shelf yet: open the panel with Alt+Q first (also works mid-drag). A global drag watcher would fire on browser tab and window drags too.
+- Dragging a file toward the top of the screen while the island is hidden does not open the shelf yet: open the panel with the shortcut first (also works mid-drag). A global drag watcher would fire on browser tab and window drags too.
 - Clipboard history lives in memory only (by design) and is cleared on quit. The shelf list is saved in `%LOCALAPPDATA%\Atoll\shelf.json`.
 - Unexpected errors are logged to `%LOCALAPPDATA%\Atoll\errors.log` instead of closing the app.
 - Monitors with different scaling were not tested (both test monitors were at 100%).

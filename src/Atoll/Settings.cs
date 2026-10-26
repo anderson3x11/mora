@@ -17,7 +17,7 @@ sealed class Settings
 
     // The shortcut that opens the island (RegisterHotKey modifiers and virtual key).
     public uint HotkeyModifiers { get; set; } = Hotkey.Alt;
-    public uint HotkeyKey { get; set; } = 'Q';
+    public uint HotkeyKey { get; set; } = Hotkey.KeyAboveTab;
     [System.Text.Json.Serialization.JsonIgnore] public string HotkeyName => Hotkey.Name(HotkeyModifiers, HotkeyKey);
 
     // Off by default: unlike a Mac notch, a resting pill covers real content (browser tabs).

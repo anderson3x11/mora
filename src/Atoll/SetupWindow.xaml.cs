@@ -284,10 +284,10 @@ public sealed partial class SetupWindow : Window
             button.Content = _working.HotkeyName;
             status.Text = "Applied when you click Save.";
         };
-        var reset = new HyperlinkButton { Content = "Reset to Alt + Q", FontSize = 12, Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Right };
+        var reset = new HyperlinkButton { Content = $"Reset to {Hotkey.DefaultName}", FontSize = 12, Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Right };
         reset.Click += (_, _) =>
         {
-            (_working.HotkeyModifiers, _working.HotkeyKey) = (Hotkey.Alt, 'Q');
+            (_working.HotkeyModifiers, _working.HotkeyKey) = (Hotkey.Alt, Hotkey.KeyAboveTab);
             button.Content = _working.HotkeyName;
             status.Text = "";
         };

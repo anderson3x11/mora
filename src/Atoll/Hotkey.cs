@@ -7,6 +7,11 @@ static class Hotkey
 {
     public const uint Alt = 0x1, Ctrl = 0x2, Shift = 0x4, Win = 0x8, NoRepeat = 0x4000;
 
+    // The key above Tab, by position rather than letter: ² on AZERTY, ` on QWERTY, ^ on QWERTZ.
+    // Never needed to type with Alt held, and rarely bound by games, unlike Alt + a letter.
+    public static uint KeyAboveTab => MapVirtualKey(0x29, 1); // scan code 0x29, MAPVK_VSC_TO_VK
+    public static string DefaultName => Name(Alt, KeyAboveTab);
+
     // "Alt + Q", "Win + Alt + Space", "Alt + ²": key names from the current keyboard layout.
     public static string Name(uint mods, uint vk)
     {
