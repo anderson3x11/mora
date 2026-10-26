@@ -79,8 +79,12 @@ sealed class Settings
         _ => PopClipboard,
     };
 
-    public static readonly string FilePath =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Atoll", "settings.json");
+    // ATOLL_DATA points tests and development runs at a folder of their own, so they never touch the
+    // user's settings, shelf or error log.
+    public static readonly string FilePath = Path.Combine(
+        Environment.GetEnvironmentVariable("ATOLL_DATA") is { Length: > 0 } dir ? dir
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Atoll"),
+        "settings.json");
 
     public void Save()
     {
