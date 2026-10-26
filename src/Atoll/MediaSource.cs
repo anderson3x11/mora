@@ -58,7 +58,9 @@ static class MediaSource
         return found;
     }
 
-    static string ProcessName(uint pid)
+    static string ProcessName(uint pid) => Path.GetFileNameWithoutExtension(ProcessPath(pid));
+
+    public static string ProcessPath(uint pid)
     {
         var process = OpenProcess(0x1000, false, pid); // PROCESS_QUERY_LIMITED_INFORMATION
         if (process == 0) return "";
@@ -66,7 +68,7 @@ static class MediaSource
         {
             var path = new StringBuilder(1024);
             int size = path.Capacity;
-            return QueryFullProcessImageName(process, 0, path, ref size) ? Path.GetFileNameWithoutExtension(path.ToString()) : "";
+            return QueryFullProcessImageName(process, 0, path, ref size) ? path.ToString() : "";
         }
         finally { CloseHandle(process); }
     }
