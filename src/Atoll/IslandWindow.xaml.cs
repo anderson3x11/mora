@@ -91,7 +91,7 @@ public sealed partial class IslandWindow : Window
         DwmExtendFrameIntoClientArea(_hwnd, ref glass);
 
         unsafe { SetWindowSubclass(_hwnd, (nint)(delegate* unmanaged<nint, uint, nint, nint, nuint, nuint, nint>)&WndProc, 1, 0); }
-        RegisterHotKey(_hwnd, HotkeyId, MOD_ALT | MOD_NOREPEAT, 'Q');
+        RegisterHotKey(_hwnd, HotkeyId, _settings.HotkeyModifiers | MOD_NOREPEAT, _settings.HotkeyKey);
 
         Place();
         SetWindowRgn(_hwnd, CreateRectRgn(0, 0, 0, 0), 1); // click-through from the start; Render only updates on change
@@ -114,10 +114,10 @@ public sealed partial class IslandWindow : Window
         _media.Changed += OnMediaChanged;
         _ = _media.StartAsync();
         WireAlerts();
-        _tray = new Tray(_hwnd);
+        _tray = new Tray(_hwnd, $"Atoll ({_settings.HotkeyName})");
         _trayMenu =
         [
-            ("Open Atoll    Alt+Q", () => SetMode(Mode.Expanded, Via.Click)),
+            ("Open Atoll", () => SetMode(Mode.Expanded, Via.Click)),
             ("Settings…", () => OpenSetup(firstRun: false)),
             ("Quit Atoll", () =>
             {
@@ -141,13 +141,26 @@ public sealed partial class IslandWindow : Window
         SetMode(Mode.Hidden);
         _setup = SetupWindow.Open(_settings, firstRun, chosen =>
         {
+            var old = _settings;
             _settings = chosen;
+            if ((old.HotkeyModifiers, old.HotkeyKey) != (chosen.HotkeyModifiers, chosen.HotkeyKey) && _hotkeyOn)
+            {
+                UnregisterHotKey(_hwnd, HotkeyId);
+                if (RegisterHotKey(_hwnd, HotkeyId, chosen.HotkeyModifiers | MOD_NOREPEAT, chosen.HotkeyKey) == 0)
+                {
+                    // Taken since it was picked: keep the old shortcut rather than none.
+                    (chosen.HotkeyModifiers, chosen.HotkeyKey) = (old.HotkeyModifiers, old.HotkeyKey);
+                    RegisterHotKey(_hwnd, HotkeyId, old.HotkeyModifiers | MOD_NOREPEAT, old.HotkeyKey);
+                    Notify(new Alert(Pop.Music, "", "Shortcut already in use", $"Atoll keeps {old.HotkeyName}", Seconds: 4), force: true);
+                }
+            }
+            _tray.SetTip($"Atoll ({_settings.HotkeyName})");
             _settings.Save();
             Startup.Apply(_settings.StartWithWindows);
             UpdateHotkey();
             OnMediaChanged(); // the resting pill may have been switched on or off
             if (firstRun)
-                Notify(new Alert(Pop.Music, "", "Press Alt+Q any time", "Atoll never takes your keyboard", Seconds: 5), force: true);
+                Notify(new Alert(Pop.Music, "", $"Press {_settings.HotkeyName} any time", "Atoll never takes your keyboard", Seconds: 5), force: true);
         });
         _setup.Closed += (_, _) => _setup = null;
     }

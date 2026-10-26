@@ -1,11 +1,11 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using static Atoll.Native;
 
 namespace Atoll;
 
 // Fullscreen games (and any fullscreen app, a movie included): nothing pops up, alerts are held
-// and summarised once on exit. The user picks what Alt+Q does there: nothing, or a small music card.
+// and summarised once on exit. The user picks what the shortcut does there: nothing, or a small music card.
 public sealed partial class IslandWindow
 {
     readonly List<Alert> _held = [];
@@ -46,7 +46,7 @@ public sealed partial class IslandWindow
         SetMode(Mode.Hidden);
         // Answered with the keyboard: games usually capture the mouse, so a click may never reach the island.
         if (_asking != null)
-            Notify(new Alert(Pop.Music, "", $"First time in {exe}", "Press Alt+Q for music controls here, or Atoll stays out",
+            Notify(new Alert(Pop.Music, "", $"First time in {exe}", $"Press {_settings.HotkeyName} for music controls here, or Atoll stays out",
                 Seconds: 8, Wide: true, Expired: () => Remember(exe, GameMode.Quiet)), force: true);
     }
 
@@ -58,7 +58,7 @@ public sealed partial class IslandWindow
         UpdateHotkey();
     }
 
-    // Alt+Q while the question shows: music it is, and the card opens right away as proof.
+    // The shortcut while the question shows: music it is, and the card opens right away as proof.
     void AnswerMusic()
     {
         var exe = _asking!;
@@ -84,18 +84,18 @@ public sealed partial class IslandWindow
             string.Join(" · ", held.Select(a => a.Title)), Seconds: 5), force: true);
     }
 
-    // Outside games, Alt+Q is a regular hotkey. In a game where it belongs to Atoll (music card, or the
+    // Outside games, the shortcut is a regular hotkey. In a game where it belongs to Atoll (music card, or the
     // first-time question), a keyboard hook reads it, since games often disable hotkeys. Quiet games
-    // get Alt+Q back entirely.
+    // get the shortcut back entirely.
     void UpdateHotkey()
     {
         bool hotkey = _game is null;
         bool hook = _game != null && (GamePolicy == GameMode.Music || _asking == _game);
-        if (hook) GameKeys.Start(() => DispatcherQueue.TryEnqueue(Toggle));
+        if (hook) GameKeys.Start(() => DispatcherQueue.TryEnqueue(Toggle), _settings.HotkeyModifiers, _settings.HotkeyKey);
         else GameKeys.Stop();
         if (hotkey == _hotkeyOn) return;
         _hotkeyOn = hotkey;
-        if (hotkey) RegisterHotKey(_hwnd, HotkeyId, MOD_ALT | MOD_NOREPEAT, 'Q');
+        if (hotkey) RegisterHotKey(_hwnd, HotkeyId, _settings.HotkeyModifiers | MOD_NOREPEAT, _settings.HotkeyKey);
         else UnregisterHotKey(_hwnd, HotkeyId);
     }
 

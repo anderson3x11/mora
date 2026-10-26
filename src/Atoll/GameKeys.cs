@@ -3,25 +3,26 @@ using System.Runtime.InteropServices;
 namespace Atoll;
 
 // Many games read the keyboard as raw input with RIDEV_NOHOTKEYS (League of Legends does), which
-// silently turns off every RegisterHotKey shortcut while they have focus. During a game where Alt+Q
-// belongs to Atoll, a low-level keyboard hook reads it instead. The hook lives on a thread of its own
-// with nothing else to do, so a busy UI thread can never delay the game's keystrokes, and it only
-// exists while such a game is in front. Only Alt+Q is swallowed; every other key passes untouched.
+// silently turns off every RegisterHotKey shortcut while they have focus. During a game where the
+// shortcut belongs to Atoll, a low-level keyboard hook reads it instead. The hook lives on a thread of
+// its own with nothing else to do, so a busy UI thread can never delay the game's keystrokes, and it
+// only exists while such a game is in front. Only the shortcut is swallowed; every other key passes.
 static class GameKeys
 {
     const int WH_KEYBOARD_LL = 13;
     const nint WM_KEYDOWN = 0x100, WM_SYSKEYDOWN = 0x104;
-    const uint WM_QUIT = 0x12, LLKHF_ALTDOWN = 0x20;
+    const uint WM_QUIT = 0x12;
 
-    static Action? _onAltQ;
+    static Action? _onShortcut;
+    static uint _mods, _vk;
     static Thread? _thread;
     static uint _threadId;
-    static bool _swallowingQ;
+    static bool _swallowing;
 
-    public static void Start(Action onAltQ)
+    public static void Start(Action onShortcut, uint mods, uint vk)
     {
+        (_onShortcut, _mods, _vk) = (onShortcut, mods, vk);
         if (_thread != null) return;
-        _onAltQ = onAltQ;
         using var ready = new ManualResetEventSlim();
         _thread = new Thread(() =>
         {
@@ -49,18 +50,18 @@ static class GameKeys
         if (code >= 0)
         {
             var key = (KeyInfo*)lParam;
-            if (key->Vk == 'Q')
+            if (key->Vk == _vk)
             {
                 bool down = wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN;
-                if (down && (key->Flags & LLKHF_ALTDOWN) != 0)
+                if (down && Hotkey.Held() == _mods)
                 {
-                    if (!_swallowingQ) _onAltQ?.Invoke(); // not again on auto-repeat
-                    _swallowingQ = true;
+                    if (!_swallowing) _onShortcut?.Invoke(); // not again on auto-repeat
+                    _swallowing = true;
                     return 1;
                 }
-                if (!down && _swallowingQ)
+                if (!down && _swallowing)
                 {
-                    _swallowingQ = false;
+                    _swallowing = false;
                     return 1; // the matching key-up, so the game never sees half a key press
                 }
             }

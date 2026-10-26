@@ -33,6 +33,9 @@
                         <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#08080A" />
                         <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#08080A" />
                         <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#08080A" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#36CDBB" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#4FD8C8" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#2BB3A3" />
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
                 <SolidColorBrush x:Key="Card" Color="#141418" />

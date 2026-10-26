@@ -235,6 +235,7 @@ Decisions taken while building:
 - During a game set to "Stay out of my way", Atoll releases Alt+Q so the game receives it.
 - During a game where Alt+Q belongs to Atoll, it is read with a low-level keyboard hook on its own thread: games such as League of Legends read raw input with RIDEV_NOHOTKEYS, which silently disables RegisterHotKey. The hook exists only while such a game is in front and swallows only Alt+Q.
 - The per-game question is answered with the keyboard (Alt+Q) because games capture the mouse; left alone it means "stay out".
+- The shortcut is configurable in Settings (General). A new one must include a modifier, cannot be Ctrl+Alt (AltGr on many keyboards) and is checked as free before it is kept. Alt+Q stays the default for now; it collides with some game binds (League of Legends self-cast).
 - Clipboard history skips copies flagged private (password managers) and never touches disk.
 
 Open follow-ups: dragging toward the top opens the shelf while hidden (needs a global drag watcher without false positives on tab and window drags), split bubble, output-device picker, mixed-DPI testing.

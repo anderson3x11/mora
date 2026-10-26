@@ -13,7 +13,7 @@ public sealed partial class SetupWindow : Window
 {
     enum Tab { General, Popups, Games, About }
 
-    readonly Settings _working;
+    readonly Settings _working, _original;
     readonly bool _firstRun;
     readonly Action<Settings> _done;
     bool _finished;
@@ -25,14 +25,14 @@ public sealed partial class SetupWindow : Window
     {
         var dictionaries = Application.Current.Resources.MergedDictionaries;
         if (!dictionaries.OfType<XamlControlsResources>().Any()) dictionaries.Add(new XamlControlsResources());
-        var w = new SetupWindow(settings.Clone(), firstRun, done);
+        var w = new SetupWindow(settings.Clone(), settings, firstRun, done);
         w.Activate();
         return w;
     }
 
-    SetupWindow(Settings working, bool firstRun, Action<Settings> done)
+    SetupWindow(Settings working, Settings original, bool firstRun, Action<Settings> done)
     {
-        (_working, _firstRun, _done) = (working, firstRun, done);
+        (_working, _original, _firstRun, _done) = (working, original, firstRun, done);
         InitializeComponent();
         Title = firstRun ? "Atoll Setup" : "Atoll Settings";
         WindowTitle.Text = Title;
@@ -97,7 +97,7 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(Card(
                     Row("Start Atoll when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
                     Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
-                    Row("Open the island", "Works from any app, without taking your keyboard.", Key("Alt + Q"))));
+                    Row("Open the island", "Click, then press the shortcut you want. It works from any app.", ShortcutPicker())));
                 break;
             case Tab.Popups:
                 Heading("Pop-ups", "What may open the island on its own. Each one leaves after 3 seconds, and none show during fullscreen games.");
@@ -132,7 +132,7 @@ public sealed partial class SetupWindow : Window
         var rows = new List<UIElement>();
         foreach (var exe in _working.PerGame.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList())
         {
-            var choice = new ComboBox { Items = { "Music on Alt+Q", "Stays out" }, MinWidth = 160 };
+            var choice = new ComboBox { Items = { "Music on " + _working.HotkeyName, "Stays out" }, MinWidth = 160 };
             choice.SelectedIndex = _working.PerGame[exe] == GameMode.Music ? 0 : 1;
             choice.SelectionChanged += (_, _) => _working.PerGame[exe] = choice.SelectedIndex == 0 ? GameMode.Music : GameMode.Quiet;
             var forget = new Button { Content = new FontIcon { Glyph = "", FontSize = 14 }, Padding = new Thickness(10, 8, 10, 8) };
@@ -155,7 +155,7 @@ public sealed partial class SetupWindow : Window
         {
             case 0:
                 Heading("A living island at the top of your screen", "Music, timers, downloads and device events show up in a small black island, then get out of the way.");
-                Page.Children.Add(Card(Row("Open it any time", "From any app, or from the Atoll icon next to the clock.", Key("Alt + Q"))));
+                Page.Children.Add(Card(Row("Open it any time", "From any app, or from the Atoll icon next to the clock. You can change the shortcut in Settings.", Key(_working.HotkeyName))));
                 break;
             case 1:
                 Heading("When you play fullscreen games", "Pick what Atoll does. You can change it later in Settings.");
@@ -189,8 +189,8 @@ public sealed partial class SetupWindow : Window
     {
         (GameMode Mode, string Title, string Description)[] choices =
         [
-            (GameMode.Quiet, "Stay out of my way", "Nothing pops up and Alt+Q is left to the game. Best for shooters, RPGs, anything immersive."),
-            (GameMode.Music, "Only when I ask", "No pop-ups, but Alt+Q opens music controls that close by themselves. Best for chill games with music."),
+            (GameMode.Quiet, "Stay out of my way", $"Nothing pops up and {_working.HotkeyName} is left to the game. Best for shooters, RPGs, anything immersive."),
+            (GameMode.Music, "Only when I ask", $"No pop-ups, but {_working.HotkeyName} opens music controls that close by themselves. Best for chill games with music."),
             (GameMode.Ask, "Decide per game", "The first time you launch a game, Atoll asks which of the two you want."),
         ];
         var rows = choices.Select(c =>
@@ -242,6 +242,60 @@ public sealed partial class SetupWindow : Window
             row.Children.Add(control);
         }
         return row;
+    }
+
+    // Click the button, press a shortcut: it is checked right away (needs a modifier, not AltGr,
+    // not already held by Windows or another app) and only kept when Save is clicked.
+    StackPanel ShortcutPicker()
+    {
+        var button = new Button
+        {
+            Content = _working.HotkeyName, MinWidth = 150, Padding = new Thickness(12, 6, 12, 6),
+            FontFamily = new FontFamily("Cascadia Mono,Consolas"), FontSize = 12,
+        };
+        var status = new TextBlock { FontSize = 12, Foreground = Brush("Muted"), TextWrapping = TextWrapping.Wrap, MaxWidth = 220, HorizontalAlignment = HorizontalAlignment.Right };
+        bool recording = false;
+        button.Click += (_, _) =>
+        {
+            recording = true;
+            button.Content = "Press keys…";
+            status.Text = "Esc cancels. If nothing happens, another app already uses that shortcut.";
+        };
+        Root.PreviewKeyDown += (_, e) =>
+        {
+            if (!recording) return;
+            e.Handled = true;
+            uint vk = (uint)e.Key, mods = Hotkey.Held();
+            if (Hotkey.IsModifierKey(vk)) return; // wait for the actual key
+            recording = false;
+            if (vk == 0x1B) { button.Content = _working.HotkeyName; status.Text = ""; return; }
+            string? problem =
+                mods == 0 && vk is < 0x7C or > 0x87 ? "Add Alt, Ctrl, Shift or Win, so typing never triggers it." :
+                (mods & (Hotkey.Ctrl | Hotkey.Alt)) == (Hotkey.Ctrl | Hotkey.Alt) ? "Ctrl + Alt is AltGr on many keyboards, used to type characters." :
+                (mods, vk) != (_original.HotkeyModifiers, _original.HotkeyKey) && !Hotkey.IsFree(mods, vk) ? "Windows or another app already uses it." :
+                null;
+            if (problem != null)
+            {
+                button.Content = _working.HotkeyName;
+                status.Text = $"{Hotkey.Name(mods, vk)}: {problem}";
+                return;
+            }
+            (_working.HotkeyModifiers, _working.HotkeyKey) = (mods, vk);
+            button.Content = _working.HotkeyName;
+            status.Text = "Applied when you click Save.";
+        };
+        var reset = new HyperlinkButton { Content = "Reset to Alt + Q", FontSize = 12, Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Right };
+        reset.Click += (_, _) =>
+        {
+            (_working.HotkeyModifiers, _working.HotkeyKey) = (Hotkey.Alt, 'Q');
+            button.Content = _working.HotkeyName;
+            status.Text = "";
+        };
+        var panel = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Right };
+        panel.Children.Add(button);
+        panel.Children.Add(status);
+        panel.Children.Add(reset);
+        return panel;
     }
 
     static ToggleSwitch Toggle(Func<bool> get, Action<bool> set)

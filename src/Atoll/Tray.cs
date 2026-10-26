@@ -13,10 +13,11 @@ sealed class Tray
     const uint WM_LBUTTONUP = 0x202, WM_RBUTTONUP = 0x205;
 
     readonly nint _hwnd, _menuOwner, _icon;
+    string _tip;
 
-    public Tray(nint hwnd)
+    public Tray(nint hwnd, string tip)
     {
-        _hwnd = hwnd;
+        (_hwnd, _tip) = (hwnd, tip);
         _icon = LoadImage(0, Path.Combine(AppContext.BaseDirectory, "Atoll.ico"), 1, 0, 0, 0x10 | 0x40); // IMAGE_ICON, LR_LOADFROMFILE | LR_DEFAULTSIZE
         _menuOwner = CreateWindowEx(0, "STATIC", "Atoll menu", 0x80000000, 0, 0, 0, 0, 0, 0, 0, 0); // WS_POPUP, never shown
         Add();
@@ -27,6 +28,14 @@ sealed class Tray
     {
         var data = Data();
         Shell_NotifyIcon(0, ref data); // NIM_ADD
+    }
+
+    // Hover text, which names the shortcut.
+    public void SetTip(string tip)
+    {
+        _tip = tip;
+        var data = Data();
+        Shell_NotifyIcon(1, ref data); // NIM_MODIFY
     }
 
     public void Remove()
@@ -59,7 +68,7 @@ sealed class Tray
         Flags = 0x1 | 0x2 | 0x4, // NIF_MESSAGE | NIF_ICON | NIF_TIP
         CallbackMessage = Message,
         Icon = _icon,
-        Tip = "Atoll (Alt+Q)",
+        Tip = _tip,
     };
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
