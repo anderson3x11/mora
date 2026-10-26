@@ -672,6 +672,12 @@ public sealed partial class IslandWindow : Window
             return 0;
         }
         if (msg == Tray.TaskbarCreated) _self._tray.Add();
+        if (msg == WM_COPYDATA && lParam != 0) // a --simulate command from a second instance
+        {
+            var copy = System.Runtime.InteropServices.Marshal.PtrToStructure<CopyData>(lParam);
+            _self.Simulate(System.Runtime.InteropServices.Marshal.PtrToStringUni(copy.Data, copy.Bytes / 2) ?? "");
+            return 1;
+        }
         if (msg == ClipboardHistory.WM_CLIPBOARDUPDATE)
         {
             _self.OnClipboardUpdate();

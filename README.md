@@ -40,6 +40,16 @@ The script runs it against the Debug build with settings of its own (`ATOLL_DATA
 powershell -ExecutionPolicy Bypass -File tests/run-keystroke-test.ps1
 ```
 
+## Simulating events
+
+For events a machine cannot produce (no Bluetooth headset, no battery), a second launch hands a fake event to the running Atoll, which handles it through the same code as the real one:
+
+```bash
+Atoll.exe --simulate headphones "Headphones (WH-1000XM4)" 72
+```
+
+Also `charging 46` (plugged in at 46%) and `battery 21 20` (charge dropping from 21% to 20%).
+
 ## What is in
 
 | Area | Notes |

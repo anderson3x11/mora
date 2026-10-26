@@ -9,7 +9,8 @@ namespace Atoll;
 
 record Alert(Pop Kind, string Glyph, string Title, string Sub = "", Color? Tint = null, double? Level = null,
              string? ActionLabel = null, Action? Action = null, ImageSource? Art = null,
-             string? Action2Label = null, Action? Action2 = null, int Seconds = 3, bool Wide = false, Action? Expired = null);
+             string? Action2Label = null, Action? Action2 = null, int Seconds = 3, bool Wide = false, Action? Expired = null,
+             bool FillUp = false); // the level bar fills from empty when shown (charging)
 
 // Short-lived events: shown one at a time for ~3 s, held longer only while hovered,
 // queued while the panel is open, held during fullscreen games.
@@ -38,7 +39,7 @@ public sealed partial class IslandWindow
             _audio.VolumeChanged += (level, muted) => { if (_mode != Mode.Game) Notify(muted // the music card shows its own level
                 ? new Alert(Pop.Volume, "", "Muted", Level: 0)
                 : new Alert(Pop.Volume, "", $"Volume {Math.Round(level * 100)}", Level: level)); };
-            _audio.OutputChanged += name => Notify(new Alert(Pop.Devices, "", name, "Audio output"));
+            _audio.OutputChanged += async name => ShowOutput(name, await BluetoothBattery.For(name));
         }
         catch (System.Runtime.InteropServices.COMException) { } // audio service stopped: no audio alerts
 
@@ -60,11 +61,19 @@ public sealed partial class IslandWindow
             PowerManager.RemainingChargePercentChanged += (_, _) => DispatcherQueue.TryEnqueue(OnBattery);
             PowerManager.PowerSupplyStatusChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
             {
-                if (PowerManager.PowerSupplyStatus == PowerSupplyStatus.Adequate)
-                    Notify(new Alert(Pop.Devices, "", "Charging", $"{PowerManager.RemainingChargePercent}%", Green));
+                if (PowerManager.PowerSupplyStatus == PowerSupplyStatus.Adequate) ShowCharging(PowerManager.RemainingChargePercent);
             });
         }
     }
+
+    // A new audio output, with its battery when it is a Bluetooth headset that reports one.
+    void ShowOutput(string name, int? battery) => Notify(battery is int b
+        ? new Alert(Pop.Devices, "", name, $"Connected, battery {b}%", Tint: b <= 20 ? Red : null)
+        : new Alert(Pop.Devices, "", name, "Audio output"));
+
+    // Plugged in: the bar fills up to the current charge, like the iPhone's charging moment.
+    void ShowCharging(int percent) =>
+        Notify(new Alert(Pop.Devices, BluetoothBattery.Glyph(percent, charging: true), $"Charging, {percent}%", Tint: Green, Level: percent / 100.0, FillUp: true));
 
     static readonly Color MicOrange = Color.FromArgb(255, 0xFF, 0x9F, 0x0A), CameraGreen = Color.FromArgb(255, 0x30, 0xD1, 0x58);
     PrivacyWatch? _privacy;
@@ -89,8 +98,13 @@ public sealed partial class IslandWindow
     void OnBattery()
     {
         int prev = _battery, now = _battery = PowerManager.RemainingChargePercent;
-        if (PowerManager.BatteryStatus != BatteryStatus.Discharging || !LowBatteryCrossed(prev, now)) return;
-        Notify(new Alert(Pop.Devices, "", $"Battery at {now}%", "Plug in soon", Red, ActionLabel: "Energy saver",
+        CheckLowBattery(prev, now, PowerManager.BatteryStatus == BatteryStatus.Discharging);
+    }
+
+    void CheckLowBattery(int prev, int now, bool discharging)
+    {
+        if (!discharging || !LowBatteryCrossed(prev, now)) return;
+        Notify(new Alert(Pop.Devices, BluetoothBattery.Glyph(now, charging: false), $"Battery at {now}%", "Plug in soon", Red, ActionLabel: "Energy saver",
             Action: () => Process.Start(new ProcessStartInfo("ms-settings:batterysaver") { UseShellExecute = true })));
     }
 
@@ -163,8 +177,16 @@ public sealed partial class IslandWindow
         AlertSub.Visibility = a.Level is null ? Visibility.Visible : Visibility.Collapsed;
         AlertBar.Visibility = a.Level is null ? Visibility.Collapsed : Visibility.Visible;
         var level = Math.Clamp(a.Level ?? 0, 0, 1);
-        AlertBarDone.Width = new GridLength(level, GridUnitType.Star);
-        AlertBarLeft.Width = new GridLength(1 - level, GridUnitType.Star);
+        AlertBarFill.Background = new SolidColorBrush(a.FillUp && a.Tint is { } tint ? tint : Color.FromArgb(255, 255, 255, 255));
+        if (a.FillUp && _motion)
+        {
+            AlertBarScale.ScaleX = 0;
+            var fill = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+            Animate(fill, AlertBarScale, "ScaleX", level, 900);
+            fill.BeginTime = TimeSpan.FromMilliseconds(150);
+            fill.Begin();
+        }
+        else AlertBarScale.ScaleX = level;
         AlertAction.Visibility = a.ActionLabel is null ? Visibility.Collapsed : Visibility.Visible;
         AlertActionText.Text = a.ActionLabel ?? "";
         AlertAction2.Visibility = a.Action2Label is null ? Visibility.Collapsed : Visibility.Visible;

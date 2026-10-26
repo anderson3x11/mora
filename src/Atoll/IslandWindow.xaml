@@ -75,12 +75,13 @@
                         <TextBlock x:Name="AlertTitle" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <TextBlock x:Name="AlertSub" FontSize="10.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <Grid x:Name="AlertBar" Height="5" Margin="0,5,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition x:Name="AlertBarDone" Width="0*" />
-                                <ColumnDefinition x:Name="AlertBarLeft" Width="1*" />
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.ColumnSpan="2" CornerRadius="2.5" Background="{StaticResource Line}" />
-                            <Border CornerRadius="2.5" Background="White" />
+                            <Border CornerRadius="2.5" Background="{StaticResource Line}" />
+                            <!-- Scaled rather than resized, so it can fill up smoothly (charging) -->
+                            <Border x:Name="AlertBarFill" CornerRadius="2.5" Background="White" RenderTransformOrigin="0,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="AlertBarScale" ScaleX="0" />
+                                </Border.RenderTransform>
+                            </Border>
                         </Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
