@@ -201,20 +201,45 @@ public sealed partial class IslandWindow
         AlertWave.Visibility = a.Kind == Pop.Music && a.ActionLabel is null ? Visibility.Visible : Visibility.Collapsed;
         AlertAction2Text.Text = a.Action2Label ?? "";
         if (a.Kind == Pop.Music && _motion) MusicIn();
-        else (AlertArtMove.ScaleX, AlertArtMove.ScaleY, AlertArtMove.Rotation, AlertTextMove.X, AlertText.Opacity) = (1, 1, 0, 0, 1);
+        else
+        {
+            (AlertArtMove.ScaleX, AlertArtMove.ScaleY, AlertArtMove.Rotation, AlertArtMove.TranslateY) = (1, 1, 0, 0);
+            (AlertTextMove.X, AlertTextMove.Y, AlertText.Opacity, AlertIconFrame.Opacity) = (0, 0, 1, 1);
+        }
     }
 
-    // A new track arrives with a little flourish: the artwork pops in with a bounce and a slight turn,
-    // the title slides into place just after. It leaves the same way, reversed, before the island closes.
+    // A new track arrives with a flourish that suits the theme, and leaves the same way, reversed, before the
+    // island closes. Island: the artwork pops in with a bounce and a slight turn, the title slides in after it.
+    // Notch: both come down out of the screen's edge, as the island itself does. Fluent: a short, quiet fade.
     void MusicIn()
     {
         var sb = new Storyboard();
-        var pop = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.55 };
         var glide = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 };
-        Tween(sb, AlertArtMove, "ScaleX", 0.35, 1, 560, pop);
-        Tween(sb, AlertArtMove, "ScaleY", 0.35, 1, 560, pop);
-        Tween(sb, AlertArtMove, "Rotation", -14, 0, 620, pop);
-        Tween(sb, AlertTextMove, "X", 22, 0, 480, glide, 90);
+        (AlertArtMove.Rotation, AlertArtMove.TranslateY, AlertTextMove.X, AlertTextMove.Y, AlertIconFrame.Opacity) = (0, 0, 0, 0, 1);
+        switch (_theme.Entrance)
+        {
+            case Flourish.Pop:
+                var pop = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.55 };
+                Tween(sb, AlertArtMove, "ScaleX", 0.35, 1, 560, pop);
+                Tween(sb, AlertArtMove, "ScaleY", 0.35, 1, 560, pop);
+                Tween(sb, AlertArtMove, "Rotation", -14, 0, 620, pop);
+                Tween(sb, AlertTextMove, "X", 22, 0, 480, glide, 90);
+                break;
+            case Flourish.Drop:
+                var settle = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 };
+                Tween(sb, AlertArtMove, "TranslateY", -26, 0, 520, settle);
+                Tween(sb, AlertArtMove, "ScaleX", 0.8, 1, 520, settle);
+                Tween(sb, AlertArtMove, "ScaleY", 0.8, 1, 520, settle);
+                Tween(sb, AlertIconFrame, "Opacity", 0, 1, 260, glide);
+                Tween(sb, AlertTextMove, "Y", -12, 0, 460, glide, 70);
+                break;
+            default:
+                Tween(sb, AlertArtMove, "ScaleX", 0.9, 1, 260, glide);
+                Tween(sb, AlertArtMove, "ScaleY", 0.9, 1, 260, glide);
+                Tween(sb, AlertIconFrame, "Opacity", 0, 1, 200, glide);
+                Tween(sb, AlertTextMove, "X", 8, 0, 260, glide, 40);
+                break;
+        }
         Tween(sb, AlertText, "Opacity", 0, 1, 300, glide, 90);
         sb.Begin();
     }
@@ -223,13 +248,30 @@ public sealed partial class IslandWindow
     {
         var sb = new Storyboard();
         var ease = new ExponentialEase { EasingMode = EasingMode.EaseIn, Exponent = 3 };
-        Tween(sb, AlertArtMove, "ScaleX", 1, 0.55, 240, ease);
-        Tween(sb, AlertArtMove, "ScaleY", 1, 0.55, 240, ease);
-        Tween(sb, AlertArtMove, "Rotation", 0, 10, 240, ease);
-        Tween(sb, AlertTextMove, "X", 0, -16, 220, ease);
-        Tween(sb, AlertText, "Opacity", 1, 0, 200, ease);
+        int ms = 240;
+        switch (_theme.Entrance)
+        {
+            case Flourish.Pop:
+                Tween(sb, AlertArtMove, "ScaleX", 1, 0.55, 240, ease);
+                Tween(sb, AlertArtMove, "ScaleY", 1, 0.55, 240, ease);
+                Tween(sb, AlertArtMove, "Rotation", 0, 10, 240, ease);
+                Tween(sb, AlertTextMove, "X", 0, -16, 220, ease);
+                break;
+            case Flourish.Drop: // back up into the edge
+                Tween(sb, AlertArtMove, "TranslateY", 0, -22, 240, ease);
+                Tween(sb, AlertArtMove, "ScaleX", 1, 0.85, 240, ease);
+                Tween(sb, AlertArtMove, "ScaleY", 1, 0.85, 240, ease);
+                Tween(sb, AlertIconFrame, "Opacity", 1, 0, 220, ease);
+                Tween(sb, AlertTextMove, "Y", 0, -10, 220, ease);
+                break;
+            default: // Fluent leaves with a plain, quick fade
+                ms = 160;
+                Tween(sb, AlertIconFrame, "Opacity", 1, 0, 160, ease);
+                break;
+        }
+        Tween(sb, AlertText, "Opacity", 1, 0, Math.Min(ms, 200), ease);
         sb.Begin();
-        return Task.Delay(220);
+        return Task.Delay(ms - 20);
     }
 
     static void Tween(Storyboard sb, DependencyObject target, string property, double from, double to, int ms, EasingFunctionBase ease, int delay = 0)

@@ -555,11 +555,11 @@ public sealed partial class IslandWindow : Window
     CompositionRoundedRectangleGeometry? _shape, _bubbleShape;
     readonly Spring _bubble = new(0); // bubble scale, 0 hidden, 1 shown
     bool _tallBubble; // beside the open panel: a vertical pill instead of the round bubble
-    // As tall as the open panel, bottoms aligned (an attached theme starts it a little below the edge).
-    Vector2 TallBubble => new(52, (float)GeoOf(Mode.Expanded).H - (_theme.Attached ? 8 : 0));
+    // As tall as the open panel.
+    Vector2 TallBubble => new(52, (float)GeoOf(Mode.Expanded).H);
     CompositionColorBrush? _surface, _border;
     readonly List<CompositionSpriteShape> _fills = [];
-    readonly (ShapeVisual Visual, CompositionEllipseGeometry Arc, CompositionSpriteShape Ring)[] _shoulders = new (ShapeVisual, CompositionEllipseGeometry, CompositionSpriteShape)[2];
+    readonly (ShapeVisual Visual, CompositionEllipseGeometry Arc, CompositionSpriteShape Ring)[] _shoulders = new (ShapeVisual, CompositionEllipseGeometry, CompositionSpriteShape)[4]; // the island's two, then the bubble's
     CompositionGeometricClip? _layersClip;
     const float ShoulderMax = 10;
 
@@ -582,7 +582,7 @@ public sealed partial class IslandWindow : Window
             _fills.Add(fill);
         }
         root.Children.InsertAtTop(visual);
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 4; i++)
         {
             var arc = c.CreateEllipseGeometry();
             var ring = c.CreateSpriteShape(arc);
@@ -644,40 +644,46 @@ public sealed partial class IslandWindow : Window
         }
         _shape.CornerRadius = new Vector2(r, r);
         float side = _theme.Attached ? Math.Min(ShoulderMax, h / 2) : 0;
-        for (int i = 0; i < 2; i++)
-        {
-            var (visual, arc, ring) = _shoulders[i];
-            visual.Size = new Vector2(side, side);
-            visual.Offset = new Vector3(i == 0 ? left - side : left + w, top, 0);
-            // A ring from radius `side` out past the far corner, centered on the corner away from the island.
-            arc.Center = new Vector2(i == 0 ? 0 : side, side);
-            arc.Radius = new Vector2(side * 1.21f, side * 1.21f);
-            ring.StrokeThickness = side * 0.42f + 1;
-        }
 
-        // Bubble: 32 px round, 6 px right of the pill, scaled from its center.
-        // Bubble: 32 px round, or the tall timer pill, a few px right of the island, scaled from its center.
+        // Bubble: 32 px round, or the tall timer pill, a few px right of the island. Floating themes scale it
+        // from its center; an attached one grows it down out of the edge like the island, shoulders included.
         float s = (float)Math.Max(0, _bubble.X);
         var full = _tallBubble ? TallBubble : new Vector2(32, 32);
-        var size = full * s;
-        float gap = _tallBubble ? 8 : 6, bubbleTop = _theme.Attached && _tallBubble ? top + 8 : top; // never fused with the edge
-        var center = new Vector2(((float)CanvasW + w) / 2 + gap + full.X / 2, bubbleTop + full.Y / 2);
-        float corner = _tallBubble ? (float)_theme.Radius(full.X / 2) * s : size.X / 2;
-        _bubbleShape!.Size = size;
-        _bubbleShape.CornerRadius = new Vector2(corner, corner);
-        _bubbleShape.Offset = center - size / 2;
-        ElementCompositionPreview.GetElementVisual(BubbleText).Properties.InsertVector3("Translation", new Vector3(center.X - full.X / 2, center.Y - full.Y / 2, 0));
+        float gap = _tallBubble ? 8 : 6, bubbleLeft = ((float)CanvasW + w) / 2 + gap, bubbleRight = bubbleLeft + full.X;
+        float bubbleSide = 0;
+        if (_theme.Attached)
+        {
+            float bh = full.Y * s, corner = (float)Math.Min(_theme.Radius(full.X / 2), bh);
+            _bubbleShape!.Size = new Vector2(full.X, bh + corner);
+            _bubbleShape.CornerRadius = new Vector2(corner, corner);
+            _bubbleShape.Offset = new Vector2(bubbleLeft, top - corner);
+            bubbleSide = Math.Min(ShoulderMax, bh / 2);
+        }
+        else
+        {
+            var size = full * s;
+            float corner = _tallBubble ? (float)_theme.Radius(full.X / 2) * s : size.X / 2;
+            _bubbleShape!.Size = size;
+            _bubbleShape.CornerRadius = new Vector2(corner, corner);
+            _bubbleShape.Offset = new Vector2(bubbleLeft, top) + (full - size) / 2;
+        }
+        // Facing shoulders share the gap between island and bubble, meeting in its middle: a clean rounded slit.
+        float inner = bubbleSide > 0 ? gap / 2 : float.MaxValue;
+        PlaceShoulders(0, left, w, top, side, Math.Min(side, inner));
+        PlaceShoulders(2, bubbleLeft, full.X, top, Math.Min(bubbleSide, inner), bubbleSide);
+        ElementCompositionPreview.GetElementVisual(BubbleText).Properties.InsertVector3("Translation", new Vector3(bubbleLeft, top, 0));
         BubbleText.Opacity = Math.Clamp(s, 0, 1);
 
         // While moving, the hit region follows the shapes in 16 px steps, a little larger than them: Windows
         // hears about it a few times per animation instead of every frame. Exact again once all rests.
         var region = ShapeRect(w, h, _y.X, _animating ? 0.04 : 0);
         if (s > 0.01 && region.Bottom > 0)
-            region.Right = Math.Max(region.Right, (int)Math.Ceiling((center.X + full.X / 2) * _scale));
+            region.Right = Math.Max(region.Right, (int)Math.Ceiling(bubbleRight * _scale));
         // The shoulders reach past the island at the top: a thin band of their own, or the region would cut them off.
         var band = side < 0.5f ? default : new RECT
         {
-            Left = (int)Math.Floor((left - side) * _scale), Right = (int)Math.Ceiling((left + w + side) * _scale),
+            Left = (int)Math.Floor((left - side) * _scale),
+            Right = (int)Math.Ceiling((bubbleSide >= 0.5f ? bubbleRight + bubbleSide : left + w + side) * _scale),
             Top = 0, Bottom = (int)Math.Ceiling((top + side) * _scale),
         };
         if (_animating && region.Bottom > 0)
@@ -689,6 +695,22 @@ public sealed partial class IslandWindow : Window
     }
 
     RECT _band, _bandSet;
+
+    // Two shoulders, from `first`, at the top corners of a shape `width` wide whose left edge is at `left`.
+    void PlaceShoulders(int first, float left, float width, float top, float sideLeft, float sideRight)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            float side = i == 0 ? sideLeft : sideRight;
+            var (visual, arc, ring) = _shoulders[first + i];
+            visual.Size = new Vector2(side, side);
+            visual.Offset = new Vector3(i == 0 ? left - side : left + width, top, 0);
+            // A ring from radius `side` out past the far corner, centered on the corner away from the shape.
+            arc.Center = new Vector2(i == 0 ? 0 : side, side);
+            arc.Radius = new Vector2(side * 1.21f, side * 1.21f);
+            ring.StrokeThickness = side * 0.42f + 1;
+        }
+    }
 
     // The shape's bounds in window pixels, grown by a fraction of its size on each side.
     RECT ShapeRect(double w, double h, double y, double grow)
