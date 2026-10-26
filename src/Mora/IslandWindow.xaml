@@ -76,10 +76,16 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Border x:Name="AlertIconFrame" Width="34" Height="34" CornerRadius="17" Background="{StaticResource Raised}" VerticalAlignment="Center">
+                    <Border x:Name="AlertIconFrame" Width="34" Height="34" CornerRadius="17" Background="{StaticResource Raised}" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <CompositeTransform x:Name="AlertArtMove" />
+                        </Border.RenderTransform>
                         <FontIcon x:Name="AlertIcon" FontSize="17" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                     </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <StackPanel x:Name="AlertText" Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform x:Name="AlertTextMove" />
+                        </StackPanel.RenderTransform>
                         <TextBlock x:Name="AlertTitle" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <TextBlock x:Name="AlertSub" FontSize="10.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <Grid x:Name="AlertBar" Height="5" Margin="0,5,0,0">

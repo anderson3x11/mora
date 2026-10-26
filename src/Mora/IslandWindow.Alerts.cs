@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Windows.System.Power;
 using Windows.UI;
 using static Mora.Native;
@@ -156,6 +157,11 @@ public sealed partial class IslandWindow
         while (t == _alertToken && _mode == Mode.Alert && GetCursorPos(out var pt) != 0 && OnPill(pt))
             await Task.Delay(700);
         if (t != _alertToken || _mode != Mode.Alert) return;
+        if (_alert?.Kind == Pop.Music && _motion && _alerts.Count == 0)
+        {
+            await MusicOut();
+            if (t != _alertToken || _mode != Mode.Alert) return; // hovered, clicked or replaced meanwhile
+        }
         var expired = _alert?.Expired;
         _alert = null;
         expired?.Invoke(); // left alone until it went away: the alert's default answer
@@ -194,6 +200,44 @@ public sealed partial class IslandWindow
         AlertAction2.Visibility = a.Action2Label is null ? Visibility.Collapsed : Visibility.Visible;
         AlertWave.Visibility = a.Kind == Pop.Music && a.ActionLabel is null ? Visibility.Visible : Visibility.Collapsed;
         AlertAction2Text.Text = a.Action2Label ?? "";
+        if (a.Kind == Pop.Music && _motion) MusicIn();
+        else (AlertArtMove.ScaleX, AlertArtMove.ScaleY, AlertArtMove.Rotation, AlertTextMove.X, AlertText.Opacity) = (1, 1, 0, 0, 1);
+    }
+
+    // A new track arrives with a little flourish: the artwork pops in with a bounce and a slight turn,
+    // the title slides into place just after. It leaves the same way, reversed, before the island closes.
+    void MusicIn()
+    {
+        var sb = new Storyboard();
+        var pop = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.55 };
+        var glide = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 };
+        Tween(sb, AlertArtMove, "ScaleX", 0.35, 1, 560, pop);
+        Tween(sb, AlertArtMove, "ScaleY", 0.35, 1, 560, pop);
+        Tween(sb, AlertArtMove, "Rotation", -14, 0, 620, pop);
+        Tween(sb, AlertTextMove, "X", 22, 0, 480, glide, 90);
+        Tween(sb, AlertText, "Opacity", 0, 1, 300, glide, 90);
+        sb.Begin();
+    }
+
+    Task MusicOut()
+    {
+        var sb = new Storyboard();
+        var ease = new ExponentialEase { EasingMode = EasingMode.EaseIn, Exponent = 3 };
+        Tween(sb, AlertArtMove, "ScaleX", 1, 0.55, 240, ease);
+        Tween(sb, AlertArtMove, "ScaleY", 1, 0.55, 240, ease);
+        Tween(sb, AlertArtMove, "Rotation", 0, 10, 240, ease);
+        Tween(sb, AlertTextMove, "X", 0, -16, 220, ease);
+        Tween(sb, AlertText, "Opacity", 1, 0, 200, ease);
+        sb.Begin();
+        return Task.Delay(220);
+    }
+
+    static void Tween(Storyboard sb, DependencyObject target, string property, double from, double to, int ms, EasingFunctionBase ease, int delay = 0)
+    {
+        var a = new DoubleAnimation { From = from, To = to, Duration = TimeSpan.FromMilliseconds(ms), BeginTime = TimeSpan.FromMilliseconds(delay), EasingFunction = ease };
+        Storyboard.SetTarget(a, target);
+        Storyboard.SetTargetProperty(a, property);
+        sb.Children.Add(a);
     }
 
     void AlertAction_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => RunAlertAction(e, a => a.Action);

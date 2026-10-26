@@ -72,7 +72,9 @@ public sealed partial class IslandWindow
         TimerRunning.Visibility = _timer is null ? Visibility.Collapsed : Visibility.Visible;
         if (_timer is not { } t) return;
         TimerLabel.Text = t.Label;
-        TimerLeft.Text = CompactTimerText.Text = BubbleText.Text = Format(TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds)));
+        var left = TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds));
+        TimerLeft.Text = CompactTimerText.Text = Format(left);
+        BubbleText.Text = _tallBubble ? $"{(int)left.TotalMinutes:00}\n{left.Seconds:00}" : Format(left); // minutes over seconds in the tall pill
         TimerLeft.Foreground = CompactTimerText.Foreground = CompactTimerIcon.Foreground = BubbleText.Foreground = new SolidColorBrush(t.Break ? _theme.Calm : _theme.Warm);
     }
 

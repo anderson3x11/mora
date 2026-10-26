@@ -50,7 +50,7 @@ For events a machine cannot produce (no Bluetooth headset, no battery), a second
 Mora.exe --simulate headphones "Headphones (WH-1000XM4)" 72
 ```
 
-Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21% to 20%) and `focus 8 6` (a focus session with 8 s rounds and 6 s breaks).
+Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21% to 20%), `focus 8 6` (a focus session with 8 s rounds and 6 s breaks) and `track "Title" "Artist"` (a track change, with its animation).
 
 ## What is in
 
@@ -67,7 +67,7 @@ Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21
 
 ## Known limits
 
-- Clipboard history lives in memory only (by design) and is cleared on quit. It keeps 8 copies, of which at most 3 images. The shelf list is saved in `%LOCALAPPDATA%\Mora\shelf.json`.
+- Clipboard history lives in memory only (by design) and is cleared on quit. It keeps 8 copies, of which at most 3 images; the panel shows the 3 most recent (the shelf too). The shelf list is saved in `%LOCALAPPDATA%\Mora\shelf.json`.
 - Unexpected errors are logged to `%LOCALAPPDATA%\Mora\errors.log` instead of closing the app.
 - Monitors with different scaling were not tested (both test monitors were at 100%).
 - Native Windows volume and brightness flyouts are not hidden, which is why the volume pop-up is opt-in.

@@ -36,13 +36,7 @@ public sealed partial class IslandWindow : Window
             Mode.Compact => (MediaPill ? 214 : 132, 32),
             Mode.Alert => (_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50), // longer text or two answers
             Mode.Game => (288, 66),
-            Mode.Expanded => (430, _tab switch
-            {
-                Tab.Media => 170,
-                Tab.Timers => 124,
-                Tab.Shelf => 54 + 31 * Math.Clamp(_shelf.Count, 2, 4),           // the empty drop zone takes two rows
-                _ => 54 + 31 * Math.Clamp(_clipboard?.Items.Count ?? 0, 1, 4), // one 26 px row + 5 px gap per copy
-            }),
+            Mode.Expanded => (430, 170), // one size for every tab: switching tabs never reshapes the island
             _ => (96, 24),
         };
         double r = _theme.Radius(Math.Min(h / 2.0, 26));
@@ -246,7 +240,20 @@ public sealed partial class IslandWindow : Window
 
     void UpdateBubble()
     {
-        _bubble.T = _mode == Mode.Compact && MediaPill && TimerPill ? 1 : 0;
+        // Beside the resting pill: a round bubble (music and timer at once). Beside the open panel: a tall pill
+        // with the countdown, whenever a timer runs and the Timers tab is not already showing it.
+        bool tall = _mode == Mode.Expanded;
+        _bubble.T = (_mode == Mode.Compact && MediaPill && TimerPill) || (tall && _timer != null && _tab != Tab.Timers) ? 1 : 0;
+        if (tall != _tallBubble)
+        {
+            _tallBubble = tall;
+            _bubble.X = _bubble.V = 0; // a new shape pops in from nothing rather than morphing
+            BubbleText.Width = tall ? TallBubble.X : 32;
+            BubbleText.Height = tall ? TallBubble.Y : 32;
+            BubbleText.FontSize = tall ? 16 : 9.5;
+            BubbleText.Padding = new Thickness(0, tall ? 28 : 9, 0, 0);
+            FillTimer();
+        }
         if (_bubble.T != _bubble.X) Animate();
     }
 
@@ -291,6 +298,11 @@ public sealed partial class IslandWindow : Window
             await Task.Delay(170);
         }
         if (t != _token) return;
+        if (prev == Mode.Expanded && mode != Mode.Expanded && !_settings.ReopenLastTab && _tab != Tab.Media)
+        {
+            _tab = Tab.Media; // swapped once the panel's content has faded out
+            ShowTab();
+        }
         if (mode == Mode.Compact) Fade(CompactLayer, true);
         if (mode == Mode.Expanded) Fade(ExpandedLayer, true);
         if (mode == Mode.Game)
@@ -463,11 +475,9 @@ public sealed partial class IslandWindow : Window
 
     void Tab_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
     {
-        var before = GeoOf(Mode.Expanded);
         _tab = Enum.Parse<Tab>((string)((FrameworkElement)sender).Tag);
         ShowTab();
-        var after = GeoOf(Mode.Expanded);
-        Retarget(after, after.H > before.H ? OpenSpring : CloseSpring);
+        UpdateBubble(); // the timer pill steps aside on the Timers tab
     }
 
     void ShowTab()
@@ -544,6 +554,8 @@ public sealed partial class IslandWindow : Window
     // quarter circle, so the edge of the screen curves down into the island like a notch.
     CompositionRoundedRectangleGeometry? _shape, _bubbleShape;
     readonly Spring _bubble = new(0); // bubble scale, 0 hidden, 1 shown
+    bool _tallBubble; // beside the open panel: a vertical pill instead of the round bubble
+    static readonly Vector2 TallBubble = new(48, 100);
     CompositionColorBrush? _surface, _border;
     readonly List<CompositionSpriteShape> _fills = [];
     readonly (ShapeVisual Visual, CompositionEllipseGeometry Arc, CompositionSpriteShape Ring)[] _shoulders = new (ShapeVisual, CompositionEllipseGeometry, CompositionSpriteShape)[2];
@@ -643,19 +655,24 @@ public sealed partial class IslandWindow : Window
         }
 
         // Bubble: 32 px round, 6 px right of the pill, scaled from its center.
-        float s = (float)Math.Max(0, _bubble.X), size = 32 * s;
-        var center = new Vector2(((float)CanvasW + w) / 2 + 6 + 16, (float)_y.X + 16);
-        _bubbleShape!.Size = new Vector2(size, size);
-        _bubbleShape.CornerRadius = new Vector2(size / 2, size / 2);
-        _bubbleShape.Offset = center - new Vector2(size / 2, size / 2);
-        ElementCompositionPreview.GetElementVisual(BubbleText).Properties.InsertVector3("Translation", new Vector3(center.X - 16, center.Y - 16, 0));
+        // Bubble: 32 px round, or the tall timer pill, a few px right of the island, scaled from its center.
+        float s = (float)Math.Max(0, _bubble.X);
+        var full = _tallBubble ? TallBubble : new Vector2(32, 32);
+        var size = full * s;
+        float gap = _tallBubble ? 8 : 6, bubbleTop = _theme.Attached && _tallBubble ? top + 8 : top; // never fused with the edge
+        var center = new Vector2(((float)CanvasW + w) / 2 + gap + full.X / 2, bubbleTop + full.Y / 2);
+        float corner = _tallBubble ? (float)_theme.Radius(full.X / 2) * s : size.X / 2;
+        _bubbleShape!.Size = size;
+        _bubbleShape.CornerRadius = new Vector2(corner, corner);
+        _bubbleShape.Offset = center - size / 2;
+        ElementCompositionPreview.GetElementVisual(BubbleText).Properties.InsertVector3("Translation", new Vector3(center.X - full.X / 2, center.Y - full.Y / 2, 0));
         BubbleText.Opacity = Math.Clamp(s, 0, 1);
 
         // While moving, the hit region follows the shapes in 16 px steps, a little larger than them: Windows
         // hears about it a few times per animation instead of every frame. Exact again once all rests.
         var region = ShapeRect(w, h, _y.X, _animating ? 0.04 : 0);
         if (s > 0.01 && region.Bottom > 0)
-            region.Right = Math.Max(region.Right, (int)Math.Ceiling((center.X + 16) * _scale));
+            region.Right = Math.Max(region.Right, (int)Math.Ceiling((center.X + full.X / 2) * _scale));
         // The shoulders reach past the island at the top: a thin band of their own, or the region would cut them off.
         var band = side < 0.5f ? default : new RECT
         {

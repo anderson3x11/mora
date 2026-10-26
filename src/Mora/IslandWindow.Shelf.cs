@@ -146,7 +146,7 @@ public sealed partial class IslandWindow
             ShelfTab.Children.Add(zone);
             return;
         }
-        foreach (var path in _shelf.Take(4))
+        foreach (var path in _shelf.Take(3)) // what fits the panel's fixed height
         {
             var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(9), Padding = new Thickness(9, 3, 3, 3), ColumnSpacing = 8, CanDrag = true };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

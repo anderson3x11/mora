@@ -7,6 +7,7 @@ namespace Mora;
 // through the same code as the real one.
 //   headphones "<audio output name>" [percent]    charging <percent>    battery <before> <after>
 //   focus <focus seconds> <break seconds>: a focus session with short rounds
+//   track "<title>" "<artist>": a track change, with the current artwork
 public sealed partial class IslandWindow
 {
     internal const uint WM_COPYDATA = 0x4A;
@@ -28,6 +29,9 @@ public sealed partial class IslandWindow
                 break;
             case "battery" when a.Length >= 3 && int.TryParse(a[1], out var before) && int.TryParse(a[2], out var after):
                 CheckLowBattery(before, after, discharging: true);
+                break;
+            case "track" when a.Length >= 3:
+                Notify(new Alert(Pop.Music, "", a[1], "Now playing · " + a[2], Art: _media.Art));
                 break;
             case "focus" when a.Length >= 3 && int.TryParse(a[1], out var work) && int.TryParse(a[2], out var rest):
                 (_focusWork, _focusBreak) = (work, rest);

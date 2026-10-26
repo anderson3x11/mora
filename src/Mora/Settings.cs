@@ -49,6 +49,7 @@ sealed class Settings
     public bool AskNewGames { get; set; }
     public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
     public string Theme { get; set; } = "Island";
+    public bool ReopenLastTab { get; set; } = true; // off: the panel always opens on Media
     public List<string> SeenGames { get; set; } = [];
     public int GameListVersion { get; set; }
 

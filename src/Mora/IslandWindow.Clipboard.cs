@@ -47,7 +47,7 @@ public sealed partial class IslandWindow
             ClipboardTab.Children.Add(new TextBlock { Text = "Copy some text or an image and it shows up here.", FontSize = 11, Foreground = (Brush)res["Muted"] });
             return;
         }
-        foreach (var item in c.Items.Take(4))
+        foreach (var item in c.Items.Take(3)) // what fits the panel's fixed height
         {
             var paste = new Border { Style = (Style)res["Chip"], Child = new TextBlock { Text = "Paste", Style = (Style)res["ChipText"] } };
             paste.Tapped += (_, _) => c.Paste(item);
