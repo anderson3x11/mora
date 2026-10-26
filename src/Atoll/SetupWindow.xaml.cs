@@ -1,3 +1,4 @@
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -6,15 +7,18 @@ using Windows.Graphics;
 
 namespace Atoll;
 
-// First-run setup in four steps, and later the settings window (the same choices on one page).
+// First-run setup in four steps, and later the settings window (tabs on the left).
 // Unlike the island this is an ordinary window: the user opened it to click and type in it.
 public sealed partial class SetupWindow : Window
 {
+    enum Tab { General, Popups, Games, About }
+
     readonly Settings _working;
     readonly bool _firstRun;
     readonly Action<Settings> _done;
     bool _finished;
     int _step;
+    Tab _tab;
 
     // Standard controls need their styles. They load only when this window opens, so the island stays lean.
     internal static SetupWindow Open(Settings settings, bool firstRun, Action<Settings> done)
@@ -31,48 +35,142 @@ public sealed partial class SetupWindow : Window
         (_working, _firstRun, _done) = (working, firstRun, done);
         InitializeComponent();
         Title = firstRun ? "Atoll Setup" : "Atoll Settings";
-        SystemBackdrop = new MicaBackdrop();
+        WindowTitle.Text = Title;
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Atoll.ico"));
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(TitleBar);
+        var bar = AppWindow.TitleBar;
+        bar.ButtonBackgroundColor = bar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        bar.ButtonForegroundColor = Colors.White;
+        bar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x9B, 0x9B, 0xA5);
+        bar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(255, 0x1C, 0x1C, 0x21);
+
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         double scale = Native.GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
-        int w = (int)(540 * scale), h = (int)((firstRun ? 540 : 800) * scale);
+        int w = (int)((firstRun ? 600 : 820) * scale), h = (int)((firstRun ? 540 : 600) * scale);
         AppWindow.MoveAndResize(new RectInt32(area.X + (area.Width - w) / 2, area.Y + (area.Height - h) / 2, w, h));
+        Nav.Visibility = firstRun ? Visibility.Collapsed : Visibility.Visible;
         // Closing setup early still counts as done: the defaults are safe, and it should not come back every launch.
         Closed += (_, _) => { if (!_finished && _firstRun) _done(_working); };
-        ShowStep();
+        Show();
     }
 
-    void ShowStep()
+    void Show()
     {
         Page.Children.Clear();
         Dots.Children.Clear();
-        if (!_firstRun)
+        if (_firstRun) ShowStep(); else ShowTab();
+    }
+
+    // ---------- settings: tabs ----------
+
+    void ShowTab()
+    {
+        (BackButton.Content, NextButton.Content) = ("Cancel", "Save");
+        Nav.Children.Clear();
+        foreach (var (tab, glyph, label) in new[] { (Tab.General, "", "General"), (Tab.Popups, "", "Pop-ups"), (Tab.Games, "", "Games"), (Tab.About, "", "About") })
         {
-            Page.Children.Add(Games());
-            Page.Children.Add(Popups());
-            Page.Children.Add(Island());
-            (BackButton.Content, NextButton.Content) = ("Cancel", "Save");
-            return;
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+            content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 15 });
+            content.Children.Add(new TextBlock { Text = label, FontSize = 13 });
+            var item = new Button
+            {
+                Content = content,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(14, 9, 14, 9),
+                CornerRadius = new CornerRadius(10),
+                BorderThickness = new Thickness(0),
+                Background = tab == _tab ? Brush("Raised") : new SolidColorBrush(Colors.Transparent),
+                Foreground = tab == _tab ? new SolidColorBrush(Colors.White) : Brush("Muted"),
+            };
+            item.Click += (_, _) => { _tab = tab; Show(); };
+            Nav.Children.Add(item);
+            // Keeps keyboard focus on the current tab after a rebuild, without the keyboard focus ring on a mouse click.
+            if (tab == _tab) item.Loaded += (_, _) => item.Focus(FocusState.Programmatic);
         }
 
+        switch (_tab)
+        {
+            case Tab.General:
+                Heading("General", "How Atoll starts and how it rests on screen.");
+                Page.Children.Add(Card(
+                    Row("Start Atoll when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
+                    Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
+                    Row("Open the island", "Works from any app, without taking your keyboard.", Key("Alt + Q"))));
+                break;
+            case Tab.Popups:
+                Heading("Pop-ups", "What may open the island on its own. Each one leaves after 3 seconds, and none show during fullscreen games.");
+                Page.Children.Add(PopupsCard());
+                break;
+            case Tab.Games:
+                Heading("Games", "What Atoll does while a fullscreen game or video is in front.");
+                Page.Children.Add(GameModeCard());
+                Page.Children.Add(Subheading("Games Atoll remembers", _working.Games == GameMode.Ask
+                    ? "Answers to the first-time question. Change one here, or forget it to be asked again."
+                    : "Used when \"Decide per game\" is on."));
+                Page.Children.Add(RememberedGames());
+                break;
+            default:
+                Heading("About", $"Atoll {typeof(App).Assembly.GetName().Version?.ToString(3)}, a Dynamic Island for Windows.");
+                Page.Children.Add(Card(
+                    Row("Never takes your keyboard", "Every key you press keeps going to the app you are in, even while the island opens.", null),
+                    Row("No ads, ever", "The island only shows things you are doing. Never promotions, including ours.", null),
+                    Row("Stays on this PC", "Settings, the shelf and the clipboard history never leave your computer.", null)));
+                break;
+        }
+    }
+
+    StackPanel RememberedGames()
+    {
+        var list = new StackPanel { Spacing = 8 };
+        if (_working.PerGame.Count == 0)
+        {
+            list.Children.Add(new TextBlock { Text = "No game yet. Atoll asks the first time you launch one.", Foreground = Brush("Muted") });
+            return list;
+        }
+        var rows = new List<UIElement>();
+        foreach (var exe in _working.PerGame.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList())
+        {
+            var choice = new ComboBox { Items = { "Music on Alt+Q", "Stays out" }, MinWidth = 160 };
+            choice.SelectedIndex = _working.PerGame[exe] == GameMode.Music ? 0 : 1;
+            choice.SelectionChanged += (_, _) => _working.PerGame[exe] = choice.SelectedIndex == 0 ? GameMode.Music : GameMode.Quiet;
+            var forget = new Button { Content = new FontIcon { Glyph = "", FontSize = 14 }, Padding = new Thickness(10, 8, 10, 8) };
+            ToolTipService.SetToolTip(forget, "Forget: ask again next time");
+            forget.Click += (_, _) => { _working.PerGame.Remove(exe); Show(); };
+            var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            controls.Children.Add(choice);
+            controls.Children.Add(forget);
+            rows.Add(Row(exe, null, controls));
+        }
+        list.Children.Add(Card([.. rows]));
+        return list;
+    }
+
+    // ---------- first run: four steps ----------
+
+    void ShowStep()
+    {
         switch (_step)
         {
             case 0:
-                Heading("A living island at the top of your screen");
-                Body("Music, timers, downloads and device events show up in a small black island, then get out of the way.");
-                Body("Open it any time with Alt+Q, or from the Atoll icon next to the clock.");
+                Heading("A living island at the top of your screen", "Music, timers, downloads and device events show up in a small black island, then get out of the way.");
+                Page.Children.Add(Card(Row("Open it any time", "From any app, or from the Atoll icon next to the clock.", Key("Alt + Q"))));
                 break;
             case 1:
-                Page.Children.Add(Games());
+                Heading("When you play fullscreen games", "Pick what Atoll does. You can change it later in Settings.");
+                Page.Children.Add(GameModeCard());
                 break;
             case 2:
-                Page.Children.Add(Popups());
+                Heading("What can pop up on its own", "Each pop-up leaves after 3 seconds, and none show during fullscreen games.");
+                Page.Children.Add(PopupsCard());
                 break;
             default:
-                Heading("Two promises");
-                Body("Atoll never takes your keyboard. Every key you press keeps going to the app you are in, even while the island opens.");
-                Body("No ads, ever. The island only shows things you are doing. Never promotions, including ours.");
-                Page.Children.Add(StartCheck());
+                Heading("Two promises", "Made once, kept always.");
+                Page.Children.Add(Card(
+                    Row("Never takes your keyboard", "Every key you press keeps going to the app you are in, even while the island opens.", null),
+                    Row("No ads, ever", "The island only shows things you are doing. Never promotions, including ours.", null)));
+                Page.Children.Add(Card(Row("Start Atoll when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v))));
                 break;
         }
         BackButton.Visibility = _step == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -80,104 +178,100 @@ public sealed partial class SetupWindow : Window
         for (int i = 0; i < 4; i++)
             Dots.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle
             {
-                Width = i == _step ? 18 : 7,
-                Height = 7,
-                RadiusX = 3.5,
-                RadiusY = 3.5,
-                Fill = (Brush)Application.Current.Resources[i == _step ? "AccentFillColorDefaultBrush" : "ControlStrongFillColorDisabledBrush"],
+                Width = i == _step ? 18 : 7, Height = 7, RadiusX = 3.5, RadiusY = 3.5,
+                Fill = i == _step ? Brush("Accent") : Brush("Raised"),
             });
     }
 
-    StackPanel Games()
+    // ---------- shared sections ----------
+
+    Border GameModeCard()
     {
-        var p = Section("When a fullscreen game runs");
         (GameMode Mode, string Title, string Description)[] choices =
         [
             (GameMode.Quiet, "Stay out of my way", "Nothing pops up and Alt+Q is left to the game. Best for shooters, RPGs, anything immersive."),
             (GameMode.Music, "Only when I ask", "No pop-ups, but Alt+Q opens music controls that close by themselves. Best for chill games with music."),
             (GameMode.Ask, "Decide per game", "The first time you launch a game, Atoll asks which of the two you want."),
         ];
-        foreach (var c in choices)
+        var rows = choices.Select(c =>
         {
-            var label = new StackPanel();
-            label.Children.Add(new TextBlock { Text = c.Title, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"] });
-            label.Children.Add(new TextBlock { Text = c.Description, TextWrapping = TextWrapping.Wrap, Opacity = 0.75 });
-            var radio = new RadioButton { GroupName = "games", Content = label, IsChecked = _working.Games == c.Mode, Margin = new Thickness(0, 0, 0, 6) };
+            var label = new StackPanel { Margin = new Thickness(4, 0, 0, 0) };
+            label.Children.Add(new TextBlock { Text = c.Title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+            label.Children.Add(new TextBlock { Text = c.Description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
+            var radio = new RadioButton { GroupName = "games", Content = label, IsChecked = _working.Games == c.Mode, Margin = new Thickness(0, 10, 0, 10) };
             radio.Checked += (_, _) => _working.Games = c.Mode;
-            p.Children.Add(radio);
-        }
+            return (UIElement)radio;
+        }).ToArray();
+        return Card(rows);
+    }
 
-        // Answers given to "Decide per game", so a wrong one can be undone (asked again next launch).
-        if (!_firstRun && _working.PerGame.Count > 0)
+    Border PopupsCard() => Card(
+        Row("Music changes", "The new track, with its artwork.", Toggle(() => _working.PopMusic, v => _working.PopMusic = v)),
+        Row("Timers", "When a timer is done.", Toggle(() => _working.PopTimers, v => _working.PopTimers = v)),
+        Row("Finished downloads", "With a button to show the file.", Toggle(() => _working.PopDownloads, v => _working.PopDownloads = v)),
+        Row("Headphones and battery", "Audio output switches, low battery, charging.", Toggle(() => _working.PopDevices, v => _working.PopDevices = v)),
+        Row("Clipboard copies", "Private copies from password managers never show.", Toggle(() => _working.PopClipboard, v => _working.PopClipboard = v)),
+        Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)));
+
+    // A rounded card of rows separated by hairlines, like the island's panel.
+    Border Card(params UIElement[] rows)
+    {
+        var stack = new StackPanel();
+        for (int i = 0; i < rows.Length; i++)
         {
-            p.Children.Add(new TextBlock { Text = "Games Atoll remembers", Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"], Margin = new Thickness(0, 8, 0, 2) });
-            foreach (var (exe, mode) in _working.PerGame.OrderBy(g => g.Key))
-            {
-                var row = new Grid { ColumnSpacing = 12 };
-                row.ColumnDefinitions.Add(new ColumnDefinition());
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                row.Children.Add(new TextBlock
-                {
-                    Text = $"{exe}: {(mode == GameMode.Music ? "music on Alt+Q" : "stays out")}",
-                    VerticalAlignment = VerticalAlignment.Center,
-                });
-                var forget = new Button { Content = "Forget" };
-                forget.Click += (_, _) =>
-                {
-                    _working.PerGame.Remove(exe);
-                    ShowStep();
-                };
-                Grid.SetColumn(forget, 1);
-                row.Children.Add(forget);
-                p.Children.Add(row);
-            }
+            if (i > 0) stack.Children.Add(new Border { Height = 1, Background = Brush("Raised") });
+            stack.Children.Add(rows[i]);
         }
+        return new Border { Background = Brush("Card"), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 2, 14, 2), Child = stack };
+    }
+
+    Grid Row(string title, string? description, FrameworkElement? control)
+    {
+        var row = new Grid { Padding = new Thickness(0, 12, 0, 12), ColumnSpacing = 16 };
+        row.ColumnDefinitions.Add(new ColumnDefinition());
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = title, TextWrapping = TextWrapping.Wrap });
+        if (description != null)
+            text.Children.Add(new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
+        row.Children.Add(text);
+        if (control != null)
+        {
+            control.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(control, 1);
+            row.Children.Add(control);
+        }
+        return row;
+    }
+
+    static ToggleSwitch Toggle(Func<bool> get, Action<bool> set)
+    {
+        var t = new ToggleSwitch { IsOn = get(), OnContent = "", OffContent = "", MinWidth = 0 };
+        t.Toggled += (_, _) => set(t.IsOn);
+        return t;
+    }
+
+    Border Key(string keys) => new()
+    {
+        Background = Brush("Raised"), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 5, 10, 5),
+        Child = new TextBlock { Text = keys, FontFamily = new FontFamily("Cascadia Mono,Consolas"), FontSize = 12 },
+    };
+
+    void Heading(string title, string subtitle)
+    {
+        Page.Children.Add(new TextBlock { Text = title, FontSize = 26, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) });
+        Page.Children.Add(new TextBlock { Text = subtitle, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), Margin = new Thickness(0, -6, 0, 6) });
+    }
+
+    StackPanel Subheading(string title, string subtitle)
+    {
+        var p = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
+        p.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        p.Children.Add(new TextBlock { Text = subtitle, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
         return p;
     }
 
-    StackPanel Popups()
-    {
-        var p = Section("What can pop up on its own");
-        p.Children.Add(Check("Music changes", () => _working.PopMusic, v => _working.PopMusic = v));
-        p.Children.Add(Check("Timers", () => _working.PopTimers, v => _working.PopTimers = v));
-        p.Children.Add(Check("Finished downloads", () => _working.PopDownloads, v => _working.PopDownloads = v));
-        p.Children.Add(Check("Headphones and battery", () => _working.PopDevices, v => _working.PopDevices = v));
-        p.Children.Add(Check("Clipboard copies", () => _working.PopClipboard, v => _working.PopClipboard = v));
-        p.Children.Add(Check("Volume (Windows shows its own too)", () => _working.PopVolume, v => _working.PopVolume = v));
-        p.Children.Add(new TextBlock { Text = "Pop-ups leave after 3 seconds, and never show during fullscreen games.", TextWrapping = TextWrapping.Wrap, Opacity = 0.75 });
-        return p;
-    }
-
-    StackPanel Island()
-    {
-        var p = Section("Island");
-        p.Children.Add(Check("Keep a small pill on screen while music plays", () => _working.ShowCompactPill, v => _working.ShowCompactPill = v));
-        p.Children.Add(StartCheck());
-        return p;
-    }
-
-    CheckBox StartCheck() => Check("Start Atoll when Windows starts", () => _working.StartWithWindows, v => _working.StartWithWindows = v);
-
-    static CheckBox Check(string label, Func<bool> get, Action<bool> set)
-    {
-        var c = new CheckBox { Content = label, IsChecked = get() };
-        c.Checked += (_, _) => set(true);
-        c.Unchecked += (_, _) => set(false);
-        return c;
-    }
-
-    static StackPanel Section(string title)
-    {
-        var p = new StackPanel { Spacing = 4 };
-        p.Children.Add(new TextBlock { Text = title, Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"], Margin = new Thickness(0, 0, 0, 6) });
-        return p;
-    }
-
-    void Heading(string text) =>
-        Page.Children.Add(new TextBlock { Text = text, Style = (Style)Application.Current.Resources["TitleTextBlockStyle"], TextWrapping = TextWrapping.Wrap });
-
-    void Body(string text) =>
-        Page.Children.Add(new TextBlock { Text = text, Style = (Style)Application.Current.Resources["BodyTextBlockStyle"], TextWrapping = TextWrapping.Wrap });
+    Brush Brush(string key) => (Brush)Root.Resources[key];
 
     void Back_Click(object sender, RoutedEventArgs e)
     {
@@ -188,7 +282,7 @@ public sealed partial class SetupWindow : Window
             return;
         }
         _step--;
-        ShowStep();
+        Show();
     }
 
     void Next_Click(object sender, RoutedEventArgs e)
@@ -196,7 +290,7 @@ public sealed partial class SetupWindow : Window
         if (_firstRun && _step < 3)
         {
             _step++;
-            ShowStep();
+            Show();
             return;
         }
         _finished = true;
