@@ -15,12 +15,23 @@ sealed class Audio
     readonly VolumeCallback _volumeCallback;
     readonly DeviceCallback _deviceCallback;
     IAudioEndpointVolume? _volume;
-    IAudioMeterInformation? _meter;
+    List<IAudioMeterInformation> _meters = [];
 
-    // Loudness of what the default output plays right now, 0..1. A read of a shared value, no capture.
+    // Loudness of what plays right now, 0..1: the loudest active output, since apps can play elsewhere
+    // than the default one (per-app outputs, mixers like the GoXLR with Music/Game/Chat outputs).
+    // Each read is a shared value, no audio capture.
     public float Peak
     {
-        get { float p = 0; _meter?.GetPeakValue(out p); return p; }
+        get
+        {
+            float max = 0;
+            foreach (var m in _meters)
+            {
+                m.GetPeakValue(out var p);
+                if (p > max) max = p;
+            }
+            return max;
+        }
     }
 
     public Audio(DispatcherQueue ui)
@@ -42,15 +53,28 @@ sealed class Audio
     {
         _volume?.UnregisterControlChangeNotify(_volumeCallback);
         _volume = null;
-        _meter = null;
+        AttachMeters();
         if (_devices.GetDefaultAudioEndpoint(0, 1, out var device) != 0) return; // eRender, eMultimedia; none plugged
         var iid = typeof(IAudioEndpointVolume).GUID;
         device.Activate(ref iid, 1, 0, out var volume); // CLSCTX_INPROC_SERVER
         _volume = (IAudioEndpointVolume)volume;
         _volume.RegisterControlChangeNotify(_volumeCallback);
+    }
+
+    // One peak meter per active output; rebuilt when outputs come and go.
+    void AttachMeters()
+    {
+        var meters = new List<IAudioMeterInformation>();
+        _devices.EnumAudioEndpoints(0, 1, out var outputs); // eRender, DEVICE_STATE_ACTIVE
+        outputs.GetCount(out var count);
         var meterId = typeof(IAudioMeterInformation).GUID;
-        device.Activate(ref meterId, 1, 0, out var meter);
-        _meter = (IAudioMeterInformation)meter;
+        for (uint i = 0; i < count; i++)
+        {
+            outputs.Item(i, out var output);
+            output.Activate(ref meterId, 1, 0, out var meter);
+            meters.Add((IAudioMeterInformation)meter);
+        }
+        _meters = meters;
     }
 
     static string FriendlyName(IMMDevice device)
@@ -89,7 +113,11 @@ sealed class Audio
             });
         }
 
-        public void OnDeviceStateChanged(string id, int state) { }
+        public void OnDeviceStateChanged(string id, int state) => audio._ui.TryEnqueue(() =>
+        {
+            try { audio.AttachMeters(); }
+            catch (COMException) { } // an output went away while listing them
+        });
         public void OnDeviceAdded(string id) { }
         public void OnDeviceRemoved(string id) { }
         public void OnPropertyValueChanged(string id, PropertyKey key) { }
@@ -108,11 +136,18 @@ sealed class Audio
     [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IMMDeviceEnumerator
     {
-        void EnumAudioEndpoints(int flow, int mask, out nint devices);
+        void EnumAudioEndpoints(int flow, int mask, out IMMDeviceCollection devices);
         [PreserveSig] int GetDefaultAudioEndpoint(int flow, int role, out IMMDevice device);
         [PreserveSig] int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
         void RegisterEndpointNotificationCallback(IMMNotificationClient client);
         void UnregisterEndpointNotificationCallback(IMMNotificationClient client);
+    }
+
+    [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IMMDeviceCollection
+    {
+        void GetCount(out uint count);
+        void Item(uint index, out IMMDevice device);
     }
 
     [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
