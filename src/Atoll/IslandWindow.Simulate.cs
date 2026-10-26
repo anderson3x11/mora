@@ -6,6 +6,7 @@ namespace Atoll;
 // `Atoll.exe --simulate <event> ...` while Atoll runs, and the running instance handles the event
 // through the same code as the real one.
 //   headphones "<audio output name>" [percent]    charging <percent>    battery <before> <after>
+//   focus <focus seconds> <break seconds>: a focus session with short rounds
 public sealed partial class IslandWindow
 {
     internal const uint WM_COPYDATA = 0x4A;
@@ -27,6 +28,10 @@ public sealed partial class IslandWindow
                 break;
             case "battery" when a.Length >= 3 && int.TryParse(a[1], out var before) && int.TryParse(a[2], out var after):
                 CheckLowBattery(before, after, discharging: true);
+                break;
+            case "focus" when a.Length >= 3 && int.TryParse(a[1], out var work) && int.TryParse(a[2], out var rest):
+                (_focusWork, _focusBreak) = (work, rest);
+                StartFocus(1, rest: false);
                 break;
         }
     }

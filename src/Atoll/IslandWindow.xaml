@@ -52,7 +52,7 @@
                     </Grid>
                     <!-- A timer alone: its countdown -->
                     <Grid x:Name="CompactTimer" Visibility="Collapsed">
-                        <FontIcon Glyph="&#xE916;" FontSize="14" FontFamily="{StaticResource Icons}" Foreground="#FFB454" HorizontalAlignment="Left" />
+                        <FontIcon x:Name="CompactTimerIcon" Glyph="&#xE916;" FontSize="14" FontFamily="{StaticResource Icons}" Foreground="#FFB454" HorizontalAlignment="Left" />
                         <TextBlock x:Name="CompactTimerText" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="#FFB454" HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
                 </Grid>
@@ -242,11 +242,11 @@
                         <!-- Timers -->
                         <StackPanel x:Name="TimersTab" Visibility="Collapsed" Spacing="10">
                             <StackPanel x:Name="TimerIdle" Spacing="10">
-                                <TextBlock Text="Start a timer. It counts down while you work." Foreground="{StaticResource Muted}" FontSize="11" />
+                                <TextBlock Text="Start a timer, or focus in 25 min rounds with breaks." Foreground="{StaticResource Muted}" FontSize="11" />
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <Border Style="{StaticResource Chip}" Tag="60" Tapped="TimerStart_Tapped"><TextBlock Text="1 min" Style="{StaticResource ChipText}" /></Border>
                                     <Border Style="{StaticResource Chip}" Tag="300" Tapped="TimerStart_Tapped"><TextBlock Text="5 min" Style="{StaticResource ChipText}" /></Border>
-                                    <Border Style="{StaticResource Chip}" Tag="1500" Tapped="TimerStart_Tapped"><TextBlock Text="25 min focus" Style="{StaticResource ChipText}" /></Border>
+                                    <Border Style="{StaticResource Chip}" Tapped="FocusStart_Tapped"><TextBlock Text="Focus session" Style="{StaticResource ChipText}" /></Border>
                                 </StackPanel>
                             </StackPanel>
                             <Grid x:Name="TimerRunning" Visibility="Collapsed">

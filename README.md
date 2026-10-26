@@ -48,7 +48,7 @@ For events a machine cannot produce (no Bluetooth headset, no battery), a second
 Atoll.exe --simulate headphones "Headphones (WH-1000XM4)" 72
 ```
 
-Also `charging 46` (plugged in at 46%) and `battery 21 20` (charge dropping from 21% to 20%).
+Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21% to 20%) and `focus 8 6` (a focus session with 8 s rounds and 6 s breaks).
 
 ## What is in
 
@@ -56,7 +56,7 @@ Also `charging 46` (plugged in at 46%) and `battery 21 20` (charge dropping from
 |---|---|
 | Island window | Never activates (`WS_EX_NOACTIVATE`, `MA_NOACTIVATE`), click-through outside the pill (window region follows the shape), follows the monitor of the active window |
 | Motion | Damped springs at display rate (open 340/27, close 520/46), interruptible, content fades before the shape shrinks, reduced motion respected |
-| Panel | Media (system media sessions: Spotify, browsers, players), Timers, Shelf (also opens when a file is dragged toward the top center), Clipboard |
+| Panel | Media (system media sessions: Spotify, browsers, players), Timers (plain countdowns, and focus sessions: 25 min rounds with 5 min breaks, 15 min every 4th), Shelf (also opens when a file is dragged toward the top center), Clipboard |
 | Alerts | Track change, download finished, audio output switch, volume (opt-in), low battery and charging, timer done, clipboard copy. 3 s, held while hovered, queued while the panel is open |
 | Games | Fullscreen detection, a profile for any game and one per game: whether the shortcut opens a music card (arrows switch tracks and set the volume) and which pop-ups may show over the game. The rest is summarised on exit |
 | Setup and settings | First-run setup in 4 steps, settings window from the tray, `%LOCALAPPDATA%\Atoll\settings.json` |
