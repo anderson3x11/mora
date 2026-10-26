@@ -84,13 +84,18 @@ public sealed partial class IslandWindow
             string.Join(" · ", held.Select(a => a.Title)), Seconds: 5), force: true);
     }
 
-    // Quiet games get Alt+Q back: Atoll lets go of the shortcut instead of swallowing it.
+    // Outside games, Alt+Q is a regular hotkey. In a game where it belongs to Atoll (music card, or the
+    // first-time question), a keyboard hook reads it, since games often disable hotkeys. Quiet games
+    // get Alt+Q back entirely.
     void UpdateHotkey()
     {
-        bool want = _game is null || GamePolicy == GameMode.Music || _asking == _game;
-        if (want == _hotkeyOn) return;
-        _hotkeyOn = want;
-        if (want) RegisterHotKey(_hwnd, HotkeyId, MOD_ALT | MOD_NOREPEAT, 'Q');
+        bool hotkey = _game is null;
+        bool hook = _game != null && (GamePolicy == GameMode.Music || _asking == _game);
+        if (hook) GameKeys.Start(() => DispatcherQueue.TryEnqueue(Toggle));
+        else GameKeys.Stop();
+        if (hotkey == _hotkeyOn) return;
+        _hotkeyOn = hotkey;
+        if (hotkey) RegisterHotKey(_hwnd, HotkeyId, MOD_ALT | MOD_NOREPEAT, 'Q');
         else UnregisterHotKey(_hwnd, HotkeyId);
     }
 
@@ -143,7 +148,11 @@ public sealed partial class IslandWindow
         if (r.Left > m.Left || r.Top > m.Top || r.Right < m.Right || r.Bottom < m.Bottom) return null;
         GetWindowThreadProcessId(fg, out var pid);
         if (pid == Environment.ProcessId) return null;
-        try { return Process.GetProcessById((int)pid).ProcessName; }
+        try
+        {
+            var exe = Process.GetProcessById((int)pid).ProcessName;
+            return exe == "LockApp" ? null : exe; // the lock screen fills the monitor too
+        }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException) { return null; } // exited meanwhile
     }
 }

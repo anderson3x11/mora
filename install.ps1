@@ -20,5 +20,7 @@ $shortcut.WorkingDirectory = $dest
 $shortcut.Description = 'A Dynamic Island for Windows'
 $shortcut.Save()
 
-Start-Process (Join-Path $dest 'Atoll.exe')
+# Started through Explorer, like a Start menu launch: a process started from a packaged app (an IDE,
+# an assistant) would otherwise inherit its AppData virtualization and miss the real settings.
+Start-Process explorer.exe (Join-Path $dest 'Atoll.exe')
 "Installed in $dest"
