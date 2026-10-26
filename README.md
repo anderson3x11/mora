@@ -1,8 +1,36 @@
-# Mora
+<p align="center"><img src="docs/logo.png" width="96" alt="Mora logo"></p>
 
-A Dynamic Island for Windows 10 and 11. A black pill at the top of the screen shows what is happening right now (music, timers, downloads, devices), opens into a small panel of quick controls with a shortcut (Alt + the key above Tab by default, configurable), and gets out of the way. It never takes your keyboard.
+<h1 align="center">Mora</h1>
 
-The product brief is in [project.md](project.md).
+<p align="center">The island at the top of your screen. A Dynamic Island for Windows 10 and 11.</p>
+
+<p align="center"><img src="docs/screenshots/notch-panel.png" alt="Mora's panel in the Notch theme, playing Stairway to Heaven"></p>
+
+A small pill at the top of the screen shows what is happening right now (music, timers, downloads, devices), opens into a panel of quick controls with a shortcut (Alt + the key above Tab by default, configurable), and gets out of the way. It never takes your keyboard: every key you press keeps going to the app you are in, even while the island opens.
+
+Its name comes from the Malagasy "mora mora": easy, gently.
+
+## Features
+
+- **Music** from any app that reports to Windows (Spotify, browsers, players): artwork shaped by the source, title, progress, controls, and a waveform that follows what actually plays. Track changes pop up for a few seconds.
+- **Timers and focus sessions**: plain countdowns, or 25 minute rounds with breaks. A countdown pill sits beside the island while one runs.
+- **Shelf**: drop files on the island (or drag them toward the top of the screen) to keep them, then drag them out into any app.
+- **Clipboard history** of text and images, kept in memory only, pasted back into the app you are in.
+- **Alerts**: finished downloads, headphones connected (with their battery), low battery and charging, microphone or camera in use.
+- **Games**: stays out of the way in fullscreen games, with a profile per game for what may show, and an optional music card you control with the arrow keys.
+- **Three themes**, each a whole look rather than a palette.
+
+## Themes
+
+| Island | Notch | Fluent |
+|---|---|---|
+| A black pill floating just below the edge, round ends, a springy entrance. | Grows out of the top edge like a MacBook notch, with curved shoulders, Apple's colors and motion. | A Windows 11 card: follows light or dark mode and your accent color, settles without bouncing. |
+| ![Island panel](docs/screenshots/island-panel.png) | ![Notch panel](docs/screenshots/notch-panel.png) | ![Fluent panel](docs/screenshots/fluent-panel.png) |
+| ![Island track change](docs/screenshots/island-alert.png) | ![Notch track change](docs/screenshots/notch-alert.png) | ![Fluent track change](docs/screenshots/fluent-alert.png) |
+| ![Island resting pill with a timer](docs/screenshots/island-compact.png) | ![Notch resting pill with a timer](docs/screenshots/notch-compact.png) | ![Fluent resting pill with a timer](docs/screenshots/fluent-compact.png) |
+| ![Island panel with the timer pill](docs/screenshots/island-timer.png) | ![Notch panel with the timer pill](docs/screenshots/notch-timer.png) | ![Fluent panel with the timer pill](docs/screenshots/fluent-timer.png) |
+
+From top to bottom: the panel, a track change, the resting pill with a running timer beside it, and the panel with the timer pill.
 
 ## Install
 
@@ -52,7 +80,9 @@ Mora.exe --simulate headphones "Headphones (WH-1000XM4)" 72
 
 Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21% to 20%), `focus 8 6` (a focus session with 8 s rounds and 6 s breaks) and `track "Title" "Artist"` (a track change, with its animation).
 
-## What is in
+## How it is built
+
+C# and WinUI 3 (Windows App SDK, unpackaged), .NET 10. The product brief and the decisions taken while building are in [project.md](project.md).
 
 | Area | Notes |
 |---|---|
