@@ -34,10 +34,10 @@ The first launch opens a 4-step setup. Afterwards, the Atoll icon next to the cl
 
 Types continuously into its own window while it drives the island through every state: shortcut, clicks on panel buttons, clicks outside, alerts, a clipboard paste done by Atoll, a file dragged onto the shelf and back out, and a fullscreen "game". It passes only if every character arrives and its window never loses the foreground. It takes over the mouse and keyboard for about a minute, and restores your clipboard afterwards.
 
-Start Atoll first (with a settings file present, so setup does not open), then:
+The script runs it against the Debug build with settings of its own (`ATOLL_DATA`), so your settings are never touched, and starts the installed Atoll again at the end:
 
 ```bash
-dotnet run --project tests/KeystrokeTest
+powershell -ExecutionPolicy Bypass -File tests/run-keystroke-test.ps1
 ```
 
 ## What is in

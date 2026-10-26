@@ -1,5 +1,5 @@
-﻿// Types continuously into a text box while driving the island through every state
-// (Alt+Q open/close, click inside the panel, click outside). Passes only if every
+// Types continuously into a text box while driving the island through every state
+// (shortcut open/close, click inside the panel, click outside). Passes only if every
 // typed character arrives and this window stays foreground the whole time.
 // Start Atoll first, then run this.
 using System.Runtime.InteropServices;
@@ -129,12 +129,12 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         for (int cycle = 0; cycle < 10; cycle++)
         {
             FinishDownload(cycle); Type(30); Expect("alert", "a download finished"); // pops up mid-sentence
-            AltQ(); Type(40); Expect("panel", "Alt+Q");         // open over the alert, typing through the spring
+            Shortcut(); Type(40); Expect("panel", "the shortcut");         // open over the alert, typing through the spring
             Click(play); Type(20); Click(play); Type(20); Expect("panel", "button clicks"); // play/pause twice: music ends as it was
-            AltQ(); Type(40); Expect("hidden", "Alt+Q");        // close with the shortcut
+            Shortcut(); Type(40); Expect("hidden", "the shortcut");        // close with the shortcut
             var clip = $"[pasted {cycle}]";
             host.Copy(clip); Type(20); Expect("alert", "a copy");    // copy alert, mid-sentence
-            AltQ(); Type(20); Expect("panel", "Alt+Q");         // open again
+            Shortcut(); Type(20); Expect("panel", "the shortcut");         // open again
             Click(clipboardTab); Thread.Sleep(400);
             Click(pasteFirst); Thread.Sleep(300);               // Atoll types Ctrl+V into this window
             expected.Append(clip);
@@ -145,7 +145,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         // Shelf: drag a file from this window onto the open panel, then drag it back out of the shelf.
         var file = Path.Combine(Path.GetTempPath(), "atoll-shelf-test.txt");
         File.WriteAllText(file, "shelf");
-        AltQ(); Type(30); Expect("panel", "Alt+Q");
+        Shortcut(); Type(30); Expect("panel", "the shortcut");
         MoveTo(outside); Down(); host.StartDrag(file); Thread.Sleep(150);
         DragTo(panel(215, 60)); Thread.Sleep(400); Up(); Thread.Sleep(600);
         Expect("panel", "a file dropped on it");                   // the press started outside, the panel stays
@@ -159,7 +159,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         // A borderless fullscreen "game" with the default setting: the island stays out of the way.
         host.Fullscreen(true); Type(250);                        // Atoll checks every 1.5 s
         FinishDownload(98); Type(40); Expect("hidden", "a download during a game");
-        AltQ(); Type(40); Expect("hidden", "Alt+Q during a game"); // the shortcut is released to the game
+        Shortcut(); Type(40); Expect("hidden", "the shortcut during a game"); // the shortcut is released to the game
         host.Fullscreen(false); Type(200); Expect("alert", "leaving the game"); // one summary of what was held
     }
     catch (InvalidOperationException e)
@@ -188,10 +188,12 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
 
 static string Slice(string t, int i) => t.Substring(i, Math.Min(20, t.Length - i));
 
-static void AltQ()
+// Atoll's default shortcut: Alt + the key above Tab (² on AZERTY, ` on QWERTY).
+static void Shortcut()
 {
-    Key(0x12, '\0', 0); Key((ushort)'Q', '\0', 0); Key((ushort)'Q', '\0', 2);
-    Thread.Sleep(60); // a person holds Alt a little longer than Q
+    var key = (ushort)MapVirtualKey(0x29, 1);
+    Key(0x12, '\0', 0); Key(key, '\0', 0); Key(key, '\0', 2);
+    Thread.Sleep(60); // a person holds Alt a little longer than the key
     Key(0x12, '\0', 2);
 }
 
@@ -231,6 +233,7 @@ static unsafe void Send(INPUT input) => SendInput(1, &input, sizeof(INPUT));
 [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
 [DllImport("user32.dll")] static extern bool GetCursorPos(out Point p);
 [DllImport("user32.dll")] static extern nint GetForegroundWindow();
+[DllImport("user32.dll")] static extern uint MapVirtualKey(uint code, uint type);
 [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern nint FindWindow(string? cls, string title);
 [DllImport("user32.dll")] static extern int GetWindowRgnBox(nint hwnd, out RECT box);
 [DllImport("user32.dll")] static extern nint MonitorFromPoint(Point pt, uint flags);
