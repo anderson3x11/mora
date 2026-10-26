@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -38,6 +37,11 @@ static class MediaSource
         return (null, open.Count == 1 ? open[0] : "");
     }
 
+    // Titled visible windows with their process name. Runs on the UI thread on media changes, so it must
+    // stay cheap: process names come from a small cache by process id instead of listing every process
+    // on the PC each time, as System.Diagnostics.Process does.
+    static readonly Dictionary<uint, string> NameByPid = [];
+
     static List<(string Title, string Process)> Windows()
     {
         var found = new List<(string, string)>();
@@ -46,12 +50,30 @@ static class MediaSource
         {
             if (!IsWindowVisible(hwnd) || GetWindowText(hwnd, text, text.Capacity) == 0) return true;
             GetWindowThreadProcessId(hwnd, out var pid);
-            try { found.Add((text.ToString(), Process.GetProcessById((int)pid).ProcessName)); }
-            catch (Exception e) when (e is ArgumentException or InvalidOperationException) { } // exited meanwhile
+            if (!NameByPid.TryGetValue(pid, out var name)) NameByPid[pid] = name = ProcessName(pid);
+            found.Add((text.ToString(), name));
             return true;
         }, 0);
+        if (NameByPid.Count > 512) NameByPid.Clear(); // ids get reused; a fresh start now and then is enough
         return found;
     }
+
+    static string ProcessName(uint pid)
+    {
+        var process = OpenProcess(0x1000, false, pid); // PROCESS_QUERY_LIMITED_INFORMATION
+        if (process == 0) return "";
+        try
+        {
+            var path = new StringBuilder(1024);
+            int size = path.Capacity;
+            return QueryFullProcessImageName(process, 0, path, ref size) ? Path.GetFileNameWithoutExtension(path.ToString()) : "";
+        }
+        finally { CloseHandle(process); }
+    }
+
+    [DllImport("kernel32.dll")] static extern nint OpenProcess(uint access, bool inherit, uint pid);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(nint process, uint flags, StringBuilder path, ref int size);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(nint handle);
 
     delegate bool EnumProc(nint hwnd, nint param);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc proc, nint param);

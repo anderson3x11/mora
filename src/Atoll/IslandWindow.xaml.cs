@@ -67,6 +67,7 @@ public sealed partial class IslandWindow : Window
     public IslandWindow()
     {
         InitializeComponent();
+        BuildShape();
         _self = this;
         _hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var g = GeoOf(Mode.Hidden);
@@ -326,37 +327,70 @@ public sealed partial class IslandWindow : Window
         if (_mode == Mode.Expanded && _media.Playing) _progressTimer.Start(); else _progressTimer.Stop();
     }
 
-    // ponytail: waveform stepped at 30 fps. Any per-vsync animation recomposes the window every frame
-    // (~10% of a core at 240 Hz); the decorative bars don't need more. The pill's springs keep full rate.
+    // The bars follow what is actually playing: the output's peak level (a read of a shared value, no
+    // audio capture), each bar showing it one tick after its left neighbour so beats travel across.
+    // ponytail: stepped at 30 fps and only while visible bars move. Any per-vsync animation recomposes
+    // the window every frame (~10% of a core at 240 Hz). The pill's springs keep full rate.
+    const float BarRest = 0.22f;
+    static readonly float[] BarGain = [0.85f, 1.15f, 1f, 0.75f];
+    readonly float[] _barLevel = [BarRest, BarRest, BarRest, BarRest], _barHistory = new float[4];
+
     void BuildWave()
     {
-        foreach (var bar in Wave.Children)
-        {
-            var v = ElementCompositionPreview.GetElementVisual(bar);
-            v.CenterPoint = new Vector3(1.5f, 8, 0);
-            v.Scale = new Vector3(1, 0.22f, 1);
-            _wave.Add(v);
-        }
+        _wave.Clear();
+        foreach (var panel in new[] { Wave, AlertWave, PanelWave })
+            foreach (var bar in panel.Children)
+            {
+                var v = ElementCompositionPreview.GetElementVisual(bar);
+                v.CenterPoint = new Vector3(1.5f, 8, 0);
+                v.Scale = new Vector3(1, BarRest, 1);
+                _wave.Add(v);
+            }
         _waveTimer.Interval = TimeSpan.FromMilliseconds(33);
-        _waveTimer.Tick += (_, _) =>
-        {
-            double t = _clock.Elapsed.TotalSeconds;
-            double[] periods = [0.9, 0.76, 1.04, 0.82];
-            for (int i = 0; i < _wave.Count; i++)
-                _wave[i].Scale = new Vector3(1, (float)(0.25 + 0.75 * (0.5 - 0.5 * Math.Cos(2 * Math.PI * t / periods[i]))), 1);
-        };
+        _waveTimer.Tick += (_, _) => TickWave();
     }
 
-    // The waveform only runs while the pill shows and music plays; paused bars sit low and still.
+    // The four bars of whichever waveform is on screen, if any.
+    Span<Visual> VisibleBars()
+    {
+        int set = _mode switch
+        {
+            Mode.Compact => 0,
+            Mode.Alert when _alert?.Kind == Pop.Music => 1,
+            Mode.Expanded when _tab == Tab.Media => 2,
+            _ => -1,
+        };
+        return set < 0 ? [] : System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_wave).Slice(set * 4, 4);
+    }
+
+    void TickWave()
+    {
+        var bars = VisibleBars();
+        if (bars.IsEmpty) return;
+        for (int i = 3; i > 0; i--) _barHistory[i] = _barHistory[i - 1];
+        _barHistory[0] = MathF.Sqrt(_audio?.Peak ?? 0); // square root: closer to how loud it sounds
+        for (int i = 0; i < 4; i++)
+        {
+            float target = BarRest + (1 - BarRest) * Math.Clamp(_barHistory[i] * BarGain[i], 0, 1);
+            // Up at once on a beat, down smoothly after it.
+            float level = target > _barLevel[i] ? target : _barLevel[i] * 0.8f + target * 0.2f;
+            if (MathF.Abs(level - _barLevel[i]) < 0.005f) continue; // nothing to redraw: no composition frame
+            _barLevel[i] = level;
+            bars[i].Scale = new Vector3(1, level, 1);
+        }
+    }
+
+    // The waveform runs only while one is on screen and music plays; paused bars sit low and still.
     void UpdateWave()
     {
-        bool run = _motion && _mode == Mode.Compact && _media.Playing;
+        bool run = _motion && _media is { Playing: true } && !VisibleBars().IsEmpty; // _media is null during startup
         if (run == _waveTimer.IsRunning) return;
         if (run) _waveTimer.Start();
         else
         {
             _waveTimer.Stop();
-            foreach (var v in _wave) v.Scale = new Vector3(1, 0.22f, 1);
+            foreach (var v in _wave) v.Scale = new Vector3(1, BarRest, 1);
+            Array.Fill(_barLevel, BarRest);
         }
     }
 
@@ -400,6 +434,7 @@ public sealed partial class IslandWindow : Window
         ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
         ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
         SourceBadge.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
+        UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
         {
@@ -449,25 +484,58 @@ public sealed partial class IslandWindow : Window
         Render();
         if (moving) return;
         CompositionTarget.Rendering -= OnRendering;
-        _animating = false;
+        _animating = false;        SetRegion(ShapeRect(_w.X, _h.X, _y.X, 0)); // exact again, now that it rests
+    }
+
+    // The black shape is a compositor rounded rectangle: changing it touches no XAML layout, which at
+    // 240 frames a second was most of an animation's cost. The same geometry clips the layers.
+    CompositionRoundedRectangleGeometry? _shape;
+
+    void BuildShape()
+    {
+        var c = ElementCompositionPreview.GetElementVisual(Pill).Compositor;
+        _shape = c.CreateRoundedRectangleGeometry();
+        var fill = c.CreateSpriteShape(_shape);
+        fill.FillBrush = c.CreateColorBrush(Windows.UI.Color.FromArgb(255, 0x08, 0x08, 0x0A));
+        var visual = c.CreateShapeVisual();
+        visual.Size = new Vector2((float)CanvasW, (float)CanvasH);
+        visual.Shapes.Add(fill);
+        ElementCompositionPreview.SetElementChildVisual(ShapeHost, visual);        var clip = c.CreateGeometricClip(_shape);
+        clip.Offset = new Vector2(0, -8); // the layers start 8 below the island's top
+        ElementCompositionPreview.GetElementVisual(Layers).Clip = clip;
     }
 
     void Render()
     {
-        double w = Math.Max(0, _w.X), h = Math.Max(0, _h.X);
-        Pill.Width = w;
-        Pill.Height = h;
-        Pill.CornerRadius = new CornerRadius(Math.Min(Math.Max(0, _r.X), h / 2));
-        PillOffset.Y = _y.X;
+        float w = (float)Math.Max(0, _w.X), h = (float)Math.Max(0, _h.X), r = (float)Math.Min(Math.Max(0, _r.X), h / 2);
+        _shape!.Size = new Vector2(w, h);
+        _shape.CornerRadius = new Vector2(r, r);
+        _shape.Offset = new Vector2(((float)CanvasW - w) / 2, (float)_y.X);
+        // While moving, the hit region follows the shape in 16 px steps, a little larger than it: Windows
+        // hears about it a few times per animation instead of every frame. Exact again once it rests.
+        if (!_animating) SetRegion(ShapeRect(w, h, _y.X, 0));
+        else if (ShapeRect(w, h, _y.X, 0.04) is { Bottom: > 0 } b)
+            SetRegion(new RECT { Left = b.Left & ~15, Top = b.Top & ~15, Right = (b.Right + 15) & ~15, Bottom = (b.Bottom + 15) & ~15 });
+        else SetRegion(default);
+    }
 
+    // The shape's bounds in window pixels, grown by a fraction of its size on each side.
+    RECT ShapeRect(double w, double h, double y, double grow)
+    {
+        w = Math.Max(0, w) * (1 + grow);
+        h = Math.Max(0, h) * (1 + grow);
         var r = new RECT
         {
             Left = (int)Math.Floor((CanvasW - w) / 2 * _scale),
             Right = (int)Math.Ceiling((CanvasW + w) / 2 * _scale),
-            Top = Math.Max(0, (int)Math.Floor(_y.X * _scale)),
-            Bottom = (int)Math.Ceiling((_y.X + h) * _scale),
+            Top = Math.Max(0, (int)Math.Floor(y * _scale)),
+            Bottom = (int)Math.Ceiling((y + h) * _scale),
         };
-        if (r.Bottom <= r.Top) r = default;
+        return r.Bottom <= r.Top ? default : r;
+    }
+
+    void SetRegion(RECT r)
+    {
         if (r.Equals(_hit)) return;
         _hit = r;
         SetWindowRgn(_hwnd, CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom), 1);

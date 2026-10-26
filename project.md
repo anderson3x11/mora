@@ -231,7 +231,8 @@ Decisions taken while building:
 - The resting compact pill is off by default (founder's call): without a notch, it covers browser tabs.
 - Panel and alerts are 20% smaller than the prototype (founder's call).
 - A click outside closes the panel on release, so a file dragged from Explorer onto the open panel does not close it.
-- The waveform animates at 30 fps: per-frame animation cost about 10% of a core at 240 Hz.
+- The waveform animates at 30 fps: per-frame animation cost about 10% of a core at 240 Hz. It follows the real output level (Windows peak meter, no audio capture), only while a waveform is visible and music plays.
+- The island's black shape is a compositor rounded rectangle, not a XAML element: resizing it every frame costs no layout. With the hit region updated in 16 px steps while moving, an open plus close went from 0.53 s to 0.24 s of CPU.
 - During a game set to "Stay out of my way", Atoll releases Alt+Q so the game receives it.
 - During a game where Alt+Q belongs to Atoll, it is read with a low-level keyboard hook on its own thread: games such as League of Legends read raw input with RIDEV_NOHOTKEYS, which silently disables RegisterHotKey. The hook exists only while such a game is in front and swallows only Alt+Q.
 - The per-game question is answered with the keyboard (Alt+Q) because games capture the mouse; left alone it means "stay out".

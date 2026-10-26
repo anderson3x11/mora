@@ -22,13 +22,14 @@
             </Style>
         </Grid.Resources>
 
-        <Border x:Name="Pill" Background="#08080A" HorizontalAlignment="Center" VerticalAlignment="Top"
-                PointerEntered="Pill_PointerEntered" PointerExited="Pill_PointerExited" Tapped="Pill_Tapped"
-                AllowDrop="True" DragEnter="Pill_DragEnter" DragOver="Pill_DragOver" DragLeave="Pill_DragLeave" Drop="Pill_Drop">
-            <Border.RenderTransform>
-                <TranslateTransform x:Name="PillOffset" />
-            </Border.RenderTransform>
-            <Grid>
+        <!-- The island. Its black shape is drawn by the compositor (Render), so resizing it every frame
+             costs no layout, and the same shape clips the layers. Hit-testing is limited to the shape by
+             the window region. -->
+        <Grid x:Name="Pill" Background="Transparent"
+              PointerEntered="Pill_PointerEntered" PointerExited="Pill_PointerExited" Tapped="Pill_Tapped"
+              AllowDrop="True" DragEnter="Pill_DragEnter" DragOver="Pill_DragOver" DragLeave="Pill_DragLeave" Drop="Pill_Drop">
+            <Border x:Name="ShapeHost" />
+            <Grid x:Name="Layers" Margin="0,8,0,0">
                 <!-- Compact pill: artwork left, waveform right -->
                 <Grid x:Name="CompactLayer" Width="214" Height="32" Padding="8,0,12,0" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
@@ -73,6 +74,12 @@
                         </Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <StackPanel x:Name="AlertWave" Orientation="Horizontal" Spacing="2" Height="16" VerticalAlignment="Center" Margin="0,0,6,0">
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                        </StackPanel>
                         <Border x:Name="AlertAction2" Style="{StaticResource Chip}" Tapped="AlertAction2_Tapped">
                             <TextBlock x:Name="AlertAction2Text" Style="{StaticResource ChipText}" />
                         </Border>
@@ -194,6 +201,12 @@
                                         </Grid>
                                     </StackPanel>
                                 </Grid>
+                                <StackPanel x:Name="PanelWave" Grid.Row="1" Margin="0,4,6,0" Orientation="Horizontal" Spacing="2" Height="16" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                                </StackPanel>
                                 <StackPanel Grid.Row="1" Margin="0,4,0,0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                                     <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped"
                                           PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
@@ -241,6 +254,6 @@
                     </Grid>
                 </Grid>
             </Grid>
-        </Border>
+        </Grid>
     </Grid>
 </Window>

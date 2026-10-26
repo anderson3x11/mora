@@ -15,6 +15,13 @@ sealed class Audio
     readonly VolumeCallback _volumeCallback;
     readonly DeviceCallback _deviceCallback;
     IAudioEndpointVolume? _volume;
+    IAudioMeterInformation? _meter;
+
+    // Loudness of what the default output plays right now, 0..1. A read of a shared value, no capture.
+    public float Peak
+    {
+        get { float p = 0; _meter?.GetPeakValue(out p); return p; }
+    }
 
     public Audio(DispatcherQueue ui)
     {
@@ -35,11 +42,15 @@ sealed class Audio
     {
         _volume?.UnregisterControlChangeNotify(_volumeCallback);
         _volume = null;
+        _meter = null;
         if (_devices.GetDefaultAudioEndpoint(0, 1, out var device) != 0) return; // eRender, eMultimedia; none plugged
         var iid = typeof(IAudioEndpointVolume).GUID;
         device.Activate(ref iid, 1, 0, out var volume); // CLSCTX_INPROC_SERVER
         _volume = (IAudioEndpointVolume)volume;
         _volume.RegisterControlChangeNotify(_volumeCallback);
+        var meterId = typeof(IAudioMeterInformation).GUID;
+        device.Activate(ref meterId, 1, 0, out var meter);
+        _meter = (IAudioMeterInformation)meter;
     }
 
     static string FriendlyName(IMMDevice device)
@@ -139,6 +150,12 @@ sealed class Audio
         void SetMasterVolumeLevelScalar(float level, ref Guid context);
         void GetMasterVolumeLevel(out float db);
         void GetMasterVolumeLevelScalar(out float level);
+    }
+
+    [ComImport, Guid("C02216F6-8C67-4B5B-9D00-D008E73E0064"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IAudioMeterInformation
+    {
+        void GetPeakValue(out float peak);
     }
 
     [ComImport, Guid("657804FA-D6AD-4496-8A60-352752AF4F89"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

@@ -141,6 +141,7 @@ public sealed partial class IslandWindow
         AlertAction.Visibility = a.ActionLabel is null ? Visibility.Collapsed : Visibility.Visible;
         AlertActionText.Text = a.ActionLabel ?? "";
         AlertAction2.Visibility = a.Action2Label is null ? Visibility.Collapsed : Visibility.Visible;
+        AlertWave.Visibility = a.Kind == Pop.Music && a.ActionLabel is null ? Visibility.Visible : Visibility.Collapsed;
         AlertAction2Text.Text = a.Action2Label ?? "";
     }
 

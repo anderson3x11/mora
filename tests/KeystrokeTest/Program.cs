@@ -71,8 +71,7 @@ return exit;
 
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
-    var play = panel(215, 123);
-    Point mediaTab = panel(40, 22), clipboardTab = panel(260, 22), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
+    Point mediaTab = panel(40, 22), timersTab = panel(115, 22), clipboardTab = panel(260, 22), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)
@@ -130,7 +129,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
         {
             FinishDownload(cycle); Type(30); Expect("alert", "a download finished"); // pops up mid-sentence
             Shortcut(); Type(40); Expect("panel", "the shortcut");         // open over the alert, typing through the spring
-            Click(play); Type(20); Click(play); Type(20); Expect("panel", "button clicks"); // play/pause twice: music ends as it was
+            Click(timersTab); Type(20); Click(mediaTab); Type(20); Expect("panel", "clicks in the panel"); // never media buttons: they would pause the user's music
             Shortcut(); Type(40); Expect("hidden", "the shortcut");        // close with the shortcut
             var clip = $"[pasted {cycle}]";
             host.Copy(clip); Type(20); Expect("alert", "a copy");    // copy alert, mid-sentence
