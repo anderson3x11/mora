@@ -10,15 +10,23 @@
             <SolidColorBrush x:Key="Muted" Color="#9B9BA5" />
             <SolidColorBrush x:Key="Line" Color="#2C2C33" />
             <SolidColorBrush x:Key="Raised" Color="#1C1C21" />
+            <!-- Strong marks (waveform, progress, main button) and the text on them. Colors set by the theme. -->
+            <SolidColorBrush x:Key="Ink" Color="White" />
+            <SolidColorBrush x:Key="InkText" Color="#08080A" />
+            <FontFamily x:Key="Text">Segoe UI Variable Text,Segoe UI</FontFamily>
+            <Style TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource Text}" />
+            </Style>
             <Style x:Key="Chip" TargetType="Border">
-                <Setter Property="Background" Value="#1C1C21" />
+                <Setter Property="Background" Value="{StaticResource Raised}" />
                 <Setter Property="CornerRadius" Value="12" />
                 <Setter Property="Padding" Value="11,5" />
             </Style>
             <Style x:Key="ChipText" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource Text}" />
                 <Setter Property="FontSize" Value="10.5" />
                 <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Foreground" Value="#F4F4F6" />
+                <Setter Property="Foreground" Value="{StaticResource Fg}" />
             </Style>
         </Grid.Resources>
 
@@ -44,10 +52,10 @@
                             <FontIcon x:Name="CompactArtIcon" Glyph="&#xEC4F;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                         </Border>
                         <StackPanel x:Name="Wave" Orientation="Horizontal" Spacing="2" Height="16" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
                         </StackPanel>
                     </Grid>
                     <!-- A timer alone: its countdown -->
@@ -68,16 +76,16 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Border x:Name="AlertIconFrame" Width="34" Height="34" CornerRadius="17" Background="#1C1C21" VerticalAlignment="Center">
+                    <Border x:Name="AlertIconFrame" Width="34" Height="34" CornerRadius="17" Background="{StaticResource Raised}" VerticalAlignment="Center">
                         <FontIcon x:Name="AlertIcon" FontSize="17" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock x:Name="AlertTitle" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <TextBlock x:Name="AlertSub" FontSize="10.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <Grid x:Name="AlertBar" Height="5" Margin="0,5,0,0">
-                            <Border CornerRadius="2.5" Background="{StaticResource Line}" />
+                            <Border x:Name="AlertBarTrack" CornerRadius="2.5" Background="{StaticResource Line}" />
                             <!-- Scaled rather than resized, so it can fill up smoothly (charging) -->
-                            <Border x:Name="AlertBarFill" CornerRadius="2.5" Background="White" RenderTransformOrigin="0,0.5">
+                            <Border x:Name="AlertBarFill" CornerRadius="2.5" Background="{StaticResource Ink}" RenderTransformOrigin="0,0.5">
                                 <Border.RenderTransform>
                                     <ScaleTransform x:Name="AlertBarScale" ScaleX="0" />
                                 </Border.RenderTransform>
@@ -86,16 +94,16 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                         <StackPanel x:Name="AlertWave" Orientation="Horizontal" Spacing="2" Height="16" VerticalAlignment="Center" Margin="0,0,6,0">
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                            <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
                         </StackPanel>
                         <Border x:Name="AlertAction2" Style="{StaticResource Chip}" Tapped="AlertAction2_Tapped">
                             <TextBlock x:Name="AlertAction2Text" Style="{StaticResource ChipText}" />
                         </Border>
-                        <Border x:Name="AlertAction" Background="White" CornerRadius="12" Padding="11,5" Tapped="AlertAction_Tapped">
-                            <TextBlock x:Name="AlertActionText" FontSize="10.5" FontWeight="SemiBold" Foreground="#08080A" />
+                        <Border x:Name="AlertAction" Background="{StaticResource Ink}" CornerRadius="12" Padding="11,5" Tapped="AlertAction_Tapped">
+                            <TextBlock x:Name="AlertActionText" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource InkText}" />
                         </Border>
                     </StackPanel>
                 </Grid>
@@ -209,18 +217,18 @@
                                                     <ColumnDefinition x:Name="SeekDone" Width="0*" />
                                                     <ColumnDefinition x:Name="SeekLeft" Width="1*" />
                                                 </Grid.ColumnDefinitions>
-                                                <Border Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
-                                                <Border Height="5" CornerRadius="2.5" Background="White" />
+                                                <Border x:Name="SeekBack" Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
+                                                <Border x:Name="SeekFill" Height="5" CornerRadius="2.5" Background="{StaticResource Ink}" />
                                             </Grid>
                                             <TextBlock x:Name="DurationText" Grid.Column="2" FontFamily="{StaticResource Mono}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
                                         </Grid>
                                     </StackPanel>
                                 </Grid>
                                 <StackPanel x:Name="PanelWave" Grid.Row="1" Margin="0,4,6,0" Orientation="Horizontal" Spacing="2" Height="16" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
-                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="White" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                    <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Margin="0,4,0,0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                                     <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped"

@@ -40,6 +40,8 @@ The script runs it against the Debug build with settings of its own (`ATOLL_DATA
 powershell -ExecutionPolicy Bypass -File tests/run-keystroke-test.ps1
 ```
 
+Add `-Theme Notch` or `-Theme Fluent` to run it with another theme.
+
 ## Simulating events
 
 For events a machine cannot produce (no Bluetooth headset, no battery), a second launch hands a fake event to the running Atoll, which handles it through the same code as the real one:
@@ -59,6 +61,7 @@ Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21
 | Panel | Media (system media sessions: Spotify, browsers, players), Timers (plain countdowns, and focus sessions: 25 min rounds with 5 min breaks, 15 min every 4th), Shelf (also opens when a file is dragged toward the top center), Clipboard (text and images, pasted back into the app you are in) |
 | Alerts | Track change, download finished, audio output switch, volume (opt-in), low battery and charging, timer done, clipboard copy. 3 s, held while hovered, queued while the panel is open |
 | Games | Fullscreen games only (Windows' Game Bar list, game launcher libraries, exclusive fullscreen, or any app given a profile), a profile for any game and one per game: whether the shortcut opens a music card (arrows switch tracks and set the volume) and which pop-ups may show over the game. The rest is summarised on exit |
+| Themes | Island (a black pill floating below the edge), Notch (grows out of the top edge with curved shoulders, Apple's colors and motion, icon tabs), Fluent (a Windows 11 card following light or dark mode and the accent color, no bounce). Picked in Settings, General |
 | Setup and settings | First-run setup in 4 steps, settings window from the tray, `%LOCALAPPDATA%\Atoll\settings.json` |
 | Cost | Idle CPU 0, about 90 MB private memory (WinUI 3 baseline), about 3% of one core while the resting pill animates its waveform |
 

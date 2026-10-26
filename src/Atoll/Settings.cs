@@ -48,6 +48,7 @@ sealed class Settings
     public GameProfile AnyGame { get; set; } = new();
     public bool AskNewGames { get; set; }
     public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
+    public string Theme { get; set; } = "Island";
     public List<string> SeenGames { get; set; } = [];
     public int GameListVersion { get; set; }
 

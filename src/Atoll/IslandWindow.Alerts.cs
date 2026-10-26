@@ -167,17 +167,19 @@ public sealed partial class IslandWindow
         if (_alert is not { } a) return;
         AlertLayer.Width = GeoOf(Mode.Alert).W;
         AlertIcon.Glyph = a.Glyph;
-        AlertIcon.Foreground = new SolidColorBrush(a.Tint ?? Color.FromArgb(255, 0xF4, 0xF4, 0xF6));
+        var res = ((FrameworkElement)Content).Resources;
+        AlertIcon.Foreground = a.Tint is { } iconTint ? new SolidColorBrush(iconTint) : (Brush)res["Fg"];
         AlertIcon.Visibility = a.Art is null ? Visibility.Visible : Visibility.Collapsed;
         AlertIconFrame.Background = a.Art is { } art
             ? new ImageBrush { ImageSource = art, Stretch = Stretch.UniformToFill }
-            : new SolidColorBrush(Color.FromArgb(255, 0x1C, 0x1C, 0x21));
+            : (Brush)res["Raised"];
+        AlertIconFrame.CornerRadius = new CornerRadius(a.Art is null ? 17 : 9); // artwork and pictures keep their corners
         AlertTitle.Text = a.Title;
         AlertSub.Text = a.Sub;
         AlertSub.Visibility = a.Level is null ? Visibility.Visible : Visibility.Collapsed;
         AlertBar.Visibility = a.Level is null ? Visibility.Collapsed : Visibility.Visible;
         var level = Math.Clamp(a.Level ?? 0, 0, 1);
-        AlertBarFill.Background = new SolidColorBrush(a.FillUp && a.Tint is { } tint ? tint : Color.FromArgb(255, 255, 255, 255));
+        AlertBarFill.Background = a.FillUp && a.Tint is { } tint ? new SolidColorBrush(tint) : (Brush)res["Ink"];
         if (a.FillUp && _motion)
         {
             AlertBarScale.ScaleX = 0;

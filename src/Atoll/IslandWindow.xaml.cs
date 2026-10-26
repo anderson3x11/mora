@@ -18,7 +18,9 @@ public sealed partial class IslandWindow : Window
     // Fixed window canvas in DIPs: room for the largest state plus spring overshoot.
     const double CanvasW = 560, CanvasH = 300;
     const int HotkeyId = 1;
-    static readonly (double K, double C) OpenSpring = (340, 27), CloseSpring = (520, 46), Reduced = (900, 60);
+    static readonly (double K, double C) Reduced = (900, 60);
+    (double K, double C) OpenSpring => _theme.Open;
+    (double K, double C) CloseSpring => _theme.Close;
 
     enum Mode { Hidden, Compact, Alert, Game, Expanded }
     enum Via { None, Hotkey, Click, Hover, Drag }
@@ -26,20 +28,28 @@ public sealed partial class IslandWindow : Window
 
     enum Tab { Media, Timers, Shelf, Clipboard }
 
-    Geo GeoOf(Mode m) => m switch
+    // Sizes are the same in every theme; the theme sets the corners and where the island sits.
+    Geo GeoOf(Mode m)
     {
-        Mode.Compact => new(MediaPill ? 214 : 132, 32, 16, 8),
-        Mode.Alert => new(_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50, 25, 8), // longer text or two answers
-        Mode.Game => new(288, 66, 33, 8),
-        Mode.Expanded => new(430, _tab switch
+        var (w, h) = m switch
         {
-            Tab.Media => 170,
-            Tab.Timers => 124,
-            Tab.Shelf => 54 + 31 * Math.Clamp(_shelf.Count, 2, 4),           // the empty drop zone takes two rows
-            _ => 54 + 31 * Math.Clamp(_clipboard?.Items.Count ?? 0, 1, 4), // one 26 px row + 5 px gap per copy
-        }, 26, 8),
-        _ => new(96, 24, 12, -40),
-    };
+            Mode.Compact => (MediaPill ? 214 : 132, 32),
+            Mode.Alert => (_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50), // longer text or two answers
+            Mode.Game => (288, 66),
+            Mode.Expanded => (430, _tab switch
+            {
+                Tab.Media => 170,
+                Tab.Timers => 124,
+                Tab.Shelf => 54 + 31 * Math.Clamp(_shelf.Count, 2, 4),           // the empty drop zone takes two rows
+                _ => 54 + 31 * Math.Clamp(_clipboard?.Items.Count ?? 0, 1, 4), // one 26 px row + 5 px gap per copy
+            }),
+            _ => (96, 24),
+        };
+        double r = _theme.Radius(Math.Min(h / 2.0, 26));
+        if (m != Mode.Hidden) return new(w, h, r, _theme.Top);
+        // Back into the edge (aiming past zero, so it is gone at once rather than creeping toward it), or up and out of sight.
+        return _theme.Attached ? new(150, -12, r, 0) : new(w, h, r, -40);
+    }
 
     static IslandWindow _self = null!; // one island; native callbacks route here
     readonly nint _hwnd;
@@ -54,7 +64,8 @@ public sealed partial class IslandWindow : Window
     readonly List<Visual> _wave = [];
     readonly DispatcherQueueTimer _waveTimer;
     readonly DispatcherQueueTimer _progressTimer;
-    (double K, double C) _spring = OpenSpring;
+    Theme _theme = Theme.Island;
+    (double K, double C) _spring = Theme.Island.Open;
     double _last, _scale = 1;
     bool _animating;
     Mode _mode;
@@ -104,8 +115,7 @@ public sealed partial class IslandWindow : Window
         _progressTimer.Tick += (_, _) => UpdateProgress();
         _waveTimer = DispatcherQueue.CreateTimer();
         BuildWave();
-        ShowTab();
-        FillTimer();
+        ApplyTheme(); // also shows the tab and fills the timer
         _clipboard = new ClipboardHistory(_hwnd);
         FillClipboard();
         LoadShelf();
@@ -158,6 +168,7 @@ public sealed partial class IslandWindow : Window
             }
             _tray.SetTip($"Atoll ({_settings.HotkeyName})");
             _settings.Save();
+            if (old.Theme != chosen.Theme) ApplyTheme();
             Startup.Apply(_settings.StartWithWindows);
             UpdateHotkey();
             OnMediaChanged(); // the resting pill may have been switched on or off
@@ -487,7 +498,7 @@ public sealed partial class IslandWindow : Window
         _media.Seek(Math.Clamp(e.GetPosition(SeekTrack).X / SeekTrack.ActualWidth, 0, 1));
 
     void Button_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
-        ((Microsoft.UI.Xaml.Controls.Panel)sender).Background = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 0x1C, 0x1C, 0x21));
+        ((Microsoft.UI.Xaml.Controls.Panel)sender).Background = (Brush)((FrameworkElement)Content).Resources["Raised"];
 
     void Button_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
         ((Microsoft.UI.Xaml.Controls.Panel)sender).Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
@@ -529,36 +540,107 @@ public sealed partial class IslandWindow : Window
     // The black shape is a compositor rounded rectangle: changing it touches no XAML layout, which at
     // 240 frames a second was most of an animation's cost. The same geometry clips the layers.
     // The split bubble is a second, round one beside it.
+    // An attached theme adds two shoulders: small squares at the island's top corners, filled outside a
+    // quarter circle, so the edge of the screen curves down into the island like a notch.
     CompositionRoundedRectangleGeometry? _shape, _bubbleShape;
     readonly Spring _bubble = new(0); // bubble scale, 0 hidden, 1 shown
+    CompositionColorBrush? _surface, _border;
+    readonly List<CompositionSpriteShape> _fills = [];
+    readonly (ShapeVisual Visual, CompositionEllipseGeometry Arc, CompositionSpriteShape Ring)[] _shoulders = new (ShapeVisual, CompositionEllipseGeometry, CompositionSpriteShape)[2];
+    CompositionGeometricClip? _layersClip;
+    const float ShoulderMax = 10;
 
     void BuildShape()
     {
         var c = ElementCompositionPreview.GetElementVisual(Pill).Compositor;
-        var black = c.CreateColorBrush(Windows.UI.Color.FromArgb(255, 0x08, 0x08, 0x0A));
+        _surface = c.CreateColorBrush(Theme.Island.Surface);
+        _border = c.CreateColorBrush(Microsoft.UI.Colors.Transparent);
         _shape = c.CreateRoundedRectangleGeometry();
         _bubbleShape = c.CreateRoundedRectangleGeometry();
+        var root = c.CreateContainerVisual();
         var visual = c.CreateShapeVisual();
         visual.Size = new Vector2((float)CanvasW, (float)CanvasH);
         foreach (var geometry in new[] { _shape, _bubbleShape })
         {
             var fill = c.CreateSpriteShape(geometry);
-            fill.FillBrush = black;
+            fill.FillBrush = _surface;
+            fill.StrokeBrush = _border;
             visual.Shapes.Add(fill);
+            _fills.Add(fill);
         }
-        ElementCompositionPreview.SetElementChildVisual(ShapeHost, visual);
-        var clip = c.CreateGeometricClip(_shape);
-        clip.Offset = new Vector2(0, -8); // the layers start 8 below the island's top
-        ElementCompositionPreview.GetElementVisual(Layers).Clip = clip;
+        root.Children.InsertAtTop(visual);
+        for (int i = 0; i < 2; i++)
+        {
+            var arc = c.CreateEllipseGeometry();
+            var ring = c.CreateSpriteShape(arc);
+            ring.StrokeBrush = _surface;
+            var shoulder = c.CreateShapeVisual();
+            shoulder.Shapes.Add(ring);
+            shoulder.Clip = c.CreateInsetClip(); // only the square: the ring's other three quarters stay hidden
+            root.Children.InsertAtTop(shoulder);
+            _shoulders[i] = (shoulder, arc, ring);
+        }
+        ElementCompositionPreview.SetElementChildVisual(ShapeHost, root);
+        _layersClip = c.CreateGeometricClip(_shape);
+        ElementCompositionPreview.GetElementVisual(Layers).Clip = _layersClip;
         ElementCompositionPreview.SetIsTranslationEnabled(BubbleText, true);
+    }
+
+    // Colors, surface, corners, springs and the layout details that differ between themes.
+    void ApplyTheme()
+    {
+        var t = _theme = Theme.Named(_settings.Theme);
+        var res = ((FrameworkElement)Content).Resources;
+        foreach (var (key, color) in new[] { ("Fg", t.Fg), ("Muted", t.Muted), ("Line", t.Line), ("Raised", t.Raised), ("Ink", t.Ink), ("InkText", t.InkText) })
+            ((SolidColorBrush)res[key]).Color = color;
+        _surface!.Color = t.Surface;
+        _border!.Color = t.Border ?? Microsoft.UI.Colors.Transparent;
+        foreach (var fill in _fills) fill.StrokeThickness = t.Border is null ? 0 : 1;
+        Layers.Margin = new Thickness(0, t.Top, 0, 0);
+        _layersClip!.Offset = new Vector2(0, (float)-t.Top); // the layers start where the island's top is
+        foreach (var tab in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
+            ((Microsoft.UI.Xaml.Controls.StackPanel)tab.Children[0]).Children[1].Visibility = t.IconTabs ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill })
+        {
+            bar.Height = t.Track;
+            bar.CornerRadius = new CornerRadius(t.Track / 2);
+        }
+        AlertBar.Height = t.Track;
+        var g = GeoOf(_mode);
+        (_w.X, _h.X, _r.X, _y.X) = (_w.T, _h.T, _r.T, _y.T) = (g.W, g.H, g.R, g.Y); // jump there: no spring between two looks
+        ShowTab();
+        FillTimer();
+        Render();
     }
 
     void Render()
     {
-        float w = (float)Math.Max(0, _w.X), h = (float)Math.Max(0, _h.X), r = (float)Math.Min(Math.Max(0, _r.X), h / 2);
-        _shape!.Size = new Vector2(w, h);
+        float w = (float)Math.Max(0, _w.X), h = (float)Math.Max(0, _h.X), r = (float)Math.Min(Math.Max(0, _r.X), h / 2), top = (float)_y.X;
+        float left = ((float)CanvasW - w) / 2;
+        if (_theme.Attached)
+        {
+            // Taller by its radius and raised by as much: the top corners sit above the screen, out of sight.
+            r = (float)Math.Min(Math.Max(0, _r.X), h);
+            _shape!.Size = new Vector2(w, h + r);
+            _shape.Offset = new Vector2(left, top - r);
+        }
+        else
+        {
+            _shape!.Size = new Vector2(w, h);
+            _shape.Offset = new Vector2(left, top);
+        }
         _shape.CornerRadius = new Vector2(r, r);
-        _shape.Offset = new Vector2(((float)CanvasW - w) / 2, (float)_y.X);
+        float side = _theme.Attached ? Math.Min(ShoulderMax, h / 2) : 0;
+        for (int i = 0; i < 2; i++)
+        {
+            var (visual, arc, ring) = _shoulders[i];
+            visual.Size = new Vector2(side, side);
+            visual.Offset = new Vector3(i == 0 ? left - side : left + w, top, 0);
+            // A ring from radius `side` out past the far corner, centered on the corner away from the island.
+            arc.Center = new Vector2(i == 0 ? 0 : side, side);
+            arc.Radius = new Vector2(side * 1.21f, side * 1.21f);
+            ring.StrokeThickness = side * 0.42f + 1;
+        }
 
         // Bubble: 32 px round, 6 px right of the pill, scaled from its center.
         float s = (float)Math.Max(0, _bubble.X), size = 32 * s;
@@ -574,10 +656,21 @@ public sealed partial class IslandWindow : Window
         var region = ShapeRect(w, h, _y.X, _animating ? 0.04 : 0);
         if (s > 0.01 && region.Bottom > 0)
             region.Right = Math.Max(region.Right, (int)Math.Ceiling((center.X + 16) * _scale));
+        // The shoulders reach past the island at the top: a thin band of their own, or the region would cut them off.
+        var band = side < 0.5f ? default : new RECT
+        {
+            Left = (int)Math.Floor((left - side) * _scale), Right = (int)Math.Ceiling((left + w + side) * _scale),
+            Top = 0, Bottom = (int)Math.Ceiling((top + side) * _scale),
+        };
         if (_animating && region.Bottom > 0)
             region = new RECT { Left = region.Left & ~15, Top = region.Top & ~15, Right = (region.Right + 15) & ~15, Bottom = (region.Bottom + 15) & ~15 };
+        if (_animating && band.Bottom > 0)
+            band = band with { Left = band.Left & ~15, Right = (band.Right + 15) & ~15 };
+        _band = band;
         SetRegion(region);
     }
+
+    RECT _band, _bandSet;
 
     // The shape's bounds in window pixels, grown by a fraction of its size on each side.
     RECT ShapeRect(double w, double h, double y, double grow)
@@ -602,9 +695,16 @@ public sealed partial class IslandWindow : Window
             var s = DropStrip();
             r = r.Bottom <= r.Top ? s : new RECT { Left = Math.Min(r.Left, s.Left), Right = Math.Max(r.Right, s.Right), Bottom = Math.Max(r.Bottom, s.Bottom) };
         }
-        if (r.Equals(_hit)) return;
-        _hit = r;
-        SetWindowRgn(_hwnd, CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom), 1);
+        if (r.Equals(_hit) && _band.Equals(_bandSet)) return;
+        (_hit, _bandSet) = (r, _band);
+        var rgn = CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom);
+        if (_band.Bottom > 0)
+        {
+            var band = CreateRectRgn(_band.Left, _band.Top, _band.Right, _band.Bottom);
+            CombineRgn(rgn, rgn, band, 2); // RGN_OR
+            DeleteObject(band);
+        }
+        SetWindowRgn(_hwnd, rgn, 1); // the window owns rgn from here
     }
 
     void Fade(UIElement layer, bool on)

@@ -71,7 +71,10 @@ return exit;
 
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
-    Point mediaTab = panel(40, 22), timersTab = panel(115, 22), clipboardTab = panel(260, 22), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
+    // Themes with icon-only tabs (Notch) have them narrower, about 33 apart.
+    bool iconTabs = Environment.GetEnvironmentVariable("ATOLL_TEST_THEME") == "Notch";
+    Point Tab(int i, int labeled) => panel(iconTabs ? 30 + 33 * i : labeled, 22);
+    Point mediaTab = Tab(0, 40), timersTab = Tab(1, 115), clipboardTab = Tab(3, 260), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)
@@ -95,7 +98,7 @@ static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Ho
     // The island's window region follows its shape: empty when hidden, short for an alert, tall for the panel.
     void Expect(string state, string step)
     {
-        double h = GetWindowRgnBox(island, out var box) == 2 ? box.Bottom - box.Top : 0;
+        double h = GetWindowRgnBox(island, out var box) >= 2 ? box.Bottom - box.Top : 0; // simple, or complex (Notch shoulders)
         var actual = h == 0 ? "hidden" : h < 100 * s ? "alert" : "panel";
         if (actual != state) throw new InvalidOperationException($"island should show {state} after {step}, shows {actual}");
     }

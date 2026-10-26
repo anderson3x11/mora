@@ -43,6 +43,8 @@ static partial class Native
     [LibraryImport("user32.dll")] public static partial int UnhookWindowsHookEx(nint hook);
     [LibraryImport("user32.dll")] public static partial nint CallNextHookEx(nint hook, int code, nint wParam, nint lParam);
     [LibraryImport("gdi32.dll")] public static partial nint CreateRectRgn(int l, int t, int r, int b);
+    [LibraryImport("gdi32.dll")] public static partial int CombineRgn(nint dest, nint a, nint b, int mode);
+    [LibraryImport("gdi32.dll")] public static partial int DeleteObject(nint obj);
     [LibraryImport("comctl32.dll")] public static partial int SetWindowSubclass(nint hwnd, nint proc, nuint id, nuint data);
     [LibraryImport("comctl32.dll")] public static partial nint DefSubclassProc(nint hwnd, uint msg, nint wParam, nint lParam);
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW")] public static partial nint GetModuleHandle(nint name);

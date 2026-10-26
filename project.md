@@ -245,4 +245,6 @@ Decisions taken while building:
 
 - Only games count as games: a fullscreen window whose executable is in Windows' Game Bar list (GameConfigStore), in a game launcher library (Steam, Riot, Epic, GOG, Ubisoft, EA, Xbox), in exclusive fullscreen, or has its own profile. Snipping Tool's capture overlay, fullscreen video and slideshows used to be treated as games and silenced every pop-up (founder's report).
 
+- Themes are whole looks, not palettes (founder's request): shape (floating, or attached to the top edge with concave shoulders drawn as clipped rings), corner radius, surface and border, springs, colors, tab style and bar thickness. Sizes stay the same in every theme so layout and tests hold. Island is the default; Notch follows the MacBook notch and Apple's colors; Fluent follows Windows 11 light or dark mode and the accent color, read when the theme is applied.
+
 Open follow-ups: output-device picker, mixed-DPI testing.

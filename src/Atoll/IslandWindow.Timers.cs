@@ -1,7 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using Windows.UI;
 
 namespace Atoll;
 
@@ -10,8 +9,6 @@ namespace Atoll;
 // until stopped.
 public sealed partial class IslandWindow
 {
-    static readonly Color Amber = Color.FromArgb(255, 0xFF, 0xB4, 0x54);
-
     record RunningTimer(DateTime End, int Seconds, string Label, int Round = 0, bool Break = false); // Round 0: a plain timer
 
     RunningTimer? _timer;
@@ -53,12 +50,12 @@ public sealed partial class IslandWindow
             int round = t.Break ? t.Round + 1 : t.Round;
             StartFocus(round, !t.Break);
             Notify(t.Break
-                ? new Alert(Pop.Timers, "", "Back to focus", $"Round {round}", Amber, ActionLabel: "Stop", Action: StopTimer)
-                : new Alert(Pop.Timers, "", "Break time", $"{_timer!.Seconds / 60} min, round {round} done", Green, ActionLabel: "Stop", Action: StopTimer));
+                ? new Alert(Pop.Timers, "", "Back to focus", $"Round {round}", _theme.Warm, ActionLabel: "Stop", Action: StopTimer)
+                : new Alert(Pop.Timers, "", "Break time", $"{_timer!.Seconds / 60} min, round {round} done", _theme.Calm, ActionLabel: "Stop", Action: StopTimer));
             return;
         }
         StopTimer();
-        Notify(new Alert(Pop.Timers, "", t.Label, "Timer finished", Amber, ActionLabel: "Again", Action: () => StartTimer(t.Seconds)));
+        Notify(new Alert(Pop.Timers, "", t.Label, "Timer finished", _theme.Warm, ActionLabel: "Again", Action: () => StartTimer(t.Seconds)));
     }
 
     void StopTimer()
@@ -76,7 +73,7 @@ public sealed partial class IslandWindow
         if (_timer is not { } t) return;
         TimerLabel.Text = t.Label;
         TimerLeft.Text = CompactTimerText.Text = BubbleText.Text = Format(TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds)));
-        TimerLeft.Foreground = CompactTimerText.Foreground = CompactTimerIcon.Foreground = BubbleText.Foreground = new SolidColorBrush(t.Break ? Green : Amber);
+        TimerLeft.Foreground = CompactTimerText.Foreground = CompactTimerIcon.Foreground = BubbleText.Foreground = new SolidColorBrush(t.Break ? _theme.Calm : _theme.Warm);
     }
 
     void TimerStart_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) =>
