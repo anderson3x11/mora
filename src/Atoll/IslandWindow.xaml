@@ -133,7 +133,11 @@
                         <RowDefinition Height="22" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock x:Name="SourceBadge" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <!-- Microphone (orange) and camera (green) in use, while it lasts -->
+                        <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" />
+                        <TextBlock x:Name="SourceBadge" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                    </StackPanel>
                     <StackPanel x:Name="Tabs" Orientation="Horizontal" Spacing="3">
                         <Grid Tag="Media" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">

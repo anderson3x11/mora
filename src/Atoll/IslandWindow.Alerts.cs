@@ -42,6 +42,13 @@ public sealed partial class IslandWindow
         }
         catch (System.Runtime.InteropServices.COMException) { } // audio service stopped: no audio alerts
 
+        _privacy = new PrivacyWatch(DispatcherQueue);
+        _privacy.Started += (device, app) => Notify(device == PrivacyWatch.Device.Microphone
+            ? new Alert(Pop.Privacy, "", $"{app} is using your microphone", "An orange dot stays in the panel while it lasts", MicOrange, Wide: true)
+            : new Alert(Pop.Privacy, "", $"{app} is using your camera", "A green dot stays in the panel while it lasts", CameraGreen, Wide: true));
+        _privacy.Changed += FillPrivacyDots;
+        FillPrivacyDots();
+
         _downloads = new Downloads(DispatcherQueue);
         _downloads.Finished += path => Notify(new Alert(Pop.Downloads, "", Path.GetFileName(path),
             "Download finished " + Size(path), Green, ActionLabel: "Show",
@@ -56,6 +63,26 @@ public sealed partial class IslandWindow
                 if (PowerManager.PowerSupplyStatus == PowerSupplyStatus.Adequate)
                     Notify(new Alert(Pop.Devices, "", "Charging", $"{PowerManager.RemainingChargePercent}%", Green));
             });
+        }
+    }
+
+    static readonly Color MicOrange = Color.FromArgb(255, 0xFF, 0x9F, 0x0A), CameraGreen = Color.FromArgb(255, 0x30, 0xD1, 0x58);
+    PrivacyWatch? _privacy;
+
+    // One dot per device in use, with the apps using it on hover.
+    void FillPrivacyDots()
+    {
+        PrivacyDots.Children.Clear();
+        foreach (var group in _privacy!.InUse.GroupBy(u => u.Device))
+        {
+            var dot = new Microsoft.UI.Xaml.Shapes.Ellipse
+            {
+                Width = 7, Height = 7,
+                Fill = new SolidColorBrush(group.Key == PrivacyWatch.Device.Microphone ? MicOrange : CameraGreen),
+            };
+            var what = group.Key == PrivacyWatch.Device.Microphone ? "microphone" : "camera";
+            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(dot, $"Using the {what}: {string.Join(", ", group.Select(u => u.App))}");
+            PrivacyDots.Children.Add(dot);
         }
     }
 

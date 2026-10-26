@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Atoll;
 
-enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard }
+enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard, Privacy }
 
 // The game setting before per-game profiles; only read to convert old settings files.
 enum GameMode { Quiet, Music, Ask }
@@ -40,6 +40,7 @@ sealed class Settings
     public bool PopDevices { get; set; } = true;
     public bool PopVolume { get; set; }
     public bool PopClipboard { get; set; } = true;
+    public bool PopPrivacy { get; set; } = true; // an app starts using the microphone or camera
 
     // Games: one profile for any game, own profiles by executable name, and every game seen so far
     // (listed in Settings so it can be customized later).
@@ -76,6 +77,7 @@ sealed class Settings
         Pop.Downloads => PopDownloads,
         Pop.Devices => PopDevices,
         Pop.Volume => PopVolume,
+        Pop.Privacy => PopPrivacy,
         _ => PopClipboard,
     };
 

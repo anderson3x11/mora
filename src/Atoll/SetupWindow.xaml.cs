@@ -184,6 +184,7 @@ public sealed partial class SetupWindow : Window
             PopRow(Pop.Devices, "Show headphones and battery"),
             PopRow(Pop.Clipboard, "Show clipboard copies"),
             PopRow(Pop.Volume, "Show volume changes"),
+            PopRow(Pop.Privacy, "Show microphone and camera use"),
             .. extra,
         ]);
     }
@@ -257,7 +258,8 @@ public sealed partial class SetupWindow : Window
         Row("Finished downloads", "With a button to show the file.", Toggle(() => _working.PopDownloads, v => _working.PopDownloads = v)),
         Row("Headphones and battery", "Audio output switches, low battery, charging.", Toggle(() => _working.PopDevices, v => _working.PopDevices = v)),
         Row("Clipboard copies", "Private copies from password managers never show.", Toggle(() => _working.PopClipboard, v => _working.PopClipboard = v)),
-        Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)));
+        Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)),
+        Row("Microphone and camera", "When an app starts using them. A dot also stays in the panel while it lasts.", Toggle(() => _working.PopPrivacy, v => _working.PopPrivacy = v)));
 
     // A rounded card of rows separated by hairlines, like the island's panel.
     Border Card(params UIElement[] rows)
