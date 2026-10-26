@@ -254,32 +254,45 @@
                         </Grid>
 
                         <!-- Timers -->
-                        <StackPanel x:Name="TimersTab" Visibility="Collapsed" Spacing="10">
-                            <StackPanel x:Name="TimerIdle" Spacing="10">
-                                <TextBlock Text="Start a timer, or focus in 25 min rounds with breaks." Foreground="{StaticResource Muted}" FontSize="11" />
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <Border Style="{StaticResource Chip}" Tag="60" Tapped="TimerStart_Tapped"><TextBlock Text="1 min" Style="{StaticResource ChipText}" /></Border>
-                                    <Border Style="{StaticResource Chip}" Tag="300" Tapped="TimerStart_Tapped"><TextBlock Text="5 min" Style="{StaticResource ChipText}" /></Border>
-                                    <Border Style="{StaticResource Chip}" Tapped="FocusStart_Tapped"><TextBlock Text="Focus session" Style="{StaticResource ChipText}" /></Border>
+                        <!-- Timers: centered in the panel's fixed height; a running timer shows a big countdown and how far along it is -->
+                        <Grid x:Name="TimersTab" Visibility="Collapsed">
+                            <StackPanel x:Name="TimerIdle" Spacing="14" VerticalAlignment="Center">
+                                <TextBlock Text="Start a timer, or focus in 25 min rounds with breaks." Foreground="{StaticResource Muted}" FontSize="12" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border Style="{StaticResource Chip}" Padding="16,8" CornerRadius="15" Tag="60" Tapped="TimerStart_Tapped"><TextBlock Text="1 min" Style="{StaticResource ChipText}" FontSize="12" /></Border>
+                                    <Border Style="{StaticResource Chip}" Padding="16,8" CornerRadius="15" Tag="300" Tapped="TimerStart_Tapped"><TextBlock Text="5 min" Style="{StaticResource ChipText}" FontSize="12" /></Border>
+                                    <Border Style="{StaticResource Chip}" Padding="16,8" CornerRadius="15" Tapped="FocusStart_Tapped"><TextBlock Text="Focus session" Style="{StaticResource ChipText}" FontSize="12" /></Border>
                                 </StackPanel>
                             </StackPanel>
-                            <Grid x:Name="TimerRunning" Visibility="Collapsed">
+                            <Grid x:Name="TimerRunning" Visibility="Collapsed" VerticalAlignment="Center" RowSpacing="10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
                                 <StackPanel>
-                                    <TextBlock x:Name="TimerLabel" Foreground="{StaticResource Muted}" FontSize="11" />
-                                    <TextBlock x:Name="TimerLeft" FontFamily="{StaticResource Mono}" FontSize="30" Foreground="#FFB454" />
+                                    <TextBlock x:Name="TimerLabel" Foreground="{StaticResource Muted}" FontSize="11.5" />
+                                    <TextBlock x:Name="TimerLeft" FontFamily="{StaticResource Mono}" FontSize="40" Foreground="#FFB454" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <Border Style="{StaticResource Chip}" Tapped="TimerAdd_Tapped"><TextBlock Text="+1 min" Style="{StaticResource ChipText}" /></Border>
-                                    <Border Style="{StaticResource Chip}" Tapped="TimerCancel_Tapped"><TextBlock Text="Cancel" Style="{StaticResource ChipText}" /></Border>
+                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource Chip}" Padding="14,7" CornerRadius="14" Tapped="TimerAdd_Tapped"><TextBlock Text="+1 min" Style="{StaticResource ChipText}" FontSize="11.5" /></Border>
+                                    <Border Style="{StaticResource Chip}" Padding="14,7" CornerRadius="14" Tapped="TimerCancel_Tapped"><TextBlock Text="Cancel" Style="{StaticResource ChipText}" FontSize="11.5" /></Border>
                                 </StackPanel>
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition x:Name="TimerDone" Width="0*" />
+                                        <ColumnDefinition x:Name="TimerRest" Width="1*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="TimerBack" Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
+                                    <Border x:Name="TimerFill" Height="5" CornerRadius="2.5" Background="#FFB454" />
+                                </Grid>
                             </Grid>
-                        </StackPanel>
+                        </Grid>
 
                         <!-- Shelf: files dropped here stay until removed, and drag out into any app -->
-                        <StackPanel x:Name="ShelfTab" Visibility="Collapsed" Spacing="5" />
+                        <StackPanel x:Name="ShelfTab" Visibility="Collapsed" Spacing="6" />
 
                         <!-- Clipboard -->
-                        <StackPanel x:Name="ClipboardTab" Visibility="Collapsed" Spacing="5" />
+                        <StackPanel x:Name="ClipboardTab" Visibility="Collapsed" Spacing="6" />
                     </Grid>
                 </Grid>
             </Grid>

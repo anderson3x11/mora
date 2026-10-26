@@ -75,7 +75,10 @@ public sealed partial class IslandWindow
         var left = TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds));
         TimerLeft.Text = CompactTimerText.Text = Format(left);
         BubbleText.Text = _tallBubble ? $"{(int)left.TotalMinutes:00}\n{left.Seconds:00}" : Format(left); // minutes over seconds in the tall pill
-        TimerLeft.Foreground = CompactTimerText.Foreground = CompactTimerIcon.Foreground = BubbleText.Foreground = new SolidColorBrush(t.Break ? _theme.Calm : _theme.Warm);
+        TimerLeft.Foreground = CompactTimerText.Foreground = CompactTimerIcon.Foreground = BubbleText.Foreground = TimerFill.Background = new SolidColorBrush(t.Break ? _theme.Calm : _theme.Warm);
+        var done = t.Seconds > 0 ? Math.Clamp(1 - left.TotalSeconds / t.Seconds, 0, 1) : 0;
+        TimerDone.Width = new GridLength(done, GridUnitType.Star);
+        TimerRest.Width = new GridLength(1 - done, GridUnitType.Star);
     }
 
     void TimerStart_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) =>

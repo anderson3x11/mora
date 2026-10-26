@@ -16,6 +16,8 @@ public sealed partial class IslandWindow
     readonly List<string> _shelf = [];
     int _dragToken;
     bool _dropStrip;
+    // Shelf and Clipboard list three rows that fill the panel's fixed height exactly: 3 x 34 + 2 gaps of 6.
+    const double RowHeight = 34, RowsHeight = 3 * RowHeight + 2 * 6;
     RECT _shapeHit; // the hit region of the shapes alone, without the drop strip
 
     // During a drag (left button held a moment and moved), a strip at the top center joins the hit region,
@@ -134,7 +136,7 @@ public sealed partial class IslandWindow
         ShelfTab.Children.Clear();
         if (_shelf.Count == 0)
         {
-            var zone = new Grid { Height = 57 };
+            var zone = new Grid { Height = RowsHeight };
             zone.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle
             {
                 Stroke = (Brush)res["Line"], StrokeThickness = 1.5, StrokeDashArray = [4, 3], RadiusX = 12, RadiusY = 12,
@@ -148,7 +150,7 @@ public sealed partial class IslandWindow
         }
         foreach (var path in _shelf.Take(3)) // what fits the panel's fixed height
         {
-            var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(9), Padding = new Thickness(9, 3, 3, 3), ColumnSpacing = 8, CanDrag = true };
+            var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9, CanDrag = true };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -165,7 +167,7 @@ public sealed partial class IslandWindow
             row.Children.Add(name);
             var remove = new Border
             {
-                Style = (Style)res["Chip"], Padding = new Thickness(8, 5, 8, 5),
+                Style = (Style)res["Chip"], Padding = new Thickness(8, 5, 8, 5), VerticalAlignment = VerticalAlignment.Center,
                 Child = new FontIcon { Glyph = "", FontSize = 9, FontFamily = (FontFamily)res["Icons"], Foreground = (Brush)res["Fg"] },
             };
             remove.Tapped += (_, e) =>

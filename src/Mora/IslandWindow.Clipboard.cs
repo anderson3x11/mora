@@ -44,23 +44,27 @@ public sealed partial class IslandWindow
         ClipboardTab.Children.Clear();
         if (_clipboard is not { Items.Count: > 0 } c)
         {
-            ClipboardTab.Children.Add(new TextBlock { Text = "Copy some text or an image and it shows up here.", FontSize = 11, Foreground = (Brush)res["Muted"] });
+            ClipboardTab.Children.Add(new TextBlock
+            {
+                Text = "Copy some text or an image and it shows up here.", FontSize = 11.5, Foreground = (Brush)res["Muted"],
+                HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 40, 0, 0), // centered, like "Nothing playing"
+            });
             return;
         }
         foreach (var item in c.Items.Take(3)) // what fits the panel's fixed height
         {
-            var paste = new Border { Style = (Style)res["Chip"], Child = new TextBlock { Text = "Paste", Style = (Style)res["ChipText"] } };
+            var paste = new Border { Style = (Style)res["Chip"], VerticalAlignment = VerticalAlignment.Center, Child = new TextBlock { Text = "Paste", Style = (Style)res["ChipText"] } };
             paste.Tapped += (_, _) => c.Paste(item);
-            var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(9), Padding = new Thickness(10, 3, 3, 3), ColumnSpacing = 8 };
+            var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9 };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             if (item.Dib != null)
             {
-                row.Padding = new Thickness(3);
+                row.Padding = new Thickness(4, 0, 5, 0);
                 row.Children.Add(new Border
                 {
-                    Width = 42, Height = 24, CornerRadius = new CornerRadius(6), Background = (Brush)res["Line"],
+                    Width = 46, Height = 26, CornerRadius = new CornerRadius(7), Background = (Brush)res["Line"],
                     Child = item.Thumb is { } thumb
                         ? new Image { Source = thumb, Stretch = Stretch.UniformToFill }
                         : new FontIcon { Glyph = "", FontSize = 12, FontFamily = (FontFamily)res["Icons"], Foreground = (Brush)res["Fg"] },

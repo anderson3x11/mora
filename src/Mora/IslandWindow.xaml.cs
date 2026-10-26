@@ -250,8 +250,8 @@ public sealed partial class IslandWindow : Window
             _bubble.X = _bubble.V = 0; // a new shape pops in from nothing rather than morphing
             BubbleText.Width = tall ? TallBubble.X : 32;
             BubbleText.Height = tall ? TallBubble.Y : 32;
-            BubbleText.FontSize = tall ? 16 : 9.5;
-            BubbleText.Padding = new Thickness(0, tall ? 28 : 9, 0, 0);
+            BubbleText.FontSize = tall ? 20 : 9.5;
+            BubbleText.Padding = new Thickness(0, tall ? (TallBubble.Y - 54) / 2 : 9, 0, 0); // two 27 px lines, centered
             FillTimer();
         }
         if (_bubble.T != _bubble.X) Animate();
@@ -555,7 +555,8 @@ public sealed partial class IslandWindow : Window
     CompositionRoundedRectangleGeometry? _shape, _bubbleShape;
     readonly Spring _bubble = new(0); // bubble scale, 0 hidden, 1 shown
     bool _tallBubble; // beside the open panel: a vertical pill instead of the round bubble
-    static readonly Vector2 TallBubble = new(48, 100);
+    // As tall as the open panel, bottoms aligned (an attached theme starts it a little below the edge).
+    Vector2 TallBubble => new(52, (float)GeoOf(Mode.Expanded).H - (_theme.Attached ? 8 : 0));
     CompositionColorBrush? _surface, _border;
     readonly List<CompositionSpriteShape> _fills = [];
     readonly (ShapeVisual Visual, CompositionEllipseGeometry Arc, CompositionSpriteShape Ring)[] _shoulders = new (ShapeVisual, CompositionEllipseGeometry, CompositionSpriteShape)[2];
@@ -612,7 +613,7 @@ public sealed partial class IslandWindow : Window
         _layersClip!.Offset = new Vector2(0, (float)-t.Top); // the layers start where the island's top is
         foreach (var tab in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
             ((Microsoft.UI.Xaml.Controls.StackPanel)tab.Children[0]).Children[1].Visibility = t.IconTabs ? Visibility.Collapsed : Visibility.Visible;
-        foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill })
+        foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill, TimerBack, TimerFill })
         {
             bar.Height = t.Track;
             bar.CornerRadius = new CornerRadius(t.Track / 2);
