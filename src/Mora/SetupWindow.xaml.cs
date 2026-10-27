@@ -13,7 +13,8 @@ public sealed partial class SetupWindow : Window
 {
     enum Tab { General, Popups, Games, About }
 
-    readonly Settings _working, _original;
+    readonly Settings _working;
+    Settings _applied; // what the island runs with: the settings window applies every change as it is made
     readonly bool _firstRun;
     readonly Action<Settings> _done;
     bool _finished;
@@ -32,7 +33,7 @@ public sealed partial class SetupWindow : Window
 
     SetupWindow(Settings working, Settings original, bool firstRun, Action<Settings> done)
     {
-        (_working, _original, _firstRun, _done) = (working, original, firstRun, done);
+        (_working, _applied, _firstRun, _done) = (working, original, firstRun, done);
         InitializeComponent();
         Title = firstRun ? "Mora Setup" : "Mora Settings";
         WindowTitle.Text = Title;
@@ -66,7 +67,8 @@ public sealed partial class SetupWindow : Window
 
     void ShowTab()
     {
-        (BackButton.Content, NextButton.Content) = ("Cancel", "Save");
+        BackButton.Visibility = Visibility.Collapsed; // nothing to cancel: changes apply at once
+        NextButton.Content = "Done";
         Nav.Children.Clear();
         foreach (var (tab, glyph, label) in new[] { (Tab.General, "", "General"), (Tab.Popups, "", "Pop-ups"), (Tab.Games, "", "Games"), (Tab.About, "", "About") })
         {
@@ -149,7 +151,7 @@ public sealed partial class SetupWindow : Window
             if (!_working.GameProfiles.TryGetValue(exe, out var profile))
             {
                 var customize = new Button { Content = "Customize" };
-                customize.Click += (_, _) => { _working.GameProfiles[exe] = _working.AnyGame.Clone(); _expanded = exe; Show(); };
+                customize.Click += (_, _) => { _working.GameProfiles[exe] = _working.AnyGame.Clone(); _expanded = exe; Changed(); Show(); };
                 list.Children.Add(Card(Row(exe, "Uses the \"Any game\" settings.", customize)));
                 continue;
             }
@@ -157,7 +159,7 @@ public sealed partial class SetupWindow : Window
             header.Children.Add(new TextBlock { Text = exe });
             header.Children.Add(new TextBlock { Text = Summary(profile), Foreground = Brush("Muted"), FontSize = 12.5 });
             var reset = new HyperlinkButton { Content = "Use the \"Any game\" settings instead", Padding = new Thickness(0), Margin = new Thickness(0, 8, 0, 0) };
-            reset.Click += (_, _) => { _working.GameProfiles.Remove(exe); Show(); };
+            reset.Click += (_, _) => { _working.GameProfiles.Remove(exe); Changed(); Show(); };
             var body = new StackPanel();
             body.Children.Add(ProfileCard(profile));
             body.Children.Add(reset);
@@ -257,6 +259,7 @@ public sealed partial class SetupWindow : Window
             {
                 _working.AnyGame.MusicCard = c.Mode == GameMode.Music;
                 _working.AskNewGames = c.Mode == GameMode.Ask;
+                Changed();
             };
             return (UIElement)radio;
         }).ToArray();
@@ -277,7 +280,7 @@ public sealed partial class SetupWindow : Window
         return Card(choices.Select(c =>
         {
             var radio = new RadioButton { GroupName = "clock", Content = c.Example, IsChecked = _working.ClockFormat == c.Style, Margin = new Thickness(0, 6, 0, 6) };
-            radio.Checked += (_, _) => _working.ClockFormat = c.Style;
+            radio.Checked += (_, _) => { _working.ClockFormat = c.Style; Changed(); };
             return (UIElement)radio;
         }).ToArray());
     }
@@ -288,7 +291,7 @@ public sealed partial class SetupWindow : Window
         label.Children.Add(new TextBlock { Text = t.Name, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         label.Children.Add(new TextBlock { Text = t.Description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
         var radio = new RadioButton { GroupName = "theme", Content = label, IsChecked = _working.Theme == t.Name, Margin = new Thickness(0, 10, 0, 10) };
-        radio.Checked += (_, _) => _working.Theme = t.Name;
+        radio.Checked += (_, _) => { _working.Theme = t.Name; Changed(); };
         return (UIElement)radio;
     }).ToArray());
 
@@ -360,7 +363,7 @@ public sealed partial class SetupWindow : Window
             string? problem =
                 mods == 0 && vk is < 0x7C or > 0x87 ? "Add Alt, Ctrl, Shift or Win, so typing never triggers it." :
                 (mods & (Hotkey.Ctrl | Hotkey.Alt)) == (Hotkey.Ctrl | Hotkey.Alt) ? "Ctrl + Alt is AltGr on many keyboards, used to type characters." :
-                (mods, vk) != (_original.HotkeyModifiers, _original.HotkeyKey) && !Hotkey.IsFree(mods, vk) ? "Windows or another app already uses it." :
+                (mods, vk) != (_applied.HotkeyModifiers, _applied.HotkeyKey) && !Hotkey.IsFree(mods, vk) ? "Windows or another app already uses it." :
                 null;
             if (problem != null)
             {
@@ -370,7 +373,8 @@ public sealed partial class SetupWindow : Window
             }
             (_working.HotkeyModifiers, _working.HotkeyKey) = (mods, vk);
             button.Content = _working.HotkeyName;
-            status.Text = "Applied when you click Save.";
+            status.Text = "Applied.";
+            Changed();
         };
         var reset = new HyperlinkButton { Content = $"Reset to {Hotkey.DefaultName}", FontSize = 12, Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Right };
         reset.Click += (_, _) =>
@@ -378,6 +382,7 @@ public sealed partial class SetupWindow : Window
             (_working.HotkeyModifiers, _working.HotkeyKey) = (Hotkey.Alt, Hotkey.KeyAboveTab);
             button.Content = _working.HotkeyName;
             status.Text = "";
+            Changed();
         };
         var panel = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Right };
         panel.Children.Add(button);
@@ -386,11 +391,19 @@ public sealed partial class SetupWindow : Window
         return panel;
     }
 
-    static ToggleSwitch Toggle(Func<bool> get, Action<bool> set)
+    ToggleSwitch Toggle(Func<bool> get, Action<bool> set)
     {
         var t = new ToggleSwitch { IsOn = get(), OnContent = "", OffContent = "", MinWidth = 0 };
-        t.Toggled += (_, _) => set(t.IsOn);
+        t.Toggled += (_, _) => { set(t.IsOn); Changed(); };
         return t;
+    }
+
+    // The settings window hands every change to the island right away, which saves it. First-run setup waits for Finish.
+    void Changed()
+    {
+        if (_firstRun) return;
+        _applied = _working.Clone();
+        _done(_applied);
     }
 
     Border Key(string keys) => new()
@@ -417,13 +430,7 @@ public sealed partial class SetupWindow : Window
 
     void Back_Click(object sender, RoutedEventArgs e)
     {
-        if (!_firstRun)
-        {
-            _finished = true;
-            Close();
-            return;
-        }
-        _step--;
+        _step--; // first-run setup only: the settings window has no Back button
         Show();
     }
 
@@ -436,7 +443,7 @@ public sealed partial class SetupWindow : Window
             return;
         }
         _finished = true;
-        _done(_working);
+        if (_firstRun) _done(_working); // the settings window has applied everything already
         Close();
     }
 }
