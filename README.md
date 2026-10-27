@@ -34,19 +34,29 @@ From top to bottom: the panel, a track change, the resting pill with a running t
 
 ## Install
 
-Builds Mora, installs it for your user in `%LOCALAPPDATA%\Programs\Mora` (no admin rights), adds it to the Start menu and starts it. Run it again to update; settings are kept.
+Download `Mora-Setup-1.0.0.exe` from the [latest release](https://github.com/anderson3x11/mora/releases/latest) and run it. It installs Mora for your user only (no admin rights, nothing else to install), adds it to the Start menu and starts it. To update, run the newer installer; your settings are kept.
+
+The installer is not signed yet, so Windows SmartScreen may warn the first time: choose "More info", then "Run anyway".
+
+To uninstall, open Windows Settings > Apps > Installed apps, find Mora and choose Uninstall. It removes the app, its shortcut and its start-with-Windows entry. Your settings and shelf stay in `%LOCALAPPDATA%\Mora`; delete that folder too for a clean slate.
+
+## Build from source
+
+Needs the .NET 10 SDK, and [Inno Setup 6](https://jrsoftware.org/isinfo.php) for the installer (`winget install JRSoftware.InnoSetup`). Visual Studio is not required: the Windows App SDK comes from NuGet and the app runs unpackaged.
+
+Build the self-contained app and the installer into `artifacts\`:
+
+```bash
+powershell -ExecutionPolicy Bypass -File release.ps1
+```
+
+Or build the installer and install it right away (run again to update):
 
 ```bash
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-With "Start Mora when Windows starts" checked (the default, in setup and settings), the installed copy adds itself to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. Unchecking it removes the entry. Development builds never write that entry.
-
-To uninstall: Quit Mora from its tray icon, uncheck the start option first (or delete the `Mora` value under that key), then delete `%LOCALAPPDATA%\Programs\Mora`, `%LOCALAPPDATA%\Mora` and the `Mora` shortcut in `%APPDATA%\Microsoft\Windows\Start Menu\Programs`.
-
-## Build and run
-
-Needs the .NET 10 SDK. Visual Studio is not required: the Windows App SDK comes from NuGet and the app runs unpackaged.
+For a quick development build without the installer:
 
 ```bash
 dotnet build src/Mora -c Release -p:Platform=x64
