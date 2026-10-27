@@ -129,10 +129,28 @@ public sealed partial class IslandWindow
         return $"· {b:0.#} {units[i]}";
     }
 
+    static readonly Color QuietIndigo = Color.FromArgb(255, 0x5E, 0x5C, 0xE6); // the iPhone's Focus moon
+
+    void Quiet_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        _settings.DoNotDisturb = !_settings.DoNotDisturb;
+        _settings.Save();
+        FillQuiet();
+        if (!_settings.DoNotDisturb && _game is null && _held.Count > 0) ShowHeld("during Do not disturb");
+    }
+
+    void FillQuiet() => QuietIcon.Foreground = _settings.DoNotDisturb
+        ? new SolidColorBrush(QuietIndigo) : (Brush)((FrameworkElement)Content).Resources["Muted"];
+
     // force: Mora's own questions and summaries, shown whatever the pop-up settings or a running game.
     void Notify(Alert a, bool force = false)
     {
         if (!force && (!_settings.Allows(a.Kind) || _setup != null)) return;
+        if (!force && _settings.DoNotDisturb && a.Kind != Pop.Volume) // the volume keys are the user's own doing
+        {
+            _held.Add(a);
+            return;
+        }
         if (!force && _game != null && !Profile!.Shows(a.Kind))
         {
             if (a.Kind != Pop.Volume) _held.Add(a); // shown as one summary after the game; a stale volume level is noise

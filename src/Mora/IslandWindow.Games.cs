@@ -81,9 +81,15 @@ public sealed partial class IslandWindow
             if (_mode != Mode.Hidden) Settle();
             return;
         }
+        ShowHeld("while you played");
+    }
+
+    // What waited during a game or Do not disturb, as one summary.
+    void ShowHeld(string when)
+    {
         var held = _held.ToList();
         _held.Clear();
-        Notify(new Alert(Pop.Music, "", $"{held.Count} update{(held.Count > 1 ? "s" : "")} while you played",
+        Notify(new Alert(Pop.Music, "", $"{held.Count} update{(held.Count > 1 ? "s" : "")} {when}",
             string.Join(" · ", held.Select(a => a.Title)), Seconds: 5), force: true);
     }
 

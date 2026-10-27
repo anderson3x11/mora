@@ -339,6 +339,7 @@ public sealed partial class IslandWindow : Window
         NothingPlaying.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
         MediaPane.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
         LoadLyrics(); // the title and artist lines, or the lyrics: UpdateProgress
+        FillQuiet();
         PlayIcon.Glyph = _media.Playing ? "" : "";
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);

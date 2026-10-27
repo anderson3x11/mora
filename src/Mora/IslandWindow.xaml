@@ -162,6 +162,12 @@
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
                         <!-- Microphone (orange) and camera (green) in use, while it lasts -->
                         <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" />
+                        <!-- Do not disturb: pop-ups wait, and show up as one summary when it is turned off -->
+                        <Grid Width="22" Height="22" CornerRadius="11" Background="Transparent" VerticalAlignment="Center"
+                              Tapped="Quiet_Tapped" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                            <ToolTipService.ToolTip>Do not disturb</ToolTipService.ToolTip>
+                            <FontIcon x:Name="QuietIcon" Glyph="&#xE708;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
+                        </Grid>
                         <TextBlock x:Name="PanelClock" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Visibility="Collapsed" />
                         <TextBlock x:Name="SourceBadge" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
                     </StackPanel>
