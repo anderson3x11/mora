@@ -163,26 +163,28 @@ public sealed partial class IslandWindow
             ArmAlert();
             return;
         }
-        if (_settings.PlaySounds && a.Kind is Pop.Timers or Pop.Notifications) Chime(a.Kind);
+        if (_settings.PlaySounds && a.Kind is Pop.Timers or Pop.Notifications) Chime(a.Kind, _settings.SoundVolume);
         _alerts.Enqueue(a);
         if (_mode is Mode.Hidden or Mode.Compact) NextAlert();
     }
 
     // Windows' own sounds: a ring when a timer or a focus round ends, a short note for app notifications
     // (their Windows banner, sound included, is off). Nothing for the rest: music, volume, devices are no news.
-    static void Chime(Pop kind)
+    // volume: 0 to 100, where 100 is the sound's loudest without clipping. Also played by Settings to try it.
+    internal static void Chime(Pop kind, int volume)
     {
         var name = kind == Pop.Timers ? "Alarm02.wav" : "Windows Notify Messaging.wav";
-        if (!Sounds.TryGetValue(name, out var sound))
-            Sounds[name] = sound = Loud(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", name));
+        if (!Sounds.TryGetValue((name, volume), out var sound))
+            Sounds[(name, volume)] = sound = Loud(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", name), volume / 100.0);
         if (sound != 0) PlaySound(sound, 0, 0x7); // SND_ASYNC | SND_NODEFAULT | SND_MEMORY
     }
 
-    static readonly Dictionary<string, nint> Sounds = [];
+    // ponytail: one copy per volume ever played, never freed (a playing sound reads it); a few KB each.
+    static readonly Dictionary<(string, int), nint> Sounds = [];
 
-    // Windows' notification sounds are mixed quiet (Messaging peaks at a quarter of full scale): brought up to
-    // near full scale once, then kept in native memory, which an async PlaySound reads while it plays.
-    static nint Loud(string path)
+    // Windows' notification sounds are mixed at different levels (Messaging peaks at a quarter of full scale):
+    // brought to the chosen share of full scale, then kept in native memory, which an async PlaySound reads while it plays.
+    static nint Loud(string path, double level)
     {
         byte[] b;
         try { b = File.ReadAllBytes(path); }
@@ -194,7 +196,7 @@ public sealed partial class IslandWindow
             var samples = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(b.AsSpan(i + 8, Math.Min(BitConverter.ToInt32(b, i + 4), b.Length - i - 8) & ~1));
             int peak = 1;
             foreach (var s in samples) peak = Math.Max(peak, Math.Abs((int)s));
-            var gain = 0.9 * short.MaxValue / peak;
+            var gain = level * short.MaxValue / peak;
             for (int k = 0; k < samples.Length; k++) samples[k] = (short)(samples[k] * gain);
         }
         var native = System.Runtime.InteropServices.Marshal.AllocHGlobal(b.Length);

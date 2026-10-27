@@ -311,7 +311,22 @@ public sealed partial class SetupWindow : Window
         Row("Clipboard copies", "Private copies from password managers never show.", Toggle(() => _working.PopClipboard, v => _working.PopClipboard = v)),
         Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)),
         Row("Microphone and camera", "When an app starts using them. A dot also stays in the panel while it lasts.", Toggle(() => _working.PopPrivacy, v => _working.PopPrivacy = v)),
-        Row("Sounds", "A ring when a timer or focus round ends, a short note for app notifications.", Toggle(() => _working.PlaySounds, v => _working.PlaySounds = v)));
+        Row("Sounds", "A ring when a timer or focus round ends, a short note for app notifications.", Toggle(() => _working.PlaySounds, v => _working.PlaySounds = v)),
+        Row("Sound volume", "On top of the Windows volume.", SoundVolume()));
+
+    // The volume slider, and a button per sound to hear it at that volume.
+    StackPanel SoundVolume()
+    {
+        var slider = new Slider { Minimum = 0, Maximum = 100, StepFrequency = 5, Value = _working.SoundVolume, Width = 130, VerticalAlignment = VerticalAlignment.Center };
+        slider.ValueChanged += (_, e) => { _working.SoundVolume = (int)e.NewValue; Changed(); };
+        Button Try(string label, Pop kind)
+        {
+            var b = new Button { Content = label, Padding = new Thickness(10, 4, 10, 4) };
+            b.Click += (_, _) => IslandWindow.Chime(kind, _working.SoundVolume);
+            return b;
+        }
+        return new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { slider, Try("Timer", Pop.Timers), Try("Notification", Pop.Notifications) } };
+    }
 
     Border NotifyAppsCard()
     {
