@@ -37,6 +37,25 @@ static class MediaSource
         return (null, open.Count == 1 ? open[0] : "");
     }
 
+    // A hover preview: browsing YouTube (or Twitch) plays a short clip of whatever thumbnail is under the
+    // pointer, and the browser reports it as media. The page in front then shows the site but not what is
+    // playing, unlike a video actually watched, whose tab title holds its name.
+    // ponytail: a playlist changing track in a background tab while a page of the same site is in front is
+    // taken for a preview too, and not announced.
+    public static bool IsPreview(string appId, string title, string artist)
+    {
+        if (appId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && !Browsers.ContainsKey(Path.GetFileNameWithoutExtension(appId)))
+            return false; // a desktop player has no previews
+        var front = GetForegroundWindow();
+        var text = new StringBuilder(512);
+        if (front == 0 || GetWindowText(front, text, text.Capacity) == 0) return false;
+        GetWindowThreadProcessId(front, out var pid);
+        if (!Browsers.ContainsKey(ProcessName(pid))) return false;
+        var window = text.ToString();
+        if ((title.Length > 3 && window.Contains(title)) || (artist.Length > 2 && window.Contains(artist))) return false;
+        return window.Contains("YouTube") || window.Contains("Twitch");
+    }
+
     // Titled visible windows with their process name. Runs on the UI thread on media changes, so it must
     // stay cheap: process names come from a small cache by process id instead of listing every process
     // on the PC each time, as System.Diagnostics.Process does.
@@ -80,6 +99,7 @@ static class MediaSource
     delegate bool EnumProc(nint hwnd, nint param);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc proc, nint param);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(nint hwnd);
+    [DllImport("user32.dll")] static extern nint GetForegroundWindow();
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(nint hwnd, StringBuilder text, int max);
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(nint hwnd, out uint pid);
 }

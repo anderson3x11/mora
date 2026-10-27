@@ -13,7 +13,7 @@ sealed class Media(DispatcherQueue ui)
     GlobalSystemMediaTransportControlsSession? _session;
     TimeSpan _start, _position;
     DateTimeOffset _positionAt;
-    string _artKey = "";
+    string _artKey = "", _realKey = ""; // the track shown; the last one that was really played
 
     public event Action? Changed;
     public event Action? TrackChanged; // not raised for what was already playing at startup
@@ -119,7 +119,14 @@ sealed class Media(DispatcherQueue ui)
         catch (COMException) { } // the player closed while we were reading it
 
         Changed?.Invoke();
-        if (newTrack && _primed) TrackChanged?.Invoke();
+        // Announced only for a real new track: not a hover preview, and not the track that was already
+        // playing coming back once a preview ends.
+        if (newTrack && !MediaSource.IsPreview(s.SourceAppUserModelId, Title, Artist))
+        {
+            var key = Title + "\n" + Artist;
+            if (_primed && key != _realKey) TrackChanged?.Invoke();
+            _realKey = key;
+        }
         _primed = true;
     }
 
