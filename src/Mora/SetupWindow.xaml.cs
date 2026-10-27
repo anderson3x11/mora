@@ -106,7 +106,7 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(Card(
                     Row("On the resting pill", "Shows the time at the top of the screen. Next to music, it moves into the round bubble.", Toggle(() => _working.ShowClockPill, v => _working.ShowClockPill = v)),
                     Row("Beside the open panel", "A tall pill with the time and the day, when no timer runs.", Toggle(() => _working.ClockBesidePanel, v => _working.ClockBesidePanel = v)),
-                    Row("In the panel", "At the top right, on the tabs other than Media.", Toggle(() => _working.ClockInPanel, v => _working.ClockInPanel = v)),
+                    Row("In the panel", "At the top right, next to what is playing.", Toggle(() => _working.ClockInPanel, v => _working.ClockInPanel = v)),
                     Row("On the game music card", "The time, without leaving the game.", Toggle(() => _working.ClockInGameCard, v => _working.ClockInGameCard = v))));
                 Page.Children.Add(ClockFormatCard());
                 Page.Children.Add(Subheading("Theme", "The island's whole look: its shape, how it moves and its colors."));

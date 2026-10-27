@@ -495,7 +495,7 @@ public sealed partial class IslandWindow : Window
         ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
         ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
         SourceBadge.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
-        PanelClock.Visibility = _tab != Tab.Media && _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed; // the source's place
+        PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
