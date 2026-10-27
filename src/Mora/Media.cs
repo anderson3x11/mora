@@ -42,7 +42,24 @@ sealed class Media(DispatcherQueue ui)
     {
         _manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
         _manager.CurrentSessionChanged += (_, _) => ui.TryEnqueue(Attach);
+        _manager.SessionsChanged += (_, _) => ui.TryEnqueue(Attach); // an ignored app's clip ending can leave the current session unchanged
         Attach();
+    }
+
+    // Game launchers play promo clips (the Riot client), which are not the user's media.
+    // ponytail: matched on the app id; turn it into a setting if more launchers turn up.
+    static readonly string[] IgnoredApps = ["Riot", "League"];
+    static bool Ignored(GlobalSystemMediaTransportControlsSession s) =>
+        IgnoredApps.Any(a => s.SourceAppUserModelId.Contains(a, StringComparison.OrdinalIgnoreCase));
+
+    // Windows' current session, unless it is an ignored app: then whatever else is open, playing first.
+    GlobalSystemMediaTransportControlsSession? Pick()
+    {
+        var current = _manager!.GetCurrentSession();
+        if (current != null && !Ignored(current)) return current;
+        return _manager.GetSessions().Where(s => !Ignored(s))
+            .OrderByDescending(s => s.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+            .FirstOrDefault();
     }
 
     public void TogglePlay() => _ = _session?.TryTogglePlayPauseAsync();
@@ -52,13 +69,14 @@ sealed class Media(DispatcherQueue ui)
 
     void Attach()
     {
+        var next = Pick();
         if (_session != null)
         {
             _session.MediaPropertiesChanged -= OnPropertiesChanged;
             _session.PlaybackInfoChanged -= OnSessionChanged;
             _session.TimelinePropertiesChanged -= OnSessionChanged;
         }
-        _session = _manager!.GetCurrentSession();
+        _session = next;
         if (_session != null)
         {
             _session.MediaPropertiesChanged += OnPropertiesChanged;
