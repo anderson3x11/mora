@@ -238,6 +238,11 @@
                                     <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
                                     <Rectangle Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
                                 </StackPanel>
+                                <Grid Grid.Row="1" Margin="0,4,0,0" Width="30" Height="30" CornerRadius="15" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                      Tapped="Lyrics_Tapped" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                    <ToolTipService.ToolTip>Synced lyrics</ToolTipService.ToolTip>
+                                    <FontIcon x:Name="LyricsIcon" Glyph="&#xE8E4;" FontSize="14" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
+                                </Grid>
                                 <StackPanel Grid.Row="1" Margin="0,4,0,0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                                     <Grid Width="36" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped"
                                           PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">

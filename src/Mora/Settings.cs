@@ -52,6 +52,7 @@ sealed class Settings
     public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
     public string Theme { get; set; } = "Island";
     public bool ReopenLastTab { get; set; } = true; // off: the panel always opens on Media
+    public bool ShowLyrics { get; set; }        // the Media tab's lyrics button, remembered
     public bool PrimaryScreenOnly { get; set; } // off: the island follows the screen of the active window
     // The clock: where it shows, and how.
     public bool ShowClockPill { get; set; }         // a resting pill with the time, off like the music pill

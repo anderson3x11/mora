@@ -336,8 +336,7 @@ public sealed partial class IslandWindow : Window
         bool has = _media.HasSession;
         NothingPlaying.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
         MediaPane.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
-        TitleText.Text = _media.Title;
-        ArtistText.Text = _media.Artist;
+        LoadLyrics(); // the title and artist lines, or the lyrics: UpdateProgress
         PlayIcon.Glyph = _media.Playing ? "" : "";
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
@@ -380,6 +379,7 @@ public sealed partial class IslandWindow : Window
         var f = d > TimeSpan.Zero ? p / d : 0;
         SeekDone.Width = new GridLength(f, GridUnitType.Star);
         SeekLeft.Width = new GridLength(1 - f, GridUnitType.Star);
+        FillLyrics();
     }
 
     static string Format(TimeSpan t) => $"{(int)t.TotalMinutes}:{t.Seconds:00}";
@@ -387,6 +387,7 @@ public sealed partial class IslandWindow : Window
     // Ticks only while someone can see the progress move.
     void UpdateProgressTimer()
     {
+        _progressTimer.Interval = TimeSpan.FromMilliseconds(_lyrics != null ? 250 : 1000); // lyrics change mid-second
         if (_mode == Mode.Expanded && _media.Playing) _progressTimer.Start(); else _progressTimer.Stop();
     }
 
