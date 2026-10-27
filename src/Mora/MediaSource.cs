@@ -52,6 +52,7 @@ static class MediaSource
         GetWindowThreadProcessId(front, out var pid);
         if (!Browsers.ContainsKey(ProcessName(pid))) return false;
         var window = text.ToString();
+        if (window.Contains(" / X")) return true; // X autoplays every video scrolled past, with sound
         if ((title.Length > 3 && window.Contains(title)) || (artist.Length > 2 && window.Contains(artist))) return false;
         return window.Contains("YouTube") || window.Contains("Twitch");
     }

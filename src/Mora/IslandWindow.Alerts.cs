@@ -132,9 +132,9 @@ public sealed partial class IslandWindow
             if (a.Kind != Pop.Volume) _held.Add(a); // shown as one summary after the game; a stale volume level is noise
             return;
         }
-        if (_mode == Mode.Alert && _alert?.Kind == Pop.Volume && a.Kind == Pop.Volume)
+        if (_mode == Mode.Alert && _alert?.Kind == a.Kind && a.Kind is Pop.Volume or Pop.Music)
         {
-            _alert = a; // a held volume key updates the HUD in place instead of queueing 30 alerts
+            _alert = a; // a held volume key or a new track updates the alert in place instead of popping again
             FillAlert();
             ArmAlert();
             return;

@@ -142,10 +142,19 @@ sealed class Media(DispatcherQueue ui)
         if (newTrack && !MediaSource.IsPreview(s.SourceAppUserModelId, Title, Artist))
         {
             var key = Title + "\n" + Artist;
-            if (_primed && key != _realKey) TrackChanged?.Invoke();
-            _realKey = key;
+            if (!_primed) _realKey = key;
+            else if (key != _realKey) _ = AnnounceLater(s, key);
         }
         _primed = true;
+    }
+
+    // Clips that follow each other (scrolling a feed, skipping fast) are announced once, for the one that stays.
+    async Task AnnounceLater(GlobalSystemMediaTransportControlsSession s, string key)
+    {
+        await Task.Delay(1200);
+        if (s != _session || key != _artKey || key == _realKey) return;
+        _realKey = key;
+        TrackChanged?.Invoke();
     }
 
     // The browser window title can lag the media title by a moment after a tab switch: look once more.
