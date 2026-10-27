@@ -170,11 +170,40 @@ public sealed partial class IslandWindow
 
     // Windows' own sounds: a ring when a timer or a focus round ends, a short note for app notifications
     // (their Windows banner, sound included, is off). Nothing for the rest: music, volume, devices are no news.
-    static void Chime(Pop kind) => PlaySound(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media",
-        kind == Pop.Timers ? "Alarm02.wav" : "Windows Notify Messaging.wav"), 0, 0x20003); // SND_FILENAME | SND_ASYNC | SND_NODEFAULT
+    static void Chime(Pop kind)
+    {
+        var name = kind == Pop.Timers ? "Alarm02.wav" : "Windows Notify Messaging.wav";
+        if (!Sounds.TryGetValue(name, out var sound))
+            Sounds[name] = sound = Loud(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", name));
+        if (sound != 0) PlaySound(sound, 0, 0x7); // SND_ASYNC | SND_NODEFAULT | SND_MEMORY
+    }
 
-    [System.Runtime.InteropServices.DllImport("winmm.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-    static extern bool PlaySound(string sound, nint module, uint flags);
+    static readonly Dictionary<string, nint> Sounds = [];
+
+    // Windows' notification sounds are mixed quiet (Messaging peaks at a quarter of full scale): brought up to
+    // near full scale once, then kept in native memory, which an async PlaySound reads while it plays.
+    static nint Loud(string path)
+    {
+        byte[] b;
+        try { b = File.ReadAllBytes(path); }
+        catch (IOException) { return 0; }
+        int i = 12;
+        while (i + 8 <= b.Length && System.Text.Encoding.ASCII.GetString(b, i, 4) != "data") i += 8 + BitConverter.ToInt32(b, i + 4);
+        if (i + 8 <= b.Length && BitConverter.ToInt16(b, 20) == 1 && BitConverter.ToInt16(b, 34) == 16) // 16-bit PCM
+        {
+            var samples = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(b.AsSpan(i + 8, Math.Min(BitConverter.ToInt32(b, i + 4), b.Length - i - 8) & ~1));
+            int peak = 1;
+            foreach (var s in samples) peak = Math.Max(peak, Math.Abs((int)s));
+            var gain = 0.9 * short.MaxValue / peak;
+            for (int k = 0; k < samples.Length; k++) samples[k] = (short)(samples[k] * gain);
+        }
+        var native = System.Runtime.InteropServices.Marshal.AllocHGlobal(b.Length);
+        System.Runtime.InteropServices.Marshal.Copy(b, 0, native, b.Length);
+        return native;
+    }
+
+    [System.Runtime.InteropServices.DllImport("winmm.dll", EntryPoint = "PlaySoundW")]
+    static extern bool PlaySound(nint sound, nint module, uint flags);
 
     void NextAlert()
     {
