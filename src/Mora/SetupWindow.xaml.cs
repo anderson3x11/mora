@@ -310,7 +310,8 @@ public sealed partial class SetupWindow : Window
         Row("Headphones and battery", "Audio output switches, low battery, charging.", Toggle(() => _working.PopDevices, v => _working.PopDevices = v)),
         Row("Clipboard copies", "Private copies from password managers never show.", Toggle(() => _working.PopClipboard, v => _working.PopClipboard = v)),
         Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)),
-        Row("Microphone and camera", "When an app starts using them. A dot also stays in the panel while it lasts.", Toggle(() => _working.PopPrivacy, v => _working.PopPrivacy = v)));
+        Row("Microphone and camera", "When an app starts using them. A dot also stays in the panel while it lasts.", Toggle(() => _working.PopPrivacy, v => _working.PopPrivacy = v)),
+        Row("Sounds", "A ring when a timer or focus round ends, a short note for app notifications.", Toggle(() => _working.PlaySounds, v => _working.PlaySounds = v)));
 
     Border NotifyAppsCard()
     {

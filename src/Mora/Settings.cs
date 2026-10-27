@@ -44,6 +44,7 @@ sealed class Settings
     public bool PopVolume { get; set; }
     public bool PopClipboard { get; set; } = true;
     public bool PopPrivacy { get; set; } = true; // an app starts using the microphone or camera
+    public bool PlaySounds { get; set; } = true; // a ring for timers, a note for app notifications
     public Dictionary<string, string> NotifyApps { get; set; } = []; // app id → name: their notifications show in the island
 
     // Games: one profile for any game, own profiles by executable name, and every game seen so far

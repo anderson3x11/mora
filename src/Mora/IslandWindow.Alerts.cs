@@ -163,9 +163,18 @@ public sealed partial class IslandWindow
             ArmAlert();
             return;
         }
+        if (_settings.PlaySounds && a.Kind is Pop.Timers or Pop.Notifications) Chime(a.Kind);
         _alerts.Enqueue(a);
         if (_mode is Mode.Hidden or Mode.Compact) NextAlert();
     }
+
+    // Windows' own sounds: a ring when a timer or a focus round ends, a short note for app notifications
+    // (their Windows banner, sound included, is off). Nothing for the rest: music, volume, devices are no news.
+    static void Chime(Pop kind) => PlaySound(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media",
+        kind == Pop.Timers ? "Alarm02.wav" : "Windows Notify Messaging.wav"), 0, 0x20003); // SND_FILENAME | SND_ASYNC | SND_NODEFAULT
+
+    [System.Runtime.InteropServices.DllImport("winmm.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    static extern bool PlaySound(string sound, nint module, uint flags);
 
     void NextAlert()
     {
