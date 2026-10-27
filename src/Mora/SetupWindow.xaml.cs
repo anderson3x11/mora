@@ -98,6 +98,7 @@ public sealed partial class SetupWindow : Window
                 Heading("General", "How Mora starts and how it rests on screen.");
                 Page.Children.Add(Card(
                     Row("Start Mora when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
+                    ScreenRow(),
                     Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
                     Row("Open the panel on the last tab used", "Off: it always opens on Media. A file dragged in still opens the Shelf.", Toggle(() => _working.ReopenLastTab, v => _working.ReopenLastTab = v)),
                     Row("Show a small countdown while a timer runs", "With the music pill on too, it splits into a round bubble beside it.", Toggle(() => _working.ShowTimerPill, v => _working.ShowTimerPill = v)),
@@ -202,6 +203,9 @@ public sealed partial class SetupWindow : Window
         ]);
     }
 
+    UIElement ScreenRow() => Row("Only on the main screen", "Off: the island shows on the screen of the app you are in.",
+        Toggle(() => _working.PrimaryScreenOnly, v => _working.PrimaryScreenOnly = v));
+
     // ---------- first run: four steps ----------
 
     void ShowStep()
@@ -211,6 +215,7 @@ public sealed partial class SetupWindow : Window
             case 0:
                 Heading("A living island at the top of your screen", "Music, timers, downloads and device events show up in a small black island, then get out of the way.");
                 Page.Children.Add(Card(Row("Open it any time", "From any app, or from the Mora icon next to the clock. You can change the shortcut in Settings.", Key(_working.HotkeyName))));
+                Page.Children.Add(Card(ScreenRow()));
                 break;
             case 1:
                 Heading("When you play fullscreen games", "Pick what Mora does. You can change it later in Settings.");

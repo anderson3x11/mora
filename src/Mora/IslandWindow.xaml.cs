@@ -172,11 +172,11 @@ public sealed partial class IslandWindow : Window
         _setup.Closed += (_, _) => _setup = null;
     }
 
-    // Top center of the monitor holding the active window.
+    // Top center of the monitor holding the active window, or of the main one.
     // ponytail: only re-checked when the island appears or opens; a resting pill does not follow focus yet.
     void Place()
     {
-        var mon = MonitorFromWindow(GetForegroundWindow(), 1); // MONITOR_DEFAULTTOPRIMARY
+        var mon = MonitorFromWindow(_settings.PrimaryScreenOnly ? 0 : GetForegroundWindow(), 1); // MONITOR_DEFAULTTOPRIMARY
         if (mon == _monitor) return;
         _monitor = mon;
         var info = new MONITORINFO { Size = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
