@@ -82,7 +82,7 @@ Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21
 
 ## How it is built
 
-C# and WinUI 3 (Windows App SDK, unpackaged), .NET 10. The product brief and the decisions taken while building are in [project.md](project.md).
+C# and WinUI 3 (Windows App SDK, unpackaged), .NET 10. The product brief and the decisions taken while building are in [project.md](project.md). Released under the [MIT license](LICENSE).
 
 | Area | Notes |
 |---|---|
