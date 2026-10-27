@@ -18,6 +18,8 @@ sealed class GameProfile
     public GameProfile Clone() => new() { MusicCard = MusicCard, Pops = [.. Pops] };
 }
 
+public enum ClockStyle { TimeAndDate, Time, TimeWithSeconds, FullDate }
+
 // User preferences in %LOCALAPPDATA%\Mora\settings.json, written by the setup and settings window.
 sealed class Settings
 {
@@ -50,6 +52,12 @@ sealed class Settings
     public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
     public string Theme { get; set; } = "Island";
     public bool ReopenLastTab { get; set; } = true; // off: the panel always opens on Media
+    // The clock: where it shows, and how.
+    public bool ShowClockPill { get; set; }         // a resting pill with the time, off like the music pill
+    public bool ClockBesidePanel { get; set; } = true;
+    public bool ClockInPanel { get; set; } = true;
+    public bool ClockInGameCard { get; set; } = true;
+    public ClockStyle ClockFormat { get; set; } = ClockStyle.TimeAndDate;
     public List<string> SeenGames { get; set; } = [];
     public int GameListVersion { get; set; }
 

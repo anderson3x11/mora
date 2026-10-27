@@ -33,7 +33,7 @@ public sealed partial class IslandWindow : Window
     {
         var (w, h) = m switch
         {
-            Mode.Compact => (MediaPill ? 214 : 132, 32),
+            Mode.Compact => (MediaPill ? 214 : TimerPill ? 132 : ClockPillWidth, 32),
             Mode.Alert => (_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50), // longer text or two answers
             Mode.Game => (288, 66),
             Mode.Expanded => (430, 170), // one size for every tab: switching tabs never reshapes the island
@@ -212,10 +212,11 @@ public sealed partial class IslandWindow : Window
     }
 
     // The resting pill, each part opt-in: music while media exists (paused included), a countdown while a
-    // timer runs. Both at once split into the pill and a round bubble beside it. Never over a game.
+    // timer runs, the time. Music with a countdown or the time splits into the pill and a round bubble beside it.
+    // Never over a game.
     bool MediaPill => _settings.ShowCompactPill && _media is { HasSession: true };
     bool TimerPill => _settings.ShowTimerPill && _timer != null;
-    bool RestingPill => (MediaPill || TimerPill) && _game is null;
+    bool RestingPill => (MediaPill || TimerPill || ClockPill) && _game is null;
 
     // After media or a timer changed: show, hide or refill the resting pill.
     void EvaluateRest()
@@ -236,23 +237,29 @@ public sealed partial class IslandWindow : Window
         CompactTimer.Visibility = MediaPill ? Visibility.Collapsed : Visibility.Visible;
         CompactLayer.Width = GeoOf(Mode.Compact).W;
         UpdateWave();
+        FillClock(); // the time, when neither music nor a countdown has the pill
     }
 
     void UpdateBubble()
     {
-        // Beside the resting pill: a round bubble (music and timer at once). Beside the open panel: a tall pill
-        // with the countdown, whenever a timer runs and the Timers tab is not already showing it.
+        // Beside the resting pill: a round bubble with the countdown or the time, next to music. Beside the open
+        // panel: a tall pill with the countdown, unless the Timers tab already shows it; else the time, if wanted.
         bool tall = _mode == Mode.Expanded;
-        _bubble.T = (_mode == Mode.Compact && MediaPill && TimerPill) || (tall && _timer != null && _tab != Tab.Timers) ? 1 : 0;
-        if (tall != _tallBubble)
+        bool timer = tall ? _timer != null && _tab != Tab.Timers : MediaPill && TimerPill;
+        bool clock = !timer && (tall ? _settings.ClockBesidePanel : MediaPill && ClockPill);
+        _bubble.T = (_mode == Mode.Compact || tall) && (timer || clock) ? 1 : 0;
+        if (tall != _tallBubble || clock != _bubbleClock)
         {
             _tallBubble = tall;
+            _bubbleClock = clock;
             _bubble.X = _bubble.V = 0; // a new shape pops in from nothing rather than morphing
             BubbleText.Width = tall ? TallBubble.X : 32;
             BubbleText.Height = tall ? TallBubble.Y : 32;
             BubbleText.FontSize = tall ? 20 : 9.5;
-            BubbleText.Padding = new Thickness(0, tall ? (TallBubble.Y - 54) / 2 : 9, 0, 0); // two 27 px lines, centered
+            // Two 27 px lines centered (the time adds an 18 px line for the day).
+            BubbleText.Padding = new Thickness(0, tall ? (TallBubble.Y - (clock ? 72 : 54)) / 2 : 9, 0, 0);
             FillTimer();
+            FillClock();
         }
         if (_bubble.T != _bubble.X) Animate();
     }
@@ -283,6 +290,7 @@ public sealed partial class IslandWindow : Window
         Fade(ExpandedLayer, false);
         UpdateWave();
         UpdateProgressTimer();
+        UpdateClockTick();
 
         Geo g = GeoOf(mode), pg = GeoOf(prev);
         if (g.W * g.H > pg.W * pg.H + 1)
@@ -487,6 +495,7 @@ public sealed partial class IslandWindow : Window
         ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
         ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
         SourceBadge.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
+        PanelClock.Visibility = _tab != Tab.Media && _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed; // the source's place
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())

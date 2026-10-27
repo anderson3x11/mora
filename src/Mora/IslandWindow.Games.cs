@@ -156,6 +156,7 @@ public sealed partial class IslandWindow
     {
         GameTitle.Text = _media.HasSession ? _media.Title : "Nothing playing";
         GameArtist.Text = _cardNote ?? _media.Artist;
+        GameClock.Visibility = _settings.ClockInGameCard ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
         GamePlayIcon.Glyph = PlayIcon.Glyph;
         SetArt(GameArt, GameArtIcon);
         ShapeArt(GameArt, GameArtColumn, 45);

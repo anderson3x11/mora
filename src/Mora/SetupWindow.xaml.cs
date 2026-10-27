@@ -100,6 +100,13 @@ public sealed partial class SetupWindow : Window
                     Row("Open the panel on the last tab used", "Off: it always opens on Media. A file dragged in still opens the Shelf.", Toggle(() => _working.ReopenLastTab, v => _working.ReopenLastTab = v)),
                     Row("Show a small countdown while a timer runs", "With the music pill on too, it splits into a round bubble beside it.", Toggle(() => _working.ShowTimerPill, v => _working.ShowTimerPill = v)),
                     Row("Open the island", "Click, then press the shortcut you want. It works from any app.", ShortcutPicker())));
+                Page.Children.Add(Subheading("Clock", "The time and date on the island. The resting pill is off by default: without a notch, it can cover browser tabs."));
+                Page.Children.Add(Card(
+                    Row("On the resting pill", "Shows the time at the top of the screen. Next to music, it moves into the round bubble.", Toggle(() => _working.ShowClockPill, v => _working.ShowClockPill = v)),
+                    Row("Beside the open panel", "A tall pill with the time and the day, when no timer runs.", Toggle(() => _working.ClockBesidePanel, v => _working.ClockBesidePanel = v)),
+                    Row("In the panel", "At the top right, on the tabs other than Media.", Toggle(() => _working.ClockInPanel, v => _working.ClockInPanel = v)),
+                    Row("On the game music card", "The time, without leaving the game.", Toggle(() => _working.ClockInGameCard, v => _working.ClockInGameCard = v))));
+                Page.Children.Add(ClockFormatCard());
                 Page.Children.Add(Subheading("Theme", "The island's whole look: its shape, how it moves and its colors."));
                 Page.Children.Add(ThemeCard());
                 break;
@@ -254,6 +261,25 @@ public sealed partial class SetupWindow : Window
             return (UIElement)radio;
         }).ToArray();
         return Card(rows);
+    }
+
+    // Each choice shows what it looks like right now, in Windows' own format.
+    Border ClockFormatCard()
+    {
+        var now = DateTime.Now;
+        (ClockStyle Style, string Example)[] choices =
+        [
+            (ClockStyle.TimeAndDate, now.ToString("t") + " · " + now.ToString("ddd d MMM")),
+            (ClockStyle.Time, now.ToString("t")),
+            (ClockStyle.TimeWithSeconds, now.ToString("T")),
+            (ClockStyle.FullDate, now.ToString("dddd d MMMM") + " · " + now.ToString("t")),
+        ];
+        return Card(choices.Select(c =>
+        {
+            var radio = new RadioButton { GroupName = "clock", Content = c.Example, IsChecked = _working.ClockFormat == c.Style, Margin = new Thickness(0, 6, 0, 6) };
+            radio.Checked += (_, _) => _working.ClockFormat = c.Style;
+            return (UIElement)radio;
+        }).ToArray());
     }
 
     Border ThemeCard() => Card(Theme.All.Select(t =>
