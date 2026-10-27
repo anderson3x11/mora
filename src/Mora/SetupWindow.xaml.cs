@@ -116,6 +116,8 @@ public sealed partial class SetupWindow : Window
             case Tab.Popups:
                 Heading("Pop-ups", "What may open the island on its own. Each one leaves after 3 seconds, and none show during fullscreen games.");
                 Page.Children.Add(PopupsCard());
+                Page.Children.Add(Subheading("App notifications", "Apps turned on here show their notifications in the island, and Windows stops showing them in the corner. They stay in the notification center. Apps appear once they have sent a notification."));
+                Page.Children.Add(NotifyAppsCard());
                 break;
             case Tab.Games:
                 Heading("Games", "What Mora does while a fullscreen game is in front (games Windows knows, or installed by Steam, Riot, Epic, GOG, Ubisoft, EA or Xbox). Anything not allowed waits, and shows up as one summary when you leave the game.");
@@ -199,6 +201,7 @@ public sealed partial class SetupWindow : Window
             PopRow(Pop.Clipboard, "Show clipboard copies"),
             PopRow(Pop.Volume, "Show volume changes"),
             PopRow(Pop.Privacy, "Show microphone and camera use"),
+            PopRow(Pop.Notifications, "Show app notifications"),
             .. extra,
         ]);
     }
@@ -308,6 +311,18 @@ public sealed partial class SetupWindow : Window
         Row("Clipboard copies", "Private copies from password managers never show.", Toggle(() => _working.PopClipboard, v => _working.PopClipboard = v)),
         Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)),
         Row("Microphone and camera", "When an app starts using them. A dot also stays in the panel while it lasts.", Toggle(() => _working.PopPrivacy, v => _working.PopPrivacy = v)));
+
+    Border NotifyAppsCard()
+    {
+        var apps = Notifications.Seen.Concat(_working.NotifyApps).DistinctBy(a => a.Key).OrderBy(a => a.Value).ToList();
+        if (!Notifications.Allowed) return Card(Row("Mora cannot read notifications", "Allow it in Windows Settings, Privacy and security, Notifications.", null));
+        if (apps.Count == 0) return Card(Row("No app has sent a notification yet", "Since Mora started.", null));
+        return Card([.. apps.Select(a => Row(a.Value, null, Toggle(() => _working.NotifyApps.ContainsKey(a.Key), v =>
+        {
+            if (v) _working.NotifyApps[a.Key] = a.Value;
+            else _working.NotifyApps.Remove(a.Key);
+        })))]);
+    }
 
     // A rounded card of rows separated by hairlines, like the island's panel.
     Border Card(params UIElement[] rows)

@@ -51,6 +51,11 @@ public sealed partial class IslandWindow
         _privacy.Changed += FillPrivacyDots;
         FillPrivacyDots();
 
+        _notifications = new Notifications(DispatcherQueue, id => _settings.NotifyApps.ContainsKey(id));
+        _notifications.Arrived += t => Notify(new Alert(Pop.Notifications, "", t.Title == "" ? t.App : t.Title,
+            t.Title == "" ? t.Body : t.Body == "" ? t.App : $"{t.App} · {t.Body}", Art: t.Logo, Seconds: 4));
+        _ = _notifications.StartAsync();
+
         _downloads = new Downloads(DispatcherQueue);
         _downloads.Finished += path => Notify(new Alert(Pop.Downloads, "", Path.GetFileName(path),
             "Download finished " + Size(path), Green, ActionLabel: "Show",
@@ -78,6 +83,7 @@ public sealed partial class IslandWindow
 
     static readonly Color MicOrange = Color.FromArgb(255, 0xFF, 0x9F, 0x0A), CameraGreen = Color.FromArgb(255, 0x30, 0xD1, 0x58);
     PrivacyWatch? _privacy;
+    Notifications? _notifications;
 
     // One dot per device in use, with the apps using it on hover.
     void FillPrivacyDots()

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Mora;
 
-enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard, Privacy }
+enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard, Privacy, Notifications }
 
 // The game setting before per-game profiles; only read to convert old settings files.
 enum GameMode { Quiet, Music, Ask }
@@ -44,6 +44,7 @@ sealed class Settings
     public bool PopVolume { get; set; }
     public bool PopClipboard { get; set; } = true;
     public bool PopPrivacy { get; set; } = true; // an app starts using the microphone or camera
+    public Dictionary<string, string> NotifyApps { get; set; } = []; // app id → name: their notifications show in the island
 
     // Games: one profile for any game, own profiles by executable name, and every game seen so far
     // (listed in Settings so it can be customized later).
@@ -98,6 +99,8 @@ sealed class Settings
         Pop.Devices => PopDevices,
         Pop.Volume => PopVolume,
         Pop.Privacy => PopPrivacy,
+        Pop.Notifications => true, // chosen per app
+
         _ => PopClipboard,
     };
 

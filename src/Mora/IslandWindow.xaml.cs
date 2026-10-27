@@ -163,6 +163,8 @@ public sealed partial class IslandWindow : Window
             _tray.SetTip($"Mora ({_settings.HotkeyName})");
             _settings.Save();
             if (old.Theme != chosen.Theme) ApplyTheme();
+            foreach (var id in old.NotifyApps.Keys.Union(chosen.NotifyApps.Keys))
+                if (old.NotifyApps.ContainsKey(id) != chosen.NotifyApps.ContainsKey(id)) Notifications.SetBanner(id, show: !chosen.NotifyApps.ContainsKey(id));
             Startup.Apply(_settings.StartWithWindows);
             UpdateHotkey();
             OnMediaChanged(); // the resting pill may have been switched on or off
