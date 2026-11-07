@@ -33,8 +33,8 @@ var ui = new Thread(() =>
     {
         var fg = form.Handle;
         var outside = new Point(form.Left + form.Width / 2, form.Bottom - Px(40)); // form area below the text box
-        // Points inside the open panel, in DIPs from its top-left corner (430 wide, 8 below the screen edge).
-        Point Panel(int x, int y) => new(mon.Left + mon.Width / 2 - Px(215) + Px(x), mon.Top + Px(8 + y));
+        // Points inside the open panel, in DIPs from its top-left corner (680 wide, 8 below the screen edge).
+        Point Panel(int x, int y) => new(mon.Left + mon.Width / 2 - Px(340) + Px(x), mon.Top + Px(8 + y));
 
         // The test copies text, so put the user's clipboard back afterwards.
         var savedText = Clipboard.ContainsText() ? Clipboard.GetText() : null;
@@ -71,10 +71,11 @@ return exit;
 
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
-    // Themes with icon-only tabs (Notch) have them narrower, about 33 apart.
+    // Tabs, in a pill from the left: Home, Media, Timers, Shelf, Clipboard. Themes with icon-only tabs (Notch)
+    // have them narrower, about 30 apart.
     bool iconTabs = Environment.GetEnvironmentVariable("MORA_TEST_THEME") == "Notch";
-    Point Tab(int i, int labeled) => panel(iconTabs ? 30 + 33 * i : labeled, 22);
-    Point mediaTab = Tab(0, 40), timersTab = Tab(1, 115), clipboardTab = Tab(3, 260), pasteFirst = panel(395, 56), firstShelfRow = panel(100, 56);
+    Point Tab(int i, int labeled) => panel(iconTabs ? 30 + 30 * i : labeled, 22);
+    Point mediaTab = Tab(1, 113), timersTab = Tab(2, 178), clipboardTab = Tab(4, 310), pasteFirst = panel(630, 60), firstShelfRow = panel(100, 60);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)

@@ -65,6 +65,7 @@ public sealed partial class IslandWindow
     // Ticks once a second while the island shows anything; hidden, it rests.
     void UpdateClockTick()
     {
+        UpdateRoam(); // the crab walks while the panel is open
         if (_clockTick is null)
         {
             _clockTick = DispatcherQueue.CreateTimer();

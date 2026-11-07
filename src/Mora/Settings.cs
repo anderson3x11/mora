@@ -45,7 +45,8 @@ sealed class Settings
     public bool PopClipboard { get; set; } = true;
     public bool PopPrivacy { get; set; } = true; // an app starts using the microphone or camera
     public bool PopAgents { get; set; } = true;  // a coding agent needs you, or finished a long task
-    public bool ConnectClaudeCode { get; set; }  // Mora's hooks are in Claude Code's settings
+    public bool ConnectClaudeCode { get; set; }
+    public bool MascotRoams { get; set; } = true; // the crab walks along the open panel's bottom edge  // Mora's hooks are in Claude Code's settings
     public bool PlaySounds { get; set; } = true; // a ring for timers, a note for app notifications
     public int SoundVolume { get; set; } = 90;   // 0 to 100, of each sound's loudest without clipping
     public Dictionary<string, string> NotifyApps { get; set; } = []; // app id → name: their notifications show in the island

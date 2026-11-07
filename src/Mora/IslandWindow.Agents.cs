@@ -22,6 +22,7 @@ public sealed partial class IslandWindow
     void OnAgent(Agents.Session? s, string ev)
     {
         if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents();
+        UpdateRoam(); // the walking crab takes the agents' mood
         if (s is null || !_settings.ConnectClaudeCode || AgentInFront()) return;
         bool asks = ev == "Notification" && s.State == Agents.State.NeedsYou;
         bool done = ev == "Stop" && DateTime.Now - s.Started >= TimeSpan.FromSeconds(30); // quick answers are no news
@@ -62,58 +63,26 @@ public sealed partial class IslandWindow
         return t.TotalMinutes >= 1 ? $"{(int)t.TotalMinutes} min {t.Seconds:00} s" : $"{t.Seconds} s";
     }
 
-    // Mora's mascot, a pixel crab: it bobs while its agent works, waves its claws when it needs the user, and
-    // rests once done. Drawn from this map, one rectangle per pixel.
-    static readonly string[] Crab =
-    [
-        ".C.......C.",
-        "CC.......CC",
-        ".C.BBBBB.C.",
-        "..BBBBBBB..",
-        ".BBEBBBEBB.",
-        "..BBBBBBB..",
-        ".L.L...L.L.",
-        "L..L...L..L",
-    ];
-    static readonly Windows.UI.Color Coral = Windows.UI.Color.FromArgb(255, 0xFF, 0x7A, 0x59);
-
+    // The crab in a card or an alert: it blinks now and then, marches on the spot while its agent works and
+    // waves its claws when it needs the user.
     FrameworkElement Mascot(Agents.State state, double px)
     {
-        var body = new Canvas { Width = 11 * px, Height = 8 * px };
-        var claws = new Canvas { Width = 11 * px, Height = 8 * px, RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5) };
-        var coral = new SolidColorBrush(Coral);
-        var dark = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x1A, 0x10, 0x0E));
-        for (int y = 0; y < Crab.Length; y++)
-            for (int x = 0; x < Crab[y].Length; x++)
-            {
-                var c = Crab[y][x];
-                if (c == '.') continue;
-                var r = new Microsoft.UI.Xaml.Shapes.Rectangle { Width = px, Height = px, Fill = c == 'E' ? dark : coral };
-                Canvas.SetLeft(r, x * px);
-                Canvas.SetTop(r, y * px);
-                (c == 'C' ? claws : body).Children.Add(r);
-            }
-        var crab = new Grid { Width = 11 * px, Height = 8 * px, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        crab.Children.Add(body);
-        crab.Children.Add(claws);
-        if (!_motion || state == Agents.State.Done) return crab;
-        var move = new TranslateTransform();
-        ((UIElement)(state == Agents.State.NeedsYou ? claws : crab)).RenderTransform = move;
-        var sb = new Storyboard { RepeatBehavior = RepeatBehavior.Forever, AutoReverse = true };
-        var a = new DoubleAnimation
+        var crab = new Crab(px) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        if (!_motion) return crab;
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(120);
+        int tick = 0, blinkAt = _rng.Next(15, 40);
+        timer.Tick += (_, _) =>
         {
-            From = 0, To = state == Agents.State.NeedsYou ? -1.5 * px : -px,
-            Duration = TimeSpan.FromMilliseconds(state == Agents.State.NeedsYou ? 180 : 420),
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+            tick++;
+            bool blink = tick % blinkAt is 0 or 1;
+            crab.Pose(step: state == Agents.State.Working && tick / 3 % 2 == 1, blink: blink,
+                clawsUp: state == Agents.State.NeedsYou && tick / 2 % 2 == 1);
         };
-        Storyboard.SetTarget(a, move);
-        Storyboard.SetTargetProperty(a, "Y");
-        sb.Children.Add(a);
-        crab.Loaded += (_, _) => sb.Begin();
-        crab.Unloaded += (_, _) => sb.Stop();
+        crab.Loaded += (_, _) => timer.Start();
+        crab.Unloaded += (_, _) => timer.Stop();
         return crab;
     }
-
     // A turning three-quarter circle. Not a ProgressRing: the island does not load WinUI's control styles.
     FrameworkElement Spinner(Brush stroke)
     {

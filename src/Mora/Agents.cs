@@ -81,7 +81,7 @@ sealed class Agents(DispatcherQueue ui)
                 have += r;
             }
             await s.WriteAsync("HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8.ToArray());
-            var json = Encoding.UTF8.GetString(body);
+            var json = Encoding.UTF8.GetString(body).TrimStart('﻿'); // a byte order mark (PowerShell pipes add one) is not JSON
             ui.TryEnqueue(() => Handle(json));
         }
         catch (Exception e) when (e is IOException or SocketException) { }

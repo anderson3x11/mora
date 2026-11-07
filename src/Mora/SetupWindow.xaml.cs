@@ -116,7 +116,9 @@ public sealed partial class SetupWindow : Window
                     Row("Calendar link", "Windows' calendars show by themselves. For Google Calendar, paste the \"Secret address in iCal format\" from its settings; for Outlook, a published calendar's ICS link.", CalendarLinkBox())));
                 Page.Children.Add(Subheading("Coding agents", "Follow your AI agents from the island: what each session is doing, and a pop-up when one needs you or finishes a long task."));
                 Page.Children.Add(Card(Row("Connect Claude Code", "Adds hooks to Claude Code's settings (.claude\\settings.json in your user folder). They report to Mora on this PC only. New sessions pick them up.",
-                    Toggle(() => _working.ConnectClaudeCode, v => _working.ConnectClaudeCode = v))));
+                    Toggle(() => _working.ConnectClaudeCode, v => _working.ConnectClaudeCode = v)),
+                    Row("Let the crab wander", "Mora's mascot walks along the bottom of the open panel, under everything. It bobs while an agent works and waves when one needs you.",
+                        Toggle(() => _working.MascotRoams, v => _working.MascotRoams = v))));
                 Page.Children.Add(Subheading("Theme", "The island's whole look: its shape, how it moves and its colors."));
                 Page.Children.Add(ThemeCard());
                 break;
