@@ -11,7 +11,8 @@ namespace Mora;
 record Alert(Pop Kind, string Glyph, string Title, string Sub = "", Color? Tint = null, double? Level = null,
              string? ActionLabel = null, Action? Action = null, ImageSource? Art = null,
              string? Action2Label = null, Action? Action2 = null, int Seconds = 3, bool Wide = false, Action? Expired = null,
-             bool FillUp = false); // the level bar fills from empty when shown (charging)
+             bool FillUp = false,  // the level bar fills from empty when shown (charging)
+             Agents.State? Agent = null); // a coding agent's alert: the mascot instead of the icon
 
 // Short-lived events: shown one at a time for ~3 s, held longer only while hovered,
 // queued while the panel is open, held during fullscreen games.
@@ -243,7 +244,8 @@ public sealed partial class IslandWindow
         AlertIcon.Glyph = a.Glyph;
         var res = ((FrameworkElement)Content).Resources;
         AlertIcon.Foreground = a.Tint is { } iconTint ? new SolidColorBrush(iconTint) : (Brush)res["Fg"];
-        AlertIcon.Visibility = a.Art is null ? Visibility.Visible : Visibility.Collapsed;
+        AlertIcon.Visibility = a.Art is null && a.Agent is null ? Visibility.Visible : Visibility.Collapsed;
+        AlertMascot.Content = a.Agent is { } agent ? Mascot(agent, 2) : null;
         AlertIconFrame.Background = a.Art is { } art
             ? new ImageBrush { ImageSource = art, Stretch = Stretch.UniformToFill }
             : (Brush)res["Raised"];

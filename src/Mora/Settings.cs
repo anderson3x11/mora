@@ -59,6 +59,8 @@ sealed class Settings
     public bool ReopenLastTab { get; set; } = true; // off: the panel always opens on Media
     public bool DoNotDisturb { get; set; }      // the moon in the panel: pop-ups wait until it is off
     public bool ShowLyrics { get; set; }        // the Media tab's lyrics button, remembered
+    public bool ShowWeather { get; set; } = true; // the Home tab's weather card (asks Open-Meteo, with a rounded location)
+    public string CalendarLink { get; set; } = ""; // an .ics address for the Home tab's agenda, besides Windows' calendars
     public bool PrimaryScreenOnly { get; set; } // off: the island follows the screen of the active window
     // The clock: where it shows, and how.
     public bool ShowClockPill { get; set; }         // a resting pill with the time, off like the music pill

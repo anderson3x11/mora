@@ -23,6 +23,8 @@ sealed class Agents(DispatcherQueue ui)
         public string Name = "";
         public State State;
         public string Action = "";
+        public string Prompt = "";                       // what the user asked, on one line
+        public readonly List<(string Glyph, string Text)> Steps = []; // the latest tool steps, newest first
         public DateTime Started = DateTime.Now;
     }
 
@@ -107,9 +109,14 @@ sealed class Agents(DispatcherQueue ui)
         {
             case "UserPromptSubmit":
                 (s.State, s.Action, s.Started) = (State.Working, "Thinking", DateTime.Now);
+                s.Prompt = string.Join(' ', Str(r, "prompt").Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries));
+                s.Steps.Clear();
                 break;
             case "PreToolUse":
-                (s.State, s.Action) = (State.Working, Describe(Str(r, "tool_name"), r.TryGetProperty("tool_input", out var input) ? input : default));
+                var step = Describe(Str(r, "tool_name"), r.TryGetProperty("tool_input", out var input) ? input : default);
+                (s.State, s.Action) = (State.Working, step.Text);
+                s.Steps.Insert(0, step);
+                if (s.Steps.Count > 3) s.Steps.RemoveAt(3);
                 break;
             case "PostToolUse" when s.State == State.NeedsYou: // allowed: back to work
                 s.State = State.Working;
@@ -125,18 +132,18 @@ sealed class Agents(DispatcherQueue ui)
         }
         Changed?.Invoke(s, ev);
 
-        string Describe(string tool, JsonElement i)
+        (string Glyph, string Text) Describe(string tool, JsonElement i)
         {
             var file = Path.GetFileName(Str(i, "file_path"));
             return tool switch
             {
-                "Edit" or "MultiEdit" or "Write" or "NotebookEdit" => $"Editing {file}",
-                "Read" => $"Reading {file}",
-                "Bash" or "PowerShell" => Str(i, "description") is { Length: > 0 } d ? d : "Running a command",
-                "Grep" or "Glob" => "Searching the code",
-                "WebFetch" or "WebSearch" => "Searching the web",
-                "Agent" or "Task" => "Running a subagent",
-                _ => tool.StartsWith("mcp__") ? "Using a connector" : tool,
+                "Edit" or "MultiEdit" or "Write" or "NotebookEdit" => ("\uE70F", $"Edit {file}"),
+                "Read" => ("\uE8A5", $"Read {file}"),
+                "Bash" or "PowerShell" => ("\uE756", Str(i, "description") is { Length: > 0 } d ? d : "Run a command"),
+                "Grep" or "Glob" => ("\uE721", "Search the code"),
+                "WebFetch" or "WebSearch" => ("\uE774", "Search the web"),
+                "Agent" or "Task" => ("\uE99A", "Run a subagent"),
+                _ => ("\uE71B", tool.StartsWith("mcp__") ? "Use a connector" : tool),
             };
         }
     }

@@ -8,6 +8,8 @@ namespace Mora;
 //   headphones "<audio output name>" [percent]    charging <percent>    battery <before> <after>
 //   focus <focus seconds> <break seconds>: a focus session with short rounds
 //   track "<title>" "<artist>": a track change, with the current artwork
+//   open <tab>, close: the panel on a tab (Home, Media, Agents...), for screenshots
+//   agent "<title>" "<text>": a coding agent asking for the user, with the mascot
 public sealed partial class IslandWindow
 {
     internal const uint WM_COPYDATA = 0x4A;
@@ -32,6 +34,17 @@ public sealed partial class IslandWindow
                 break;
             case "track" when a.Length >= 3:
                 Notify(new Alert(Pop.Music, "", a[1], "Now playing · " + a[2], Art: _media.Art));
+                break;
+            case "open" when a.Length >= 2 && Enum.TryParse<Tab>(a[1], true, out var tab):
+                _tab = tab;
+                SetMode(Mode.Expanded, Via.Click);
+                ShowTab();
+                break;
+            case "close":
+                Settle();
+                break;
+            case "agent" when a.Length >= 3:
+                Notify(new Alert(Pop.Agents, "", a[1], a[2], MicOrange, Seconds: 6, Wide: true, Agent: Agents.State.NeedsYou), force: true);
                 break;
             case "focus" when a.Length >= 3 && int.TryParse(a[1], out var work) && int.TryParse(a[2], out var rest):
                 (_focusWork, _focusBreak) = (work, rest);

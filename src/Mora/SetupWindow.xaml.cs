@@ -100,7 +100,7 @@ public sealed partial class SetupWindow : Window
                     Row("Start Mora when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
                     ScreenRow(),
                     Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
-                    Row("Open the panel on the last tab used", "Off: it always opens on Media. A file dragged in still opens the Shelf.", Toggle(() => _working.ReopenLastTab, v => _working.ReopenLastTab = v)),
+                    Row("Open the panel on the last tab used", "Off: it always opens on Home. A file dragged in still opens the Shelf.", Toggle(() => _working.ReopenLastTab, v => _working.ReopenLastTab = v)),
                     Row("Show a small countdown while a timer runs", "With the music pill on too, it splits into a round bubble beside it.", Toggle(() => _working.ShowTimerPill, v => _working.ShowTimerPill = v)),
                     Row("Open the island", "Click, then press the shortcut you want. It works from any app.", ShortcutPicker())));
                 Page.Children.Add(Subheading("Clock", "The time and date on the island. The resting pill is off by default: without a notch, it can cover browser tabs."));
@@ -110,6 +110,10 @@ public sealed partial class SetupWindow : Window
                     Row("In the panel", "At the top right, next to what is playing.", Toggle(() => _working.ClockInPanel, v => _working.ClockInPanel = v)),
                     Row("On the game music card", "The time, without leaving the game.", Toggle(() => _working.ClockInGameCard, v => _working.ClockInGameCard = v))));
                 Page.Children.Add(ClockFormatCard());
+                Page.Children.Add(Subheading("Home", "The first tab: your music, the agenda, a focus timer and the weather."));
+                Page.Children.Add(Card(
+                    Row("Weather", "From Open-Meteo, for your area: Windows' location, rounded to about 10 km, is all that leaves your PC.", Toggle(() => _working.ShowWeather, v => _working.ShowWeather = v)),
+                    Row("Calendar link", "Windows' calendars show by themselves. For Google Calendar, paste the \"Secret address in iCal format\" from its settings; for Outlook, a published calendar's ICS link.", CalendarLinkBox())));
                 Page.Children.Add(Subheading("Coding agents", "Follow your AI agents from the island: what each session is doing, and a pop-up when one needs you or finishes a long task."));
                 Page.Children.Add(Card(Row("Connect Claude Code", "Adds hooks to Claude Code's settings (.claude\\settings.json in your user folder). They report to Mora on this PC only. New sessions pick them up.",
                     Toggle(() => _working.ConnectClaudeCode, v => _working.ConnectClaudeCode = v))));
@@ -208,6 +212,18 @@ public sealed partial class SetupWindow : Window
             PopRow(Pop.Agents, "Show coding agents"),
             .. extra,
         ]);
+    }
+
+    TextBox CalendarLinkBox()
+    {
+        var box = new TextBox { Text = _working.CalendarLink, PlaceholderText = "https://…/basic.ics", Width = 220 };
+        box.LostFocus += (_, _) =>
+        {
+            if (box.Text.Trim() == _working.CalendarLink) return;
+            _working.CalendarLink = box.Text.Trim();
+            Changed();
+        };
+        return box;
     }
 
     UIElement ScreenRow() => Row("Only on the main screen", "Off: the island shows on the screen of the app you are in.",

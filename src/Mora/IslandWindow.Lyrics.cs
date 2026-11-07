@@ -8,8 +8,8 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Mora;
 
-// Synced lyrics from LRCLIB (free, no key), asked for only while the lyrics button is on. The line being
-// sung takes the title's place and the next one the artist's; before the first line, the title shows.
+// Synced lyrics from LRCLIB (free, no key), asked for only while the lyrics button is on. A card beside the
+// player shows the line being sung, and the next one under it.
 public sealed partial class IslandWindow
 {
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8), DefaultRequestHeaders = { { "User-Agent", "Mora (https://github.com/anderson3x11/mora)" } } };
@@ -60,8 +60,15 @@ public sealed partial class IslandWindow
         var lines = _settings.ShowLyrics ? _lyrics : null;
         var p = _media.Position;
         int i = lines?.FindLastIndex(l => l.At <= p) ?? -1;
-        TitleText.Text = i < 0 ? _media.Title : lines![i].Text is { Length: > 0 } t ? t : "♪";
-        ArtistText.Text = i < 0 ? _media.Artist : i + 1 < lines!.Count ? lines[i + 1].Text : "";
+        TitleText.Text = _media.Title;
+        ArtistText.Text = _media.Artist;
+        LyricsCard.Visibility = lines is null ? Visibility.Collapsed : Visibility.Visible;
+        if (lines != null)
+        {
+            // Before the first line, the first one waits as the next.
+            LyricNow.Text = i < 0 ? "♪" : lines[i].Text is { Length: > 0 } t ? t : "♪";
+            LyricNext.Text = i + 1 < lines.Count ? lines[i + 1].Text : "";
+        }
         LyricsIcon.Foreground = (Brush)((FrameworkElement)Content).Resources[_settings.ShowLyrics ? "Fg" : "Muted"];
     }
 

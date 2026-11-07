@@ -16,7 +16,7 @@ namespace Mora;
 public sealed partial class IslandWindow : Window
 {
     // Fixed window canvas in DIPs: room for the largest state plus spring overshoot.
-    const double CanvasW = 560, CanvasH = 300;
+    const double CanvasW = 840, CanvasH = 300;
     const int HotkeyId = 1;
     static readonly (double K, double C) Reduced = (900, 60);
     (double K, double C) OpenSpring => _theme.Open;
@@ -26,7 +26,7 @@ public sealed partial class IslandWindow : Window
     enum Via { None, Hotkey, Click, Hover, Drag }
     record struct Geo(double W, double H, double R, double Y);
 
-    enum Tab { Media, Timers, Shelf, Clipboard, Agents }
+    enum Tab { Home, Media, Timers, Shelf, Clipboard, Agents }
 
     // Sizes are the same in every theme; the theme sets the corners and where the island sits.
     Geo GeoOf(Mode m)
@@ -36,7 +36,7 @@ public sealed partial class IslandWindow : Window
             Mode.Compact => (MediaPill ? 214 : TimerPill ? 132 : ClockPillWidth, 32),
             Mode.Alert => (_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50), // longer text or two answers
             Mode.Game => (288, 66),
-            Mode.Expanded => (430, 170), // one size for every tab: switching tabs never reshapes the island
+            Mode.Expanded => (680, 170), // one size for every tab: switching tabs never reshapes the island; wide rather than tall
             _ => (96, 24),
         };
         double r = _theme.Radius(Math.Min(h / 2.0, 26));
@@ -164,6 +164,8 @@ public sealed partial class IslandWindow : Window
             _tray.SetTip($"Mora ({_settings.HotkeyName})");
             _settings.Save();
             if (old.Theme != chosen.Theme) ApplyTheme();
+            if (old.CalendarLink != chosen.CalendarLink) _eventsAt = default; // read again next time Home shows
+            if (old.ShowWeather != chosen.ShowWeather) (_weatherAt, _weather) = (default, null);
             if (old.ConnectClaudeCode != chosen.ConnectClaudeCode)
             {
                 try { Agents.ConnectClaude(chosen.ConnectClaudeCode); }
@@ -320,9 +322,9 @@ public sealed partial class IslandWindow : Window
             await Task.Delay(170);
         }
         if (t != _token) return;
-        if (prev == Mode.Expanded && mode != Mode.Expanded && !_settings.ReopenLastTab && _tab != Tab.Media)
+        if (prev == Mode.Expanded && mode != Mode.Expanded && !_settings.ReopenLastTab && _tab != Tab.Home)
         {
-            _tab = Tab.Media; // swapped once the panel's content has faded out
+            _tab = Tab.Home; // swapped once the panel's content has faded out
             ShowTab();
         }
         if (mode == Mode.Compact) Fade(CompactLayer, true);
@@ -358,6 +360,7 @@ public sealed partial class IslandWindow : Window
         ShapeArt(ExpandedArt, ArtColumn, 58);
         SourceBadge.Text = _media.Source;
         FillGameCard();
+        if (_tab == Tab.Home) FillHome();
         UpdateProgress();
         UpdateWave();
         UpdateProgressTimer();
@@ -506,7 +509,9 @@ public sealed partial class IslandWindow : Window
 
     void ShowTab()
     {
-        if (_tab == Tab.Agents && !_settings.ConnectClaudeCode) _tab = Tab.Media; // disconnected meanwhile
+        if (_tab == Tab.Agents && !_settings.ConnectClaudeCode) _tab = Tab.Home; // disconnected meanwhile
+        HomeTab.Visibility = _tab == Tab.Home ? Visibility.Visible : Visibility.Collapsed;
+        if (_tab == Tab.Home) FillHome();
         MediaTab.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
         TimersTab.Visibility = _tab == Tab.Timers ? Visibility.Visible : Visibility.Collapsed;
         ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
@@ -521,13 +526,15 @@ public sealed partial class IslandWindow : Window
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
         {
             bool on = (string)t.Tag == _tab.ToString();
-            t.Background = on ? (Brush)res["Raised"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            t.Background = on ? (Brush)res["Line"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent); // inside the Raised pill
             var fg = (Brush)res[on ? "Fg" : "Muted"];
             var label = (Microsoft.UI.Xaml.Controls.StackPanel)t.Children[0];
             ((Microsoft.UI.Xaml.Controls.FontIcon)label.Children[0]).Foreground = fg;
             ((Microsoft.UI.Xaml.Controls.TextBlock)label.Children[1]).Foreground = fg;
         }
     }
+
+    void Settings_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => OpenSetup(firstRun: false);
 
     void Play_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.TogglePlay();
     void Next_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.Next();
