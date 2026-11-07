@@ -26,7 +26,7 @@ public sealed partial class IslandWindow : Window
     enum Via { None, Hotkey, Click, Hover, Drag }
     record struct Geo(double W, double H, double R, double Y);
 
-    enum Tab { Media, Timers, Shelf, Clipboard }
+    enum Tab { Media, Timers, Shelf, Clipboard, Agents }
 
     // Sizes are the same in every theme; the theme sets the corners and where the island sits.
     Geo GeoOf(Mode m)
@@ -120,6 +120,7 @@ public sealed partial class IslandWindow : Window
         _media.Changed += OnMediaChanged;
         _ = _media.StartAsync();
         WireAlerts();
+        WireAgents();
         _tray = new Tray(_hwnd, $"Mora ({_settings.HotkeyName})");
         _trayMenu =
         [
@@ -163,6 +164,17 @@ public sealed partial class IslandWindow : Window
             _tray.SetTip($"Mora ({_settings.HotkeyName})");
             _settings.Save();
             if (old.Theme != chosen.Theme) ApplyTheme();
+            if (old.ConnectClaudeCode != chosen.ConnectClaudeCode)
+            {
+                try { Agents.ConnectClaude(chosen.ConnectClaudeCode); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    chosen.ConnectClaudeCode = old.ConnectClaudeCode;
+                    _settings.Save();
+                    Notify(new Alert(Pop.Agents, "", "Claude Code's settings are locked", "Try again in a moment", Seconds: 4), force: true);
+                }
+                ShowTab();
+            }
             foreach (var id in old.NotifyApps.Keys.Union(chosen.NotifyApps.Keys))
                 if (old.NotifyApps.ContainsKey(id) != chosen.NotifyApps.ContainsKey(id)) Notifications.SetBanner(id, show: !chosen.NotifyApps.ContainsKey(id));
             Startup.Apply(_settings.StartWithWindows);
@@ -494,10 +506,14 @@ public sealed partial class IslandWindow : Window
 
     void ShowTab()
     {
+        if (_tab == Tab.Agents && !_settings.ConnectClaudeCode) _tab = Tab.Media; // disconnected meanwhile
         MediaTab.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
         TimersTab.Visibility = _tab == Tab.Timers ? Visibility.Visible : Visibility.Collapsed;
         ShelfTab.Visibility = _tab == Tab.Shelf ? Visibility.Visible : Visibility.Collapsed;
         ClipboardTab.Visibility = _tab == Tab.Clipboard ? Visibility.Visible : Visibility.Collapsed;
+        AgentsTabButton.Visibility = _settings.ConnectClaudeCode ? Visibility.Visible : Visibility.Collapsed;
+        AgentsTab.Visibility = _tab == Tab.Agents ? Visibility.Visible : Visibility.Collapsed;
+        if (_tab == Tab.Agents) FillAgents();
         SourceBadge.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
         PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Mora;
 
-enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard, Privacy, Notifications }
+enum Pop { Music, Timers, Downloads, Devices, Volume, Clipboard, Privacy, Notifications, Agents }
 
 // The game setting before per-game profiles; only read to convert old settings files.
 enum GameMode { Quiet, Music, Ask }
@@ -44,6 +44,8 @@ sealed class Settings
     public bool PopVolume { get; set; }
     public bool PopClipboard { get; set; } = true;
     public bool PopPrivacy { get; set; } = true; // an app starts using the microphone or camera
+    public bool PopAgents { get; set; } = true;  // a coding agent needs you, or finished a long task
+    public bool ConnectClaudeCode { get; set; }  // Mora's hooks are in Claude Code's settings
     public bool PlaySounds { get; set; } = true; // a ring for timers, a note for app notifications
     public int SoundVolume { get; set; } = 90;   // 0 to 100, of each sound's loudest without clipping
     public Dictionary<string, string> NotifyApps { get; set; } = []; // app id → name: their notifications show in the island
@@ -103,6 +105,7 @@ sealed class Settings
         Pop.Volume => PopVolume,
         Pop.Privacy => PopPrivacy,
         Pop.Notifications => true, // chosen per app
+        Pop.Agents => PopAgents,
 
         _ => PopClipboard,
     };

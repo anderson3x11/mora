@@ -196,6 +196,12 @@
                                 <TextBlock Text="Clipboard" FontSize="10.5" FontWeight="SemiBold" />
                             </StackPanel>
                         </Grid>
+                        <Grid x:Name="AgentsTabButton" Tag="Agents" CornerRadius="11" Padding="9,0" Tapped="Tab_Tapped" Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE99A;" FontSize="12" FontFamily="{StaticResource Icons}" />
+                                <TextBlock Text="Agents" FontSize="10.5" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
 
                     <Grid Grid.Row="1" Margin="0,10,0,0">
@@ -306,6 +312,9 @@
 
                         <!-- Clipboard -->
                         <StackPanel x:Name="ClipboardTab" Visibility="Collapsed" Spacing="6" />
+
+                        <!-- Coding agents -->
+                        <StackPanel x:Name="AgentsTab" Visibility="Collapsed" Spacing="6" />
                     </Grid>
                 </Grid>
             </Grid>

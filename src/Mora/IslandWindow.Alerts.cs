@@ -52,7 +52,7 @@ public sealed partial class IslandWindow
         FillPrivacyDots();
 
         _notifications = new Notifications(DispatcherQueue, id => _settings.NotifyApps.ContainsKey(id));
-        _notifications.Arrived += t => Notify(new Alert(Pop.Notifications, "", t.Title == "" ? t.App : t.Title,
+        _notifications.Arrived += t => Notify(new Alert(Pop.Notifications, "", t.Title == "" ? t.App : t.Title,
             t.Title == "" ? t.Body : t.Body == "" ? t.App : $"{t.App} · {t.Body}", Art: t.Logo, Seconds: 4));
         _ = _notifications.StartAsync();
 
@@ -163,7 +163,7 @@ public sealed partial class IslandWindow
             ArmAlert();
             return;
         }
-        if (_settings.PlaySounds && a.Kind is Pop.Timers or Pop.Notifications) Chime(a.Kind, _settings.SoundVolume);
+        if (_settings.PlaySounds && a.Kind is Pop.Timers or Pop.Notifications or Pop.Agents) Chime(a.Kind, _settings.SoundVolume);
         _alerts.Enqueue(a);
         if (_mode is Mode.Hidden or Mode.Compact) NextAlert();
     }

@@ -58,6 +58,7 @@ public sealed partial class IslandWindow
         }
         PanelClock.Text = ClockText(now);
         GameClock.Text = now.ToString("t");
+        if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents(); // the elapsed times
     }
 
     // Ticks once a second while the island shows anything; hidden, it rests.

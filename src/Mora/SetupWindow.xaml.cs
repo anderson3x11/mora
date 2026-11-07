@@ -110,6 +110,9 @@ public sealed partial class SetupWindow : Window
                     Row("In the panel", "At the top right, next to what is playing.", Toggle(() => _working.ClockInPanel, v => _working.ClockInPanel = v)),
                     Row("On the game music card", "The time, without leaving the game.", Toggle(() => _working.ClockInGameCard, v => _working.ClockInGameCard = v))));
                 Page.Children.Add(ClockFormatCard());
+                Page.Children.Add(Subheading("Coding agents", "Follow your AI agents from the island: what each session is doing, and a pop-up when one needs you or finishes a long task."));
+                Page.Children.Add(Card(Row("Connect Claude Code", "Adds hooks to Claude Code's settings (.claude\\settings.json in your user folder). They report to Mora on this PC only. New sessions pick them up.",
+                    Toggle(() => _working.ConnectClaudeCode, v => _working.ConnectClaudeCode = v))));
                 Page.Children.Add(Subheading("Theme", "The island's whole look: its shape, how it moves and its colors."));
                 Page.Children.Add(ThemeCard());
                 break;
@@ -202,6 +205,7 @@ public sealed partial class SetupWindow : Window
             PopRow(Pop.Volume, "Show volume changes"),
             PopRow(Pop.Privacy, "Show microphone and camera use"),
             PopRow(Pop.Notifications, "Show app notifications"),
+            PopRow(Pop.Agents, "Show coding agents"),
             .. extra,
         ]);
     }
@@ -311,6 +315,7 @@ public sealed partial class SetupWindow : Window
         Row("Clipboard copies", "Private copies from password managers never show.", Toggle(() => _working.PopClipboard, v => _working.PopClipboard = v)),
         Row("Volume", "Windows shows its own volume pop-up too.", Toggle(() => _working.PopVolume, v => _working.PopVolume = v)),
         Row("Microphone and camera", "When an app starts using them. A dot also stays in the panel while it lasts.", Toggle(() => _working.PopPrivacy, v => _working.PopPrivacy = v)),
+        Row("Coding agents", "When one needs you, or finishes a task of 30 seconds or more. Not while its window is in front.", Toggle(() => _working.PopAgents, v => _working.PopAgents = v)),
         Row("Sounds", "A ring when a timer or focus round ends, a short note for app notifications.", Toggle(() => _working.PlaySounds, v => _working.PlaySounds = v)),
         Row("Sound volume", "On top of the Windows volume.", SoundVolume()));
 
