@@ -22,10 +22,25 @@ public sealed partial class IslandWindow
     {
         if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents();
         if (s is null || !_settings.ConnectClaudeCode || AgentInFront()) return;
-        if (ev == "Notification" && s.State == Agents.State.NeedsYou)
+        bool asks = ev == "Notification" && s.State == Agents.State.NeedsYou;
+        bool done = ev == "Stop" && DateTime.Now - s.Started >= TimeSpan.FromSeconds(30); // quick answers are no news
+        if (!(asks || done) || !FirstWordOnClaude()) return;
+        if (asks)
             Notify(new Alert(Pop.Agents, "", $"{s.Name} needs you", s.Action, MicOrange, Seconds: 6, Wide: true));
-        else if (ev == "Stop" && DateTime.Now - s.Started >= TimeSpan.FromSeconds(30)) // quick answers are no news
+        else
             Notify(new Alert(Pop.Agents, "", $"{s.Name} is done", $"After {Elapsed(s)}", Green));
+    }
+
+    // The Claude app sends its own notification for the same moment (a question, the end of a task). Whichever of
+    // the two comes first speaks; the other, within 15 seconds, stays quiet.
+    // ponytail: a second, unrelated Claude event in those 15 seconds is dropped too.
+    DateTime _claudeSpoke;
+
+    bool FirstWordOnClaude()
+    {
+        if (DateTime.Now - _claudeSpoke < TimeSpan.FromSeconds(15)) return false;
+        _claudeSpoke = DateTime.Now;
+        return true;
     }
 
     // Where agents run: the Claude app, terminals and editors.

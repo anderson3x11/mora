@@ -52,8 +52,12 @@ public sealed partial class IslandWindow
         FillPrivacyDots();
 
         _notifications = new Notifications(DispatcherQueue, id => _settings.NotifyApps.ContainsKey(id));
-        _notifications.Arrived += t => Notify(new Alert(Pop.Notifications, "", t.Title == "" ? t.App : t.Title,
-            t.Title == "" ? t.Body : t.Body == "" ? t.App : $"{t.App} · {t.Body}", Art: t.Logo, Seconds: 4));
+        _notifications.Arrived += t =>
+        {
+            if (t.AppId.Contains("Claude", StringComparison.OrdinalIgnoreCase) && !FirstWordOnClaude()) return;
+            Notify(new Alert(Pop.Notifications, "", t.Title == "" ? t.App : t.Title,
+                t.Title == "" ? t.Body : t.Body == "" ? t.App : $"{t.App} · {t.Body}", Art: t.Logo, Seconds: 4));
+        };
         _ = _notifications.StartAsync();
 
         _downloads = new Downloads(DispatcherQueue);
