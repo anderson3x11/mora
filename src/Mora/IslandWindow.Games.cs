@@ -10,7 +10,9 @@ public sealed partial class IslandWindow
     readonly List<Alert> _held = [];
     readonly HashSet<string> _asked = []; // asked once per game per run, even if left unanswered
     DispatcherQueueTimer? _gameWatch;
-    string? _game;   // executable of the fullscreen app in front
+    string? _game;   // executable of the game being played
+    nint _gameWindow;
+    DateTime? _awaySince; // the game stopped being on screen (minimized, or covered on its own screen)
     string? _asking; // game whose "first time" question is on screen
     int _cardToken;
     bool _hotkeyOn = true;
@@ -24,12 +26,48 @@ public sealed partial class IslandWindow
         _gameWatch.Interval = TimeSpan.FromSeconds(1.5); // ponytail: polling; a foreground WinEvent hook would react faster
         _gameWatch.Tick += (_, _) =>
         {
-            var exe = FullscreenApp();
-            if (exe == _game) return;
-            if (_game != null) LeaveGame();
-            if (exe != null) EnterGame(exe);
+            var exe = FullscreenApp(out var window);
+            if (exe != null)
+            {
+                (_gameWindow, _awaySince) = (window, null);
+                if (exe == _game) return;
+                if (_game != null) LeaveGame();
+                EnterGame(exe);
+                return;
+            }
+            if (_game is null || StillPlaying()) return;
+            LeaveGame();
         };
         _gameWatch.Start();
+    }
+
+    // The game is not in front. With two screens that is often a glance at the other one, the game still
+    // fullscreen on its own: the session goes on, nothing pops up, no "while you played" summary. It ends when
+    // the game closes or turns windowed, or once it has been minimized or covered on its own screen for 20 seconds.
+    bool StillPlaying()
+    {
+        if (IsWindow(_gameWindow) == 0) return false;
+        if (GetForegroundWindow() == _gameWindow) return false; // in front but no longer fullscreen: played windowed now
+        bool onScreen = IsIconic(_gameWindow) == 0 && FillsMonitor(_gameWindow)
+            && MonitorFromWindow(GetForegroundWindow(), 2) != MonitorFromWindow(_gameWindow, 2); // MONITOR_DEFAULTTONEAREST
+        if (onScreen)
+        {
+            _awaySince = null;
+            return true;
+        }
+        _awaySince ??= DateTime.Now;
+        return DateTime.Now - _awaySince < TimeSpan.FromSeconds(20);
+    }
+
+    static bool FillsMonitor(nint window)
+    {
+        // Maximized: a regular window with a title bar, unless it has none (some borderless games maximize themselves).
+        if (IsZoomed(window) != 0 && (GetWindowLongPtr(window, -16) & 0x00C00000) == 0x00C00000) return false; // GWL_STYLE, WS_CAPTION
+        if (GetWindowRect(window, out var r) == 0) return false;
+        var info = new MONITORINFO { Size = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
+        GetMonitorInfo(MonitorFromWindow(window, 2), ref info);
+        var m = info.Monitor;
+        return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom;
     }
 
     void EnterGame(string exe)
@@ -73,7 +111,7 @@ public sealed partial class IslandWindow
 
     void LeaveGame()
     {
-        _game = null;
+        (_game, _gameWindow, _awaySince) = (null, 0, null);
         _asking = null; // unanswered: stays out for this run, asked again next time Mora starts
         UpdateHotkey();
         if (_held.Count == 0)
@@ -173,10 +211,10 @@ public sealed partial class IslandWindow
     // The foreground window fills its whole monitor without being a maximized window, and is a game
     // (KnownGames, or one with its own profile). Snipping Tool's capture overlay, fullscreen video and
     // slideshows fill the monitor too, and are left alone.
-    string? FullscreenApp()
+    string? FullscreenApp(out nint fg)
     {
-        var fg = GetForegroundWindow();
-        if (fg == 0 || IsZoomed(fg) != 0 || GetWindowRect(fg, out var r) == 0) return null;
+        fg = GetForegroundWindow();
+        if (fg == 0 || !FillsMonitor(fg)) return null;
         string name;
         unsafe
         {
@@ -184,10 +222,6 @@ public sealed partial class IslandWindow
             name = new string(cls, 0, GetClassName(fg, cls, 32));
         }
         if (name is "Progman" or "WorkerW" or "Shell_TrayWnd") return null; // the desktop is "fullscreen" too
-        var info = new MONITORINFO { Size = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
-        GetMonitorInfo(MonitorFromWindow(fg, 2), ref info); // MONITOR_DEFAULTTONEAREST
-        var m = info.Monitor;
-        if (r.Left > m.Left || r.Top > m.Top || r.Right < m.Right || r.Bottom < m.Bottom) return null;
         GetWindowThreadProcessId(fg, out var pid);
         if (pid == Environment.ProcessId) return null;
         string exe;

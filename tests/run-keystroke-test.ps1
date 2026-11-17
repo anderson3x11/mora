@@ -9,8 +9,9 @@ Remove-Item (Join-Path $data '*') -Force -ErrorAction SilentlyContinue
 # Not a first run: no setup window. The test's fullscreen window counts as a game through its own profile.
 "{ `"StartWithWindows`": false, `"GameProfiles`": { `"KeystrokeTest`": {} } }" | Set-Content (Join-Path $data 'settings.json') -Encoding utf8
 
-Get-Process Mora -ErrorAction SilentlyContinue | Stop-Process # a running Mora locks the build output
-Start-Sleep -Milliseconds 500
+# A running Mora locks the build output. Any Mora, including one still starting up (the installed one,
+# relaunched by a previous test run).
+for ($i = 0; $i -lt 8; $i++) { Get-Process Mora -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 400 }
 $code = 1
 try {
     dotnet build (Join-Path $root 'src\Mora') -p:Platform=x64 -v q -nologo | Out-Null

@@ -35,6 +35,8 @@ static partial class Native
     [LibraryImport("user32.dll", EntryPoint = "PostMessageW")] public static partial int PostMessage(nint hwnd, uint msg, nint wParam, nint lParam);
     [LibraryImport("user32.dll")] public static partial int UnregisterHotKey(nint hwnd, int id);
     [LibraryImport("user32.dll")] public static partial int IsZoomed(nint hwnd);
+    [LibraryImport("user32.dll")] public static partial int IsIconic(nint hwnd);
+    [LibraryImport("user32.dll")] public static partial int IsWindow(nint hwnd);
     [LibraryImport("user32.dll")] public static partial int GetWindowRect(nint hwnd, out RECT rect);
     [LibraryImport("user32.dll")] public static partial uint GetWindowThreadProcessId(nint hwnd, out uint pid);
     [LibraryImport("user32.dll", EntryPoint = "GetClassNameW")] public static unsafe partial int GetClassName(nint hwnd, char* name, int max);
