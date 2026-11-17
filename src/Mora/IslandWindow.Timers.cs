@@ -79,11 +79,14 @@ public sealed partial class IslandWindow
         if (TimerPill) // otherwise the clock may have the resting pill
         {
             CompactTimerIcon.Glyph = "";
+            CompactTimerIcon.Visibility = Visibility.Visible;
+            (CompactTimerText.FontFamily, CompactTimerText.HorizontalAlignment) = ((FontFamily)((FrameworkElement)Content).Resources["Mono"], HorizontalAlignment.Right);
             CompactTimerText.Text = Format(left);
             CompactTimerText.Foreground = CompactTimerIcon.Foreground = color;
         }
         if (!_bubbleClock)
         {
+            BubbleText.FontFamily = (FontFamily)((FrameworkElement)Content).Resources["Mono"];
             BubbleText.Text = _tallBubble ? $"{(int)left.TotalMinutes:00}\n{left.Seconds:00}" : Format(left); // minutes over seconds in the tall pill
             BubbleText.Foreground = color;
         }

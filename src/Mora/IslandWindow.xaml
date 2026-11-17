@@ -38,8 +38,30 @@
               AllowDrop="True" DragEnter="Pill_DragEnter" DragOver="Pill_DragOver" DragLeave="Pill_DragLeave" Drop="Pill_Drop">
             <Border x:Name="ShapeHost" />
             <!-- The split bubble's countdown: placed by Render beside the pill, outside the clipped layers -->
-            <TextBlock x:Name="BubbleText" Width="32" Height="32" Padding="0,9,0,0" TextAlignment="Center" FontFamily="{StaticResource Mono}" FontSize="9.5"
-                       Foreground="#FFB454" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0" IsHitTestVisible="False" />
+            <Grid x:Name="BubbleHost" Width="32" Height="32" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0" IsHitTestVisible="False">
+                <TextBlock x:Name="BubbleText" Padding="0,9,0,0" TextAlignment="Center" FontFamily="{StaticResource Mono}" FontSize="9.5" Foreground="#FFB454" />
+                <!-- Beside the open panel, the time: a small clock face over the time and the day -->
+                <StackPanel x:Name="ClockFace" VerticalAlignment="Center" Spacing="10" Visibility="Collapsed">
+                    <Grid Width="38" Height="38" HorizontalAlignment="Center">
+                        <Ellipse Fill="{StaticResource Raised}" Stroke="{StaticResource Line}" StrokeThickness="1" />
+                        <Canvas x:Name="ClockTicks" />
+                        <Rectangle Width="2.6" Height="10" Margin="0,9,0,0" RadiusX="1.3" RadiusY="1.3" Fill="{StaticResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,1">
+                            <Rectangle.RenderTransform><RotateTransform x:Name="HourHand" /></Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Rectangle Width="1.8" Height="14" Margin="0,5,0,0" RadiusX="0.9" RadiusY="0.9" Fill="{StaticResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,1">
+                            <Rectangle.RenderTransform><RotateTransform x:Name="MinuteHand" /></Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Rectangle Width="1" Height="16" Margin="0,3,0,0" Fill="#FF9F0A" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,1">
+                            <Rectangle.RenderTransform><RotateTransform x:Name="SecondHand" /></Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Ellipse Width="4" Height="4" Fill="#FF9F0A" />
+                    </Grid>
+                    <StackPanel Spacing="1">
+                        <TextBlock x:Name="FaceTime" FontFamily="Segoe UI Variable Display,Segoe UI" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Fg}" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="FaceDay" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
             <Grid x:Name="Layers">
                 <!-- Compact pill: artwork left, waveform right -->
                 <Grid x:Name="CompactLayer" Width="214" Height="32" Padding="8,0,12,0" Opacity="0"

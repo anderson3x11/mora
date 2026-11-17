@@ -267,11 +267,12 @@ public sealed partial class IslandWindow : Window
             _tallBubble = tall;
             _bubbleClock = clock;
             _bubble.X = _bubble.V = 0; // a new shape pops in from nothing rather than morphing
-            BubbleText.Width = tall ? TallBubble.X : 32;
-            BubbleText.Height = tall ? TallBubble.Y : 32;
+            BubbleHost.Width = tall ? TallBubble.X : 32;
+            BubbleHost.Height = tall ? TallBubble.Y : 32;
             BubbleText.FontSize = tall ? 20 : 9.5;
-            // Two 27 px lines centered (the time adds an 18 px line for the day).
-            BubbleText.Padding = new Thickness(0, tall ? (TallBubble.Y - (clock ? 72 : 54)) / 2 : 9, 0, 0);
+            BubbleText.Padding = new Thickness(0, tall ? (TallBubble.Y - 54) / 2 : 9, 0, 0); // two 27 px lines, centered
+            BubbleText.Visibility = tall && clock ? Visibility.Collapsed : Visibility.Visible;
+            ClockFace.Visibility = tall && clock ? Visibility.Visible : Visibility.Collapsed;
             FillTimer();
             FillClock();
         }
@@ -628,7 +629,7 @@ public sealed partial class IslandWindow : Window
         ElementCompositionPreview.SetElementChildVisual(ShapeHost, root);
         _layersClip = c.CreateGeometricClip(_shape);
         ElementCompositionPreview.GetElementVisual(Layers).Clip = _layersClip;
-        ElementCompositionPreview.SetIsTranslationEnabled(BubbleText, true);
+        ElementCompositionPreview.SetIsTranslationEnabled(BubbleHost, true);
     }
 
     // The look's colors and bar thickness, set once at startup.
@@ -682,8 +683,8 @@ public sealed partial class IslandWindow : Window
         float inner = bubbleSide > 0 ? gap / 2 : float.MaxValue;
         PlaceShoulders(0, left, w, top, side, Math.Min(side, inner));
         PlaceShoulders(2, bubbleLeft, full.X, top, Math.Min(bubbleSide, inner), bubbleSide);
-        ElementCompositionPreview.GetElementVisual(BubbleText).Properties.InsertVector3("Translation", new Vector3(bubbleLeft, top, 0));
-        BubbleText.Opacity = Math.Clamp(s, 0, 1);
+        ElementCompositionPreview.GetElementVisual(BubbleHost).Properties.InsertVector3("Translation", new Vector3(bubbleLeft, top, 0));
+        BubbleHost.Opacity = Math.Clamp(s, 0, 1);
 
         // While moving, the hit region follows the shapes in 16 px steps, a little larger than them: Windows
         // hears about it a few times per animation instead of every frame. Exact again once all rests.

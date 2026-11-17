@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 
@@ -16,13 +17,13 @@ public sealed partial class IslandWindow
 
     bool ClockPill => _settings.ShowClockPill;
 
-    // "14:32", "14:32:07", "14:32 · lun. 27 oct.", "Lundi 27 octobre · 14:32"
-    string ClockText(DateTime now) => _settings.ClockFormat switch
+    // The time, and the date when the format has one: "14:32" + "Lun. 27 oct.", "14:32:07", "14:32" + "Lundi 27 octobre".
+    (string Time, string? Date) ClockParts(DateTime now) => _settings.ClockFormat switch
     {
-        ClockStyle.Time => now.ToString("t"),
-        ClockStyle.TimeWithSeconds => now.ToString("T"),
-        ClockStyle.FullDate => Capitalized(now.ToString("dddd d MMMM")) + " · " + now.ToString("t"),
-        _ => now.ToString("t") + " · " + now.ToString("ddd d MMM"),
+        ClockStyle.Time => (now.ToString("t"), null),
+        ClockStyle.TimeWithSeconds => (now.ToString("T"), null),
+        ClockStyle.FullDate => (now.ToString("t"), Capitalized(now.ToString("dddd d MMMM"))),
+        _ => (now.ToString("t"), Capitalized(now.ToString("ddd d MMM"))),
     };
 
     static string Capitalized(string s) => s.Length == 0 ? s : char.ToUpper(s[0], CultureInfo.CurrentCulture) + s[1..];
@@ -30,36 +31,63 @@ public sealed partial class IslandWindow
     // A time alone fits the timer's short pill; with a date it needs the music pill's width.
     double ClockPillWidth => _settings.ClockFormat is ClockStyle.Time or ClockStyle.TimeWithSeconds ? 132 : 214;
 
+    // The time bright and firm, the date quieter beside it.
+    void TwoTone(TextBlock text, DateTime now)
+    {
+        var res = ((FrameworkElement)Content).Resources;
+        var (time, date) = ClockParts(now);
+        text.Inlines.Clear();
+        text.Inlines.Add(new Run { Text = time, Foreground = (Brush)res["Fg"], FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        if (date != null) text.Inlines.Add(new Run { Text = "   " + date, Foreground = (Brush)res["Muted"], FontWeight = Microsoft.UI.Text.FontWeights.Normal });
+    }
+
     void FillClock()
     {
         var now = DateTime.Now;
         var res = ((FrameworkElement)Content).Resources;
         if (!TimerPill && !MediaPill)
         {
-            CompactTimerIcon.Glyph = "";
-            CompactTimerText.Text = ClockText(now);
-            CompactTimerIcon.Foreground = CompactTimerText.Foreground = (Brush)res["Fg"];
+            CompactTimerIcon.Visibility = Visibility.Collapsed;
+            (CompactTimerText.FontFamily, CompactTimerText.HorizontalAlignment) = ((FontFamily)res["Text"], HorizontalAlignment.Center);
+            TwoTone(CompactTimerText, now);
         }
         if (_bubbleClock)
         {
-            BubbleText.Foreground = (Brush)res["Fg"];
-            if (_tallBubble)
+            if (_tallBubble) FillFace(now);
+            else
             {
-                // Hours over minutes, and the day under them, smaller.
-                BubbleText.Inlines.Clear();
-                var t = now.ToString("t", CultureInfo.CurrentCulture).Split(':', ' ');
-                BubbleText.Inlines.Add(new Run { Text = t[0] });
-                BubbleText.Inlines.Add(new LineBreak());
-                BubbleText.Inlines.Add(new Run { Text = t.Length > 1 ? t[1] : "" });
-                BubbleText.Inlines.Add(new LineBreak());
-                BubbleText.Inlines.Add(new Run { Text = now.ToString("d MMM"), FontSize = 11, Foreground = (Brush)res["Muted"] });
+                (BubbleText.FontFamily, BubbleText.Foreground) = ((FontFamily)res["Text"], (Brush)res["Fg"]);
+                BubbleText.Text = now.ToString("t");
             }
-            else BubbleText.Text = now.ToString("t");
         }
-        PanelClock.Text = ClockText(now);
+        TwoTone(PanelClock, now);
         GameClock.Text = now.ToString("t");
         if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents(); // the elapsed times
         if (_mode == Mode.Expanded && _tab == Tab.Home) FillHome();     // the countdown, "in 12 min"
+    }
+
+    // The clock face beside the open panel: hands, then the time and the day under it.
+    void FillFace(DateTime now)
+    {
+        if (ClockTicks.Children.Count == 0)
+            for (int i = 0; i < 12; i++) // the hour marks, the quarters longer and brighter
+            {
+                bool quarter = i % 3 == 0;
+                var mark = new Microsoft.UI.Xaml.Shapes.Rectangle
+                {
+                    Width = quarter ? 1.6 : 1, Height = quarter ? 4 : 2.5,
+                    Fill = (Brush)((FrameworkElement)Content).Resources[quarter ? "Fg" : "Muted"],
+                    RenderTransform = new RotateTransform { Angle = i * 30, CenterX = quarter ? 0.8 : 0.5, CenterY = 17 },
+                };
+                Canvas.SetLeft(mark, 19 - mark.Width / 2);
+                Canvas.SetTop(mark, 2);
+                ClockTicks.Children.Add(mark);
+            }
+        HourHand.Angle = (now.Hour % 12 + now.Minute / 60.0) * 30;
+        MinuteHand.Angle = (now.Minute + now.Second / 60.0) * 6;
+        SecondHand.Angle = now.Second * 6;
+        FaceTime.Text = now.ToString("t");
+        FaceDay.Text = Capitalized(now.ToString("ddd d"));
     }
 
     // Ticks once a second while the island shows anything; hidden, it rests.
