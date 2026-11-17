@@ -36,6 +36,55 @@ sealed class Crab : Grid
         Pose();
     }
 
+    // One timer animates every crab and pulse on screen, each joining when it appears and leaving when it goes:
+    // a rebuilt rail or tab leaves no timer or endless animation behind (each used to have its own, and leaked).
+    static readonly HashSet<Crab> Crabs = [];
+    static readonly HashSet<FrameworkElement> Pulses = [];
+    static Microsoft.UI.Dispatching.DispatcherQueueTimer? _tick;
+    static int _frame;
+    static readonly Random Rng = new();
+    Agents.State _mood;
+    int _blinkEvery = 30;
+
+    // Blinks now and then, marches on the spot while its agent works, waves its claws when it needs the user.
+    public void Animate(Agents.State mood)
+    {
+        (_mood, _blinkEvery) = (mood, Rng.Next(15, 40));
+        Loaded += (_, _) => { Crabs.Add(this); Run(); };
+        Unloaded += (_, _) => Crabs.Remove(this);
+    }
+
+    // Fades in and out, slowly, while on screen.
+    public static void Pulse(FrameworkElement element)
+    {
+        element.Loaded += (_, _) => { Pulses.Add(element); Run(); };
+        element.Unloaded += (_, _) => Pulses.Remove(element);
+    }
+
+    static void Run()
+    {
+        if (_tick is null)
+        {
+            _tick = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().CreateTimer();
+            _tick.Interval = TimeSpan.FromMilliseconds(120);
+            _tick.Tick += (_, _) =>
+            {
+                if (Crabs.Count == 0 && Pulses.Count == 0)
+                {
+                    _tick.Stop();
+                    return;
+                }
+                _frame++;
+                foreach (var c in Crabs)
+                    c.Pose(step: c._mood == Agents.State.Working && _frame / 3 % 2 == 1, blink: _frame % c._blinkEvery is 0 or 1,
+                        clawsUp: c._mood == Agents.State.NeedsYou && _frame / 2 % 2 == 1);
+                double opacity = 0.675 + 0.325 * Math.Cos(_frame * 0.42); // about 1.8 s a breath
+                foreach (var p in Pulses) p.Opacity = opacity;
+            };
+        }
+        if (!_tick.IsRunning) _tick.Start();
+    }
+
     // look: -1 left, 0 ahead, 1 right.
     public void Pose(bool step = false, int look = 0, bool blink = false, bool clawsUp = false)
     {

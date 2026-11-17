@@ -13,6 +13,26 @@ public sealed partial class IslandWindow
     Agents? _agents;
 
     RailWindow? _rail;
+    Microsoft.UI.Dispatching.DispatcherQueueTimer? _redraw;
+
+    // Agents send several events a second: the tab, the rail and the walking crab redraw once for a burst of them,
+    // at most every 250 ms, rather than once per event.
+    void Redraw()
+    {
+        if (_redraw is null)
+        {
+            _redraw = DispatcherQueue.CreateTimer();
+            _redraw.Interval = TimeSpan.FromMilliseconds(250);
+            _redraw.IsRepeating = false;
+            _redraw.Tick += (_, _) =>
+            {
+                if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents();
+                UpdateRoam(); // the walking crab takes the agents' mood
+                UpdateRail();
+            };
+        }
+        if (!_redraw.IsRunning) _redraw.Start();
+    }
 
     void WireAgents()
     {
@@ -44,9 +64,7 @@ public sealed partial class IslandWindow
 
     void OnAgent(Agents.Session? s, string ev)
     {
-        if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents();
-        UpdateRoam(); // the walking crab takes the agents' mood
-        UpdateRail();
+        Redraw();
         if (s is null || !_settings.ConnectClaudeCode || AgentInFront()) return;
         bool asks = ev == "Notification" && s.State == Agents.State.NeedsYou;
         bool done = ev == "Stop" && DateTime.Now - s.Started >= TimeSpan.FromSeconds(30); // quick answers are no news
@@ -92,19 +110,7 @@ public sealed partial class IslandWindow
     FrameworkElement Mascot(Agents.State state, double px)
     {
         var crab = new Crab(px) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        if (!_motion) return crab;
-        var timer = DispatcherQueue.CreateTimer();
-        timer.Interval = TimeSpan.FromMilliseconds(120);
-        int tick = 0, blinkAt = _rng.Next(15, 40);
-        timer.Tick += (_, _) =>
-        {
-            tick++;
-            bool blink = tick % blinkAt is 0 or 1;
-            crab.Pose(step: state == Agents.State.Working && tick / 3 % 2 == 1, blink: blink,
-                clawsUp: state == Agents.State.NeedsYou && tick / 2 % 2 == 1);
-        };
-        crab.Loaded += (_, _) => timer.Start();
-        crab.Unloaded += (_, _) => timer.Stop();
+        if (_motion) crab.Animate(state);
         return crab;
     }
     // A turning three-quarter circle. Not a ProgressRing: the island does not load WinUI's control styles.

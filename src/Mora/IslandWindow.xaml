@@ -194,7 +194,14 @@
                             <FontIcon x:Name="QuietIcon" Glyph="&#xE708;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
                         </Grid>
                         <TextBlock x:Name="PanelClock" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Visibility="Collapsed" />
-                        <TextBlock x:Name="SourceBadge" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                        <!-- The player followed; with several open, a tap switches to the next -->
+                        <Border x:Name="SourceButton" CornerRadius="9" Padding="7,2" VerticalAlignment="Center" Background="Transparent" Tapped="Source_Tapped"
+                                PointerEntered="Source_PointerEntered" PointerExited="Source_PointerExited">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <TextBlock x:Name="SourceBadge" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" />
+                                <FontIcon x:Name="SourceSwitch" Glyph="&#xE8AB;" FontSize="9" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" Visibility="Collapsed" />
+                            </StackPanel>
+                        </Border>
                         <Grid Width="22" Height="22" CornerRadius="11" Background="Transparent" VerticalAlignment="Center"
                               Tapped="Settings_Tapped" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
                             <ToolTipService.ToolTip>Settings</ToolTipService.ToolTip>

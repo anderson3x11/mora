@@ -167,15 +167,6 @@ sealed class RailWindow : Window
         _ => (DateTime.Now - s.Started).TotalMinutes is var m && m < 1 ? "Now" : $"{(int)m} min",
     };
 
-    static void Breathe(UIElement arc)
-    {
-        var sb = new Storyboard { RepeatBehavior = RepeatBehavior.Forever, AutoReverse = true };
-        var a = new DoubleAnimation { From = 1, To = 0.35, Duration = TimeSpan.FromMilliseconds(900), EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut } };
-        Storyboard.SetTarget(a, arc);
-        Storyboard.SetTargetProperty(a, "Opacity");
-        sb.Children.Add(a);
-        sb.Begin();
-    }
 
     public static readonly SolidColorBrush Track = new(Windows.UI.Color.FromArgb(255, 0x2C, 0x2C, 0x2E)),
         White = new(Colors.White), Orange = new(Windows.UI.Color.FromArgb(255, 0xFF, 0x9F, 0x0A)),
@@ -216,7 +207,7 @@ sealed class RailWindow : Window
                 RenderTransform = new RotateTransform { Angle = -90 }, RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5),
             };
             ring.Children.Add(arc);
-            if (asks) Breathe(arc);
+            if (asks) Crab.Pulse(arc);
         }
         ring.Children.Add(mascot(s.State, size >= 40 ? 2 : 1.5));
         return ring;

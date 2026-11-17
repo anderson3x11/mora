@@ -52,14 +52,44 @@ sealed class Media(DispatcherQueue ui)
     static bool Ignored(GlobalSystemMediaTransportControlsSession s) =>
         IgnoredApps.Any(a => s.SourceAppUserModelId.Contains(a, StringComparison.OrdinalIgnoreCase));
 
-    // Windows' current session, unless it is an ignored app: then whatever else is open, playing first.
+    // Which player the island follows: the one picked from the panel while it is open; else Windows' current one if it
+    // plays; else one that plays (Spotify playing while a paused browser tab is still "current"); else the current one.
+    // Ignored apps never.
     GlobalSystemMediaTransportControlsSession? Pick()
     {
-        var current = _manager!.GetCurrentSession();
-        if (current != null && !Ignored(current)) return current;
-        return _manager.GetSessions().Where(s => !Ignored(s))
-            .OrderByDescending(s => s.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
-            .FirstOrDefault();
+        var sessions = _manager!.GetSessions().Where(s => !Ignored(s)).ToList();
+        if (sessions.FirstOrDefault(s => s.SourceAppUserModelId == _pinned) is { } pinned) return pinned;
+        _pinned = null; // closed since
+        var current = _manager.GetCurrentSession();
+        if (current != null && Ignored(current)) current = null;
+        if (current != null && IsPlaying(current)) return current;
+        return sessions.FirstOrDefault(IsPlaying) ?? current ?? sessions.FirstOrDefault();
+    }
+
+    static bool IsPlaying(GlobalSystemMediaTransportControlsSession s) =>
+        s.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+
+    string? _pinned;  // app id of the player picked from the panel
+    bool _switching;  // the next track is a switch of player by the user, not news
+    readonly List<GlobalSystemMediaTransportControlsSession> _watched = [];
+
+    public int Players => _manager?.GetSessions().Count(s => !Ignored(s)) ?? 0;
+
+    // The next open player, in Windows' order: the source badge in the panel cycles through them.
+    public void NextPlayer()
+    {
+        var sessions = _manager?.GetSessions().Where(s => !Ignored(s)).ToList() ?? [];
+        if (sessions.Count < 2) return;
+        int at = sessions.FindIndex(s => s.SourceAppUserModelId == _session?.SourceAppUserModelId);
+        _pinned = sessions[(at + 1) % sessions.Count].SourceAppUserModelId;
+        _switching = true;
+        Attach();
+    }
+
+    // Any player starting or stopping can change which one to follow.
+    void Reconsider()
+    {
+        if (_manager != null && Pick() is var next && next?.SourceAppUserModelId != _session?.SourceAppUserModelId) Attach();
     }
 
     public void TogglePlay() => _ = _session?.TryTogglePlayPauseAsync();
@@ -69,6 +99,13 @@ sealed class Media(DispatcherQueue ui)
 
     void Attach()
     {
+        foreach (var w in _watched) w.PlaybackInfoChanged -= OnAnyPlayback;
+        _watched.Clear();
+        foreach (var w in _manager!.GetSessions())
+        {
+            w.PlaybackInfoChanged += OnAnyPlayback;
+            _watched.Add(w);
+        }
         var next = Pick();
         if (_session != null)
         {
@@ -87,6 +124,7 @@ sealed class Media(DispatcherQueue ui)
     }
 
     void OnSessionChanged(GlobalSystemMediaTransportControlsSession s, object e) => ui.TryEnqueue(() => _ = Refresh(properties: false));
+    void OnAnyPlayback(GlobalSystemMediaTransportControlsSession s, object e) => ui.TryEnqueue(Reconsider);
     void OnPropertiesChanged(GlobalSystemMediaTransportControlsSession s, object e) => ui.TryEnqueue(() => _ = Refresh(properties: true));
 
     // properties: the title, artist or artwork changed. Browsers send these in steps when switching
@@ -142,8 +180,9 @@ sealed class Media(DispatcherQueue ui)
         if (newTrack && !MediaSource.IsPreview(s.SourceAppUserModelId, Title, Artist))
         {
             var key = Title + "\n" + Artist;
-            if (!_primed) _realKey = key;
+            if (!_primed || _switching) _realKey = key; // the user picked this player: no "now playing"
             else if (key != _realKey) _ = AnnounceLater(s, key);
+            _switching = false;
         }
         _primed = true;
     }

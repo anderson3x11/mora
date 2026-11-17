@@ -359,6 +359,8 @@ public sealed partial class IslandWindow : Window
         SetArt(ExpandedArt, ExpandedArtIcon);
         ShapeArt(ExpandedArt, ArtColumn, 58);
         SourceBadge.Text = _media.Source;
+        SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed; // the arrows: tap for the next player
+        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SourceButton, _media.Players > 1 ? $"{_media.Players} players open: tap to switch" : null);
         FillGameCard();
         if (_tab == Tab.Home) FillHome();
         UpdateProgress();
@@ -519,7 +521,7 @@ public sealed partial class IslandWindow : Window
         AgentsTabButton.Visibility = _settings.ConnectClaudeCode ? Visibility.Visible : Visibility.Collapsed;
         AgentsTab.Visibility = _tab == Tab.Agents ? Visibility.Visible : Visibility.Collapsed;
         if (_tab == Tab.Agents) FillAgents();
-        SourceBadge.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
+        SourceButton.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
         PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
@@ -533,6 +535,16 @@ public sealed partial class IslandWindow : Window
             ((Microsoft.UI.Xaml.Controls.TextBlock)label.Children[1]).Foreground = fg;
         }
     }
+
+    void Source_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.NextPlayer();
+
+    void Source_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (_media.Players > 1) SourceButton.Background = (Brush)((FrameworkElement)Content).Resources["Raised"];
+    }
+
+    void Source_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
+        SourceButton.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 
     void Settings_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => OpenSetup(firstRun: false);
 
