@@ -125,6 +125,26 @@ try {
     Sim 'close'
     Check "everything at once, $n events"
 
+    # 6. Settings changed on the fly, 150 times, while the panel moves around.
+    Sim 'settings-chaos 150'
+    for ($i = 0; $i -lt 12; $i++) { Sim ("open {0}" -f $tabs[$rng.Next($tabs.Count)]); Start-Sleep -Milliseconds 900; Sim 'close'; Start-Sleep -Milliseconds 600 }
+    Start-Sleep -Seconds 12 # the last changes land
+    Check 'settings changed 150 times'
+
+    # 7. Copies: a 1 MB text, odd characters, empty lines. The user's clipboard is put back afterwards.
+    Add-Type -AssemblyName System.Windows.Forms
+    $saved = if ([Windows.Forms.Clipboard]::ContainsText()) { [Windows.Forms.Clipboard]::GetText() } else { $null } # a copy: a data object dies with the next copy
+    try {
+        # Accents, a symbol, a dash, Japanese, right-to-left override, an emoji (built from codes: PowerShell 5 reads this file as ANSI).
+        $odd = "Caf$([char]0xE9) $([char]0x2615) na$([char]0xEF)ve $([char]0x2014) $([char]0x65E5)$([char]0x672C) $([char]0x202E)RTL$([char]0x202C) " + [char]::ConvertFromUtf32(0x1F419)
+        foreach ($text in @(('lorem ipsum ' * 90000), $odd, "`r`n`r`n   `t", 'x')) {
+            [Windows.Forms.Clipboard]::SetText($text); Start-Sleep -Milliseconds 700
+        }
+        Sim 'open Clipboard'; Start-Sleep -Seconds 1; Sim 'close'
+    }
+    finally { if ($saved) { [Windows.Forms.Clipboard]::SetText($saved) } }
+    Check 'copies: 1 MB, odd characters'
+
     # Settled: memory again, after the dust.
     Start-Sleep -Seconds 10
     Check 'ten seconds later'

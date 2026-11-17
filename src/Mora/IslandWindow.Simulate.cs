@@ -10,8 +10,25 @@ namespace Mora;
 //   track "<title>" "<artist>": a track change, with the current artwork
 //   open <tab>, close: the panel on a tab (Home, Media, Agents...), for screenshots
 //   agent "<title>" "<text>": a coding agent asking for the user, with the mascot
+//   settings-chaos <n>: n random changes of the settings, applied like the settings window does
 public sealed partial class IslandWindow
 {
+    // Random settings, one change every 50 to 300 ms, through the same path as the settings window.
+    async void SettingsChaos(int times)
+    {
+        var rng = new Random(times);
+        var flags = typeof(Settings).GetProperties().Where(p => p.PropertyType == typeof(bool) && p.CanWrite && p.Name is not ("StartWithWindows" or "AskNewGames")).ToArray();
+        for (int i = 0; i < times; i++)
+        {
+            var next = _settings.Clone();
+            var flag = flags[rng.Next(flags.Length)];
+            flag.SetValue(next, !(bool)flag.GetValue(next)!);
+            if (rng.Next(5) == 0) next.ClockFormat = (ClockStyle)rng.Next(4);
+            ApplySettings(next, firstRun: false);
+            await Task.Delay(rng.Next(50, 300));
+        }
+    }
+
     internal const uint WM_COPYDATA = 0x4A;
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -39,6 +56,9 @@ public sealed partial class IslandWindow
                 _tab = tab;
                 SetMode(Mode.Expanded, Via.Click);
                 ShowTab();
+                break;
+            case "settings-chaos" when a.Length >= 2 && int.TryParse(a[1], out var times):
+                SettingsChaos(times);
                 break;
             case "close":
                 Settle();

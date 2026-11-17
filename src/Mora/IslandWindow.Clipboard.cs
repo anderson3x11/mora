@@ -87,5 +87,7 @@ public sealed partial class IslandWindow
         }
     }
 
-    static string OneLine(string text) => string.Join(' ', text.Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries));
+    // On one line, and no longer than a row can show: a 1 MB copy must not reach the layout whole.
+    static string OneLine(string text) =>
+        string.Join(' ', (text.Length > 400 ? text[..400] : text).Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries));
 }

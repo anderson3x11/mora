@@ -213,7 +213,10 @@ sealed class Agents(DispatcherQueue ui)
     // ---------- Claude Code's hooks, in ~/.claude/settings.json ----------
 
     static readonly string[] Events = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Notification", "Stop", "SessionEnd"];
-    static readonly string ClaudeSettings = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude", "settings.json");
+    // Tests and development runs (MORA_DATA) get a file of their own: they never touch the user's Claude Code.
+    static readonly string ClaudeSettings = Environment.GetEnvironmentVariable("MORA_DATA") is { Length: > 0 } data
+        ? Path.Combine(data, "claude-settings.json")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude", "settings.json");
 
     // Adds or removes Mora's hooks, leaving everything else in the file as it was. Ours are the ones posting to Url.
     public static void ConnectClaude(bool on)

@@ -145,7 +145,13 @@ public sealed partial class IslandWindow : Window
             return;
         }
         SetMode(Mode.Hidden);
-        _setup = SetupWindow.Open(_settings, firstRun, chosen =>
+        _setup = SetupWindow.Open(_settings, firstRun, chosen => ApplySettings(chosen, firstRun));
+        _setup.Closed += (_, _) => _setup = null;
+    }
+
+    // Settings apply as soon as they change: from the settings window, and from the stress test.
+    void ApplySettings(Settings chosen, bool firstRun)
+    {
         {
             var old = _settings;
             _settings = chosen;
@@ -183,8 +189,7 @@ public sealed partial class IslandWindow : Window
             OnMediaChanged(); // the resting pill may have been switched on or off
             if (firstRun)
                 Notify(new Alert(Pop.Music, "", $"Press {_settings.HotkeyName} any time", "Mora never takes your keyboard", Seconds: 5), force: true);
-        });
-        _setup.Closed += (_, _) => _setup = null;
+        }
     }
 
     // Top center of the monitor holding the active window, or of the main one.
@@ -857,6 +862,12 @@ public sealed partial class IslandWindow : Window
         }
         // No frame at all: WinUI keeps a 3 px dialog frame that DWM paints white at the screen's top edge.
         if (msg == WM_NCCALCSIZE && wParam != 0) return 0;
+        if (msg == 0x7E) // WM_DISPLAYCHANGE: a screen plugged, unplugged or rearranged; the island finds its place again
+        {
+            _self._monitor = 0;
+            _self.Place();
+            _self.UpdateRail();
+        }
         if (msg == WM_DPICHANGED)
         {
             // Let WinUI pick up the new scale, then undo its suggested resize: Place already sized
