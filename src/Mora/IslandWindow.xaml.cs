@@ -121,6 +121,7 @@ public sealed partial class IslandWindow : Window
         WireAlerts();
         WireAgents();
         _tray = new Tray(_hwnd, $"Mora ({_settings.HotkeyName})");
+        UpdateTray();
         _trayMenu =
         [
             ("Open Mora", () => SetMode(Mode.Expanded, Via.Click)),
@@ -171,6 +172,7 @@ public sealed partial class IslandWindow : Window
             if (old.CalendarLink != chosen.CalendarLink) _eventsAt = default; // read again next time Home shows
             if (old.ShowWeather != chosen.ShowWeather) (_weatherAt, _weather) = (default, null);
             EvaluateRest(); // the agents' live activity may have been switched on or off
+            UpdateTray();
             if (old.ConnectClaudeCode != chosen.ConnectClaudeCode)
             {
                 try { Agents.ConnectClaude(chosen.ConnectClaudeCode); }

@@ -141,6 +141,7 @@ public sealed partial class IslandWindow
         _settings.DoNotDisturb = !_settings.DoNotDisturb;
         _settings.Save();
         FillQuiet();
+        UpdateTray();
         if (!_settings.DoNotDisturb && _game is null && _held.Count > 0) ShowHeld("during Do not disturb");
     }
 

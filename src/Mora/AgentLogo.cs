@@ -5,9 +5,9 @@ using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Mora;
 
-// An agent's logo: a PNG the user put in Mora's "logos" folder (claude.png, codex.png), shown as it is; else the icon
-// of its app as installed (the Claude app, Codex), drawn by Windows from the Start menu's apps folder, the same as its
-// shortcut. Without either, null: callers show a colored initial.
+// An agent's logo: an SVG or a PNG the user put in Mora's "logos" folder (claude.svg, googlegemini.svg, codex.png...),
+// shown whole; else the icon of its app as installed (the Claude app, Codex), drawn by Windows from the Start menu's apps
+// folder, the same as its shortcut. Without either, null: callers show a colored initial.
 static class AgentLogo
 {
     // Apps by agent: their Store package family and app id, the same on every PC.
@@ -30,16 +30,58 @@ static class AgentLogo
     {
         if (Cache.TryGetValue(agent, out var cached)) return cached;
         ImageSource? logo = null;
-        var png = Path.Combine(Folder, agent.Split(' ')[0].ToLowerInvariant() + ".png"); // "Claude Code" → claude.png
-        if (File.Exists(png))
+        foreach (var name in FileNames(agent))
         {
-            FromFile.Add(agent);
-            return Cache[agent] = new BitmapImage(new Uri(png)) { DecodePixelHeight = 96 };
+            var svg = Path.Combine(Folder, name + ".svg");
+            var png = Path.Combine(Folder, name + ".png");
+            if (File.Exists(svg))
+            {
+                FromFile.Add(agent);
+                return Cache[agent] = Svg(svg, Brands.GetValueOrDefault(name, "#FFFFFF"));
+            }
+            if (File.Exists(png))
+            {
+                FromFile.Add(agent);
+                return Cache[agent] = new BitmapImage(new Uri(png)) { DecodePixelHeight = 96 };
+            }
         }
         if (Apps.TryGetValue(agent, out var app))
             try { logo = Load("shell:AppsFolder\\" + app, 64); }
             catch (Exception e) when (e is COMException or ArgumentException or FileNotFoundException) { } // not installed
         return Cache[agent] = logo;
+    }
+
+    // The names a logo file may have: "Claude Code" → claude, claudecode; "Gemini CLI" → gemini, googlegemini;
+    // "GitHub Copilot" → github, githubcopilot, copilot (Simple Icons' names among them).
+    static IEnumerable<string> FileNames(string agent)
+    {
+        var words = agent.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return new[] { words[0], string.Concat(words), "google" + words[0], "openai" + words[0], words[^1] }.Distinct();
+    }
+
+    // Brand colors that read on black; the others (black or near black brands) are drawn white.
+    static readonly Dictionary<string, string> Brands = new()
+    {
+        ["claude"] = "#D97757", ["gemini"] = "#8E75B2", ["googlegemini"] = "#8E75B2", ["perplexity"] = "#20B8CD",
+    };
+
+    // Simple Icons' and most logo SVGs come without a color, or in "currentColor": both black, invisible on the island.
+    // The file is read, given its color, then rasterized by WinUI's SVG renderer.
+    static SvgImageSource Svg(string path, string color)
+    {
+        var text = File.ReadAllText(path).Replace("currentColor", color);
+        if (!System.Text.RegularExpressions.Regex.IsMatch(text, @"<svg[^>]*\sfill=")) text = text.Replace("<svg ", $"<svg fill=\"{color}\" ");
+        var source = new SvgImageSource { RasterizePixelWidth = 128, RasterizePixelHeight = 128 };
+        _ = Fill(source, System.Text.Encoding.UTF8.GetBytes(text));
+        return source;
+    }
+
+    static async Task Fill(SvgImageSource source, byte[] svg)
+    {
+        using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+        await stream.WriteAsync(svg.AsBuffer());
+        stream.Seek(0);
+        await source.SetSourceAsync(stream); // a broken file just shows nothing
     }
 
     static WriteableBitmap? Load(string path, int size)

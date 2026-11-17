@@ -28,6 +28,7 @@ public sealed partial class IslandWindow
                 if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents();
                 UpdateRoam(); // the walking crab takes the agents' mood
                 EvaluateRest(); // the live activity comes, changes or goes
+                UpdateTray();
             };
         }
         if (!_redraw.IsRunning) _redraw.Start();
@@ -46,6 +47,11 @@ public sealed partial class IslandWindow
             .OrderBy(s => s.State == Agents.State.NeedsYou ? 0 : 1).ThenByDescending(s => s.Updated).FirstOrDefault();
 
     bool AgentPill => LiveAgent != null;
+
+    // The tray's crab: claws up while an agent waits for the user, asleep during Do not disturb or a game.
+    void UpdateTray() => _tray.Show(
+        _settings.ConnectClaudeCode && _agents?.Sessions.Values.Any(s => s.State == Agents.State.NeedsYou) == true ? Tray.Mood.Waiting
+        : _settings.DoNotDisturb || _game != null ? Tray.Mood.Asleep : Tray.Mood.Usual);
     string _agentPillKey = "";
 
     // The resting island while an agent works: its logo in the ring of its progress, the project, and how it goes.

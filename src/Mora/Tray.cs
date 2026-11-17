@@ -12,7 +12,8 @@ sealed class Tray
     public static readonly uint TaskbarCreated = RegisterWindowMessage("TaskbarCreated");
     const uint WM_LBUTTONUP = 0x202, WM_RBUTTONUP = 0x205;
 
-    readonly nint _hwnd, _menuOwner, _icon;
+    readonly nint _hwnd, _menuOwner;
+    nint _icon;
     string _tip;
 
     public Tray(nint hwnd, string tip)
@@ -36,6 +37,55 @@ sealed class Tray
         _tip = tip;
         var data = Data();
         Shell_NotifyIcon(1, ref data); // NIM_MODIFY
+    }
+
+    // The crab says how things are: as usual; claws up in orange while an agent waits for the user; asleep, gray and
+    // eyes shut, during Do not disturb or a game. Drawn at the size Windows wants, whole pixels, no tile behind.
+    public enum Mood { Usual, Waiting, Asleep }
+
+    static readonly string[] Usual = ["C......C", "CC....CC", ".BBBBBB.", "BBEBBEBB", ".BBBBBB.", "B.B..B.B"];
+    static readonly string[] ClawsUp = ["C.C..C.C", ".C....C.", ".BBBBBB.", "BBEBBEBB", ".BBBBBB.", "B.B..B.B"];
+    static readonly Dictionary<Mood, nint> Icons = [];
+    Mood _mood;
+
+    public void Show(Mood mood)
+    {
+        if (mood == _mood && _icon != 0) return;
+        _mood = mood;
+        if (!Icons.TryGetValue(mood, out var icon))
+            Icons[mood] = icon = mood switch
+            {
+                Mood.Waiting => Draw(ClawsUp, 0xFFFF9F0A, 0xFF1A100E),
+                Mood.Asleep => Draw(Usual, 0xFF8E8E93, 0xFF48484A),
+                _ => Draw(Usual, 0xFFFF7A59, 0xFF1A100E),
+            };
+        _icon = icon;
+        var data = Data();
+        Shell_NotifyIcon(1, ref data); // NIM_MODIFY
+    }
+
+    static nint Draw(string[] map, uint body, uint eye)
+    {
+        int size = GetSystemMetrics(49); // SM_CXSMICON: the tray's size at this scale
+        int px = Math.Max(1, size / map[0].Length), x0 = (size - map[0].Length * px) / 2, y0 = (size - map.Length * px) / 2;
+        var pixels = new uint[size * size];
+        for (int y = 0; y < map.Length; y++)
+            for (int x = 0; x < map[y].Length; x++)
+            {
+                if (map[y][x] == '.') continue;
+                for (int dy = 0; dy < px; dy++)
+                    for (int dx = 0; dx < px; dx++)
+                        pixels[(y0 + y * px + dy) * size + x0 + x * px + dx] = map[y][x] == 'E' ? eye : body;
+            }
+        var header = new BitmapInfoHeader { Size = 40, Width = size, Height = -size, Planes = 1, BitCount = 32 };
+        var color = CreateDIBSection(0, ref header, 0, out var bits, 0, 0);
+        Marshal.Copy((int[])(object)pixels.Select(p => (int)p).ToArray(), 0, bits, pixels.Length);
+        var mask = CreateBitmap(size, size, 1, 1, 0);
+        var info = new IconInfo { Icon = true, Mask = mask, Color = color };
+        var icon = CreateIconIndirect(ref info);
+        DeleteObject(color);
+        DeleteObject(mask);
+        return icon;
     }
 
     public void Remove()
@@ -89,6 +139,14 @@ sealed class Tray
     }
 
     [StructLayout(LayoutKind.Sequential)] struct Point { public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)] struct BitmapInfoHeader { public int Size, Width, Height; public short Planes, BitCount; public int Compression, SizeImage, XPels, YPels, Used, Important; }
+    [StructLayout(LayoutKind.Sequential)] struct IconInfo { public bool Icon; public int X, Y; public nint Mask, Color; }
+
+    [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+    [DllImport("gdi32.dll")] static extern nint CreateDIBSection(nint dc, ref BitmapInfoHeader header, uint usage, out nint bits, nint section, uint offset);
+    [DllImport("gdi32.dll")] static extern nint CreateBitmap(int w, int h, uint planes, uint bits, nint data);
+    [DllImport("gdi32.dll")] static extern bool DeleteObject(nint obj);
+    [DllImport("user32.dll")] static extern nint CreateIconIndirect(ref IconInfo info);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern bool Shell_NotifyIcon(uint message, ref NotifyIconData data);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern uint RegisterWindowMessage(string name);

@@ -2,47 +2,47 @@
     x:Class="Mora.SetupWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Light and monochrome: a pale wash behind, a sidebar of outline icons, the pages on a white rounded sheet, ink as the accent. -->
-    <Grid x:Name="Root" RequestedTheme="Light"><Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#E6EEEF" Offset="0" /><GradientStop Color="#F1F2F4" Offset="0.55" /><GradientStop Color="#F4F4F5" Offset="1" /></LinearGradientBrush></Grid.Background>
+    <!-- Dark and monochrome: a near-black wash behind, a sidebar of outline icons, the pages on a rounded sheet a shade lighter, white as the accent. -->
+    <Grid x:Name="Root" RequestedTheme="Dark"><Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#1A1D1F" Offset="0" /><GradientStop Color="#121314" Offset="0.55" /><GradientStop Color="#0E0E0F" Offset="1" /></LinearGradientBrush></Grid.Background>
         <Grid.Resources>
             <ResourceDictionary>
                 <ResourceDictionary.ThemeDictionaries>
-                    <ResourceDictionary x:Key="Light">
-                        <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#1C1C1E" />
-                        <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#E61C1C1E" />
-                        <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#CC1C1C1E" />
-                        <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#1C1C1E" />
-                        <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#3A3A3C" />
-                        <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#000000" />
-                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="AccentButtonBackground" Color="#1C1C1E" />
-                        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#3A3A3C" />
-                        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#000000" />
-                        <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#1C1C1E" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#3A3A3C" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#000000" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#1C1C1E" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#3A3A3C" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#000000" />
-                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#FFFFFF" />
-                        <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#1C1C1E" />
-                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#3A3A3C" />
-                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#000000" />
+                    <ResourceDictionary x:Key="Dark">
+                        <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#F2F2F7" />
+                        <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#E6F2F2F7" />
+                        <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#CCF2F2F7" />
+                        <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#000000" />
+                        <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#F2F2F7" />
+                        <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#D1D1D6" />
+                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#000000" />
+                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#000000" />
+                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#000000" />
+                        <SolidColorBrush x:Key="AccentButtonBackground" Color="#F2F2F7" />
+                        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#D1D1D6" />
+                        <SolidColorBrush x:Key="AccentButtonForeground" Color="#000000" />
+                        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#000000" />
+                        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#000000" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#F2F2F7" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#D1D1D6" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#F2F2F7" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#D1D1D6" />
+                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#000000" />
+                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#000000" />
+                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#000000" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#F2F2F7" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#D1D1D6" />
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
-                <SolidColorBrush x:Key="Card" Color="#FFFFFF" />
-                <SolidColorBrush x:Key="Raised" Color="#E6E6E9" />
-                <SolidColorBrush x:Key="Muted" Color="#8A8A8E" />
-                <SolidColorBrush x:Key="Sheet" Color="#FBFBFC" />
-                <SolidColorBrush x:Key="Accent" Color="#1C1C1E" />
+                <SolidColorBrush x:Key="Card" Color="#232325" />
+                <SolidColorBrush x:Key="Raised" Color="#2F2F32" />
+                <SolidColorBrush x:Key="Muted" Color="#8E8E93" />
+                <SolidColorBrush x:Key="Sheet" Color="#1A1A1C" />
+                <SolidColorBrush x:Key="Accent" Color="#F2F2F7" />
             </ResourceDictionary>
         </Grid.Resources>
         <Grid.RowDefinitions>

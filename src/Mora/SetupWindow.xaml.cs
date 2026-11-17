@@ -42,9 +42,9 @@ public sealed partial class SetupWindow : Window
         SetTitleBar(TitleBar);
         var bar = AppWindow.TitleBar;
         bar.ButtonBackgroundColor = bar.ButtonInactiveBackgroundColor = Colors.Transparent;
-        bar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 0x1C, 0x1C, 0x1E);
-        bar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x8A, 0x8A, 0x8E);
-        bar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(0x14, 0, 0, 0);
+        bar.ButtonForegroundColor = Colors.White;
+        bar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x8E, 0x8E, 0x93);
+        bar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(0x1A, 0xFF, 0xFF, 0xFF);
         TitleMark.Content = new Crab(1.5); // the app's mark
 
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
@@ -74,9 +74,9 @@ public sealed partial class SetupWindow : Window
         Nav.Children.Add(new TextBlock { Text = "Settings", FontSize = 11, Foreground = Brush("Muted"), Margin = new Thickness(12, 2, 0, 6) });
         foreach (var (tab, glyph, label) in new[] { (Tab.General, "", "General"), (Tab.Popups, "", "Pop-ups"), (Tab.Games, "", "Games"), (Tab.About, "", "About") })
         {
-            // A monochrome sidebar: an outline glyph and the name in ink; the current section a white pill with a hairline edge.
+            // A monochrome sidebar: an outline glyph and the name in white; the current section a lighter pill with a hairline edge.
             bool current = tab == _tab;
-            var ink = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x1C, 0x1C, 0x1E));
+            var ink = new SolidColorBrush(Colors.White);
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 11 };
             content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 14, Foreground = ink });
             content.Children.Add(new TextBlock { Text = label, FontSize = 13, FontWeight = current ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center, Foreground = ink });
@@ -89,7 +89,7 @@ public sealed partial class SetupWindow : Window
                 CornerRadius = new CornerRadius(12),
                 BorderThickness = new Thickness(current ? 1 : 0),
                 BorderBrush = Brush("Raised"),
-                Background = current ? new SolidColorBrush(Colors.White) : new SolidColorBrush(Colors.Transparent),
+                Background = current ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x26, 0x26, 0x29)) : new SolidColorBrush(Colors.Transparent),
                 UseSystemFocusVisuals = false, // the white pill already says which section is open
             };
             item.Click += (_, _) => { _tab = tab; Show(); };
