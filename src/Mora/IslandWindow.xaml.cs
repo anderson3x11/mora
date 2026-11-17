@@ -362,7 +362,7 @@ public sealed partial class IslandWindow : Window
         PlayIcon.Glyph = _media.Playing ? "" : "";
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
-        ShapeArt(ExpandedArt, ArtColumn, 58);
+        ShapeArt(ExpandedArt, ArtColumn, 92);
         SourceBadge.Text = _media.Source;
         SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed; // the arrows: tap for the next player
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SourceButton, _media.Players > 1 ? $"{_media.Players} players open: tap to switch" : null);
