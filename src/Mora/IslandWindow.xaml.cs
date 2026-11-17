@@ -28,7 +28,7 @@ public sealed partial class IslandWindow : Window
 
     enum Tab { Home, Media, Timers, Shelf, Clipboard, Agents }
 
-    // Sizes are the same in every theme; the theme sets the corners and where the island sits.
+    // The corners follow the height: round ends up to 26, tightened by the notch look.
     Geo GeoOf(Mode m)
     {
         var (w, h) = m switch
@@ -40,9 +40,8 @@ public sealed partial class IslandWindow : Window
             _ => (96, 24),
         };
         double r = _theme.Radius(Math.Min(h / 2.0, 26));
-        if (m != Mode.Hidden) return new(w, h, r, _theme.Top);
-        // Back into the edge (aiming past zero, so it is gone at once rather than creeping toward it), or up and out of sight.
-        return _theme.Attached ? new(150, -12, r, 0) : new(w, h, r, -40);
+        // Hidden: back into the edge, aiming past zero so it is gone at once rather than creeping toward it.
+        return m != Mode.Hidden ? new(w, h, r, 0) : new(150, -12, r, 0);
     }
 
     static IslandWindow _self = null!; // one island; native callbacks route here
@@ -58,8 +57,8 @@ public sealed partial class IslandWindow : Window
     readonly List<Visual> _wave = [];
     readonly DispatcherQueueTimer _waveTimer;
     readonly DispatcherQueueTimer _progressTimer;
-    Theme _theme = Theme.Island;
-    (double K, double C) _spring = Theme.Island.Open;
+    readonly Theme _theme = Theme.Notch;
+    (double K, double C) _spring = Theme.Notch.Open;
     double _last, _scale = 1;
     bool _animating;
     Mode _mode;
@@ -163,7 +162,6 @@ public sealed partial class IslandWindow : Window
             }
             _tray.SetTip($"Mora ({_settings.HotkeyName})");
             _settings.Save();
-            if (old.Theme != chosen.Theme) ApplyTheme();
             if (old.CalendarLink != chosen.CalendarLink) _eventsAt = default; // read again next time Home shows
             if (old.ShowWeather != chosen.ShowWeather) (_weatherAt, _weather) = (default, null);
             if (old.ConnectClaudeCode != chosen.ConnectClaudeCode)
@@ -593,7 +591,7 @@ public sealed partial class IslandWindow : Window
     bool _tallBubble; // beside the open panel: a vertical pill instead of the round bubble
     // As tall as the open panel.
     Vector2 TallBubble => new(52, (float)GeoOf(Mode.Expanded).H);
-    CompositionColorBrush? _surface, _border;
+    CompositionColorBrush? _surface;
     readonly List<CompositionSpriteShape> _fills = [];
     readonly (ShapeVisual Visual, CompositionEllipseGeometry Arc, CompositionSpriteShape Ring)[] _shoulders = new (ShapeVisual, CompositionEllipseGeometry, CompositionSpriteShape)[4]; // the island's two, then the bubble's
     CompositionGeometricClip? _layersClip;
@@ -602,8 +600,7 @@ public sealed partial class IslandWindow : Window
     void BuildShape()
     {
         var c = ElementCompositionPreview.GetElementVisual(Pill).Compositor;
-        _surface = c.CreateColorBrush(Theme.Island.Surface);
-        _border = c.CreateColorBrush(Microsoft.UI.Colors.Transparent);
+        _surface = c.CreateColorBrush(Theme.Notch.Surface);
         _shape = c.CreateRoundedRectangleGeometry();
         _bubbleShape = c.CreateRoundedRectangleGeometry();
         var root = c.CreateContainerVisual();
@@ -613,7 +610,6 @@ public sealed partial class IslandWindow : Window
         {
             var fill = c.CreateSpriteShape(geometry);
             fill.FillBrush = _surface;
-            fill.StrokeBrush = _border;
             visual.Shapes.Add(fill);
             _fills.Add(fill);
         }
@@ -635,20 +631,19 @@ public sealed partial class IslandWindow : Window
         ElementCompositionPreview.SetIsTranslationEnabled(BubbleText, true);
     }
 
-    // Colors, surface, corners, springs and the layout details that differ between themes.
+    // The look's colors and bar thickness, set once at startup.
     void ApplyTheme()
     {
-        var t = _theme = Theme.Named(_settings.Theme);
+        var t = _theme;
         var res = ((FrameworkElement)Content).Resources;
         foreach (var (key, color) in new[] { ("Fg", t.Fg), ("Muted", t.Muted), ("Line", t.Line), ("Raised", t.Raised), ("Ink", t.Ink), ("InkText", t.InkText) })
             ((SolidColorBrush)res[key]).Color = color;
-        _surface!.Color = t.Surface;
-        _border!.Color = t.Border ?? Microsoft.UI.Colors.Transparent;
-        foreach (var fill in _fills) fill.StrokeThickness = t.Border is null ? 0 : 1;
-        Layers.Margin = new Thickness(0, t.Top, 0, 0);
-        _layersClip!.Offset = new Vector2(0, (float)-t.Top); // the layers start where the island's top is
-        foreach (var tab in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
-            ((Microsoft.UI.Xaml.Controls.StackPanel)tab.Children[0]).Children[1].Visibility = t.IconTabs ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var tab in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>()) // icon tabs, their names in tooltips
+        {
+            var label = (Microsoft.UI.Xaml.Controls.TextBlock)((Microsoft.UI.Xaml.Controls.StackPanel)tab.Children[0]).Children[1];
+            label.Visibility = Visibility.Collapsed;
+            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(tab, label.Text);
+        }
         foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill, TimerBack, TimerFill })
         {
             bar.Height = t.Track;
@@ -656,7 +651,7 @@ public sealed partial class IslandWindow : Window
         }
         AlertBar.Height = t.Track;
         var g = GeoOf(_mode);
-        (_w.X, _h.X, _r.X, _y.X) = (_w.T, _h.T, _r.T, _y.T) = (g.W, g.H, g.R, g.Y); // jump there: no spring between two looks
+        (_w.X, _h.X, _r.X, _y.X) = (_w.T, _h.T, _r.T, _y.T) = (g.W, g.H, g.R, g.Y);
         ShowTab();
         FillTimer();
         Render();
@@ -666,43 +661,23 @@ public sealed partial class IslandWindow : Window
     {
         float w = (float)Math.Max(0, _w.X), h = (float)Math.Max(0, _h.X), r = (float)Math.Min(Math.Max(0, _r.X), h / 2), top = (float)_y.X;
         float left = ((float)CanvasW - w) / 2;
-        if (_theme.Attached)
-        {
-            // Taller by its radius and raised by as much: the top corners sit above the screen, out of sight.
-            r = (float)Math.Min(Math.Max(0, _r.X), h);
-            _shape!.Size = new Vector2(w, h + r);
-            _shape.Offset = new Vector2(left, top - r);
-        }
-        else
-        {
-            _shape!.Size = new Vector2(w, h);
-            _shape.Offset = new Vector2(left, top);
-        }
+        // Taller by its radius and raised by as much: the top corners sit above the screen, out of sight.
+        r = (float)Math.Min(Math.Max(0, _r.X), h);
+        _shape!.Size = new Vector2(w, h + r);
+        _shape.Offset = new Vector2(left, top - r);
         _shape.CornerRadius = new Vector2(r, r);
-        float side = _theme.Attached ? Math.Min(ShoulderMax, h / 2) : 0;
+        float side = Math.Min(ShoulderMax, h / 2);
 
-        // Bubble: 32 px round, or the tall timer pill, a few px right of the island. Floating themes scale it
-        // from its center; an attached one grows it down out of the edge like the island, shoulders included.
+        // Bubble: 32 px round, or the tall timer pill, a few px right of the island, grown down out of the edge
+        // like the island, shoulders included.
         float s = (float)Math.Max(0, _bubble.X);
         var full = _tallBubble ? TallBubble : new Vector2(32, 32);
         float gap = _tallBubble ? 8 : 6, bubbleLeft = ((float)CanvasW + w) / 2 + gap, bubbleRight = bubbleLeft + full.X;
-        float bubbleSide = 0;
-        if (_theme.Attached)
-        {
-            float bh = full.Y * s, corner = (float)Math.Min(_theme.Radius(full.X / 2), bh);
-            _bubbleShape!.Size = new Vector2(full.X, bh + corner);
-            _bubbleShape.CornerRadius = new Vector2(corner, corner);
-            _bubbleShape.Offset = new Vector2(bubbleLeft, top - corner);
-            bubbleSide = Math.Min(ShoulderMax, bh / 2);
-        }
-        else
-        {
-            var size = full * s;
-            float corner = _tallBubble ? (float)_theme.Radius(full.X / 2) * s : size.X / 2;
-            _bubbleShape!.Size = size;
-            _bubbleShape.CornerRadius = new Vector2(corner, corner);
-            _bubbleShape.Offset = new Vector2(bubbleLeft, top) + (full - size) / 2;
-        }
+        float bh = full.Y * s, corner = (float)Math.Min(_theme.Radius(full.X / 2), bh);
+        _bubbleShape!.Size = new Vector2(full.X, bh + corner);
+        _bubbleShape.CornerRadius = new Vector2(corner, corner);
+        _bubbleShape.Offset = new Vector2(bubbleLeft, top - corner);
+        float bubbleSide = Math.Min(ShoulderMax, bh / 2);
         // Facing shoulders share the gap between island and bubble, meeting in its middle: a clean rounded slit.
         float inner = bubbleSide > 0 ? gap / 2 : float.MaxValue;
         PlaceShoulders(0, left, w, top, side, Math.Min(side, inner));

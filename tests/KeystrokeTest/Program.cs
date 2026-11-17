@@ -71,11 +71,9 @@ return exit;
 
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
-    // Tabs, in a pill from the left: Home, Media, Timers, Shelf, Clipboard. Themes with icon-only tabs (Notch)
-    // have them narrower, about 30 apart.
-    bool iconTabs = Environment.GetEnvironmentVariable("MORA_TEST_THEME") == "Notch";
-    Point Tab(int i, int labeled) => panel(iconTabs ? 30 + 30 * i : labeled, 22);
-    Point mediaTab = Tab(1, 113), timersTab = Tab(2, 178), clipboardTab = Tab(4, 310), pasteFirst = panel(630, 60), firstShelfRow = panel(100, 60);
+    // Icon tabs, in a pill from the left, about 30 apart: Home, Media, Timers, Shelf, Clipboard.
+    Point Tab(int i) => panel(30 + 30 * i, 22);
+    Point mediaTab = Tab(1), timersTab = Tab(2), clipboardTab = Tab(4), pasteFirst = panel(630, 60), firstShelfRow = panel(100, 60);
     Click(outside);
     Thread.Sleep(300);
     if (GetForegroundWindow() != fg)

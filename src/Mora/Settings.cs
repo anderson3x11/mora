@@ -56,7 +56,6 @@ sealed class Settings
     public GameProfile AnyGame { get; set; } = new();
     public bool AskNewGames { get; set; }
     public Dictionary<string, GameProfile> GameProfiles { get; set; } = [];
-    public string Theme { get; set; } = "Island";
     public bool ReopenLastTab { get; set; } = true; // off: the panel always opens on Media
     public bool DoNotDisturb { get; set; }      // the moon in the panel: pop-ups wait until it is off
     public bool ShowLyrics { get; set; }        // the Media tab's lyrics button, remembered

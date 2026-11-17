@@ -119,8 +119,6 @@ public sealed partial class SetupWindow : Window
                     Toggle(() => _working.ConnectClaudeCode, v => _working.ConnectClaudeCode = v)),
                     Row("Let the crab wander", "Mora's mascot walks along the bottom of the open panel, under everything. It bobs while an agent works and waves when one needs you.",
                         Toggle(() => _working.MascotRoams, v => _working.MascotRoams = v))));
-                Page.Children.Add(Subheading("Theme", "The island's whole look: its shape, how it moves and its colors."));
-                Page.Children.Add(ThemeCard());
                 break;
             case Tab.Popups:
                 Heading("Pop-ups", "What may open the island on its own. Each one leaves after 3 seconds, and none show during fullscreen games.");
@@ -314,16 +312,6 @@ public sealed partial class SetupWindow : Window
             return (UIElement)radio;
         }).ToArray());
     }
-
-    Border ThemeCard() => Card(Theme.All.Select(t =>
-    {
-        var label = new StackPanel { Margin = new Thickness(4, 0, 0, 0) };
-        label.Children.Add(new TextBlock { Text = t.Name, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        label.Children.Add(new TextBlock { Text = t.Description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
-        var radio = new RadioButton { GroupName = "theme", Content = label, IsChecked = _working.Theme == t.Name, Margin = new Thickness(0, 10, 0, 10) };
-        radio.Checked += (_, _) => { _working.Theme = t.Name; Changed(); };
-        return (UIElement)radio;
-    }).ToArray());
 
     Border PopupsCard() => Card(
         Row("Music changes", "The new track, with its artwork.", Toggle(() => _working.PopMusic, v => _working.PopMusic = v)),
