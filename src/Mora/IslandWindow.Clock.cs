@@ -62,7 +62,7 @@ public sealed partial class IslandWindow
         }
         TwoTone(PanelClock, now);
         GameClock.Text = now.ToString("t");
-        if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents(); // the elapsed times
+        if (_mode == Mode.Expanded && _tab == Tab.Agents) TickAgents(); // the elapsed time
         if (_mode == Mode.Expanded && _tab == Tab.Home) FillHome();     // the countdown, "in 12 min"
     }
 

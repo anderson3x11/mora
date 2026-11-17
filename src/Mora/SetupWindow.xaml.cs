@@ -117,6 +117,8 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(Subheading("Coding agents", "Follow your AI agents from the island: what each session is doing, and a pop-up when one needs you or finishes a long task."));
                 Page.Children.Add(Card(Row("Connect Claude Code", "Adds hooks to Claude Code's settings (.claude\\settings.json in your user folder). They report to Mora on this PC only. New sessions pick them up.",
                     Toggle(() => _working.ConnectClaudeCode, v => _working.ConnectClaudeCode = v)),
+                    Row("Rail on the screen's edge", "A ring per session against the right edge while agents work: their plan or context, orange when one needs you. Hidden during games.",
+                        Toggle(() => _working.AgentsRail, v => _working.AgentsRail = v)),
                     Row("Let the crab wander", "Mora's mascot walks along the bottom of the open panel, under everything. It bobs while an agent works and waves when one needs you.",
                         Toggle(() => _working.MascotRoams, v => _working.MascotRoams = v))));
                 break;

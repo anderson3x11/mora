@@ -164,6 +164,7 @@ public sealed partial class IslandWindow : Window
             _settings.Save();
             if (old.CalendarLink != chosen.CalendarLink) _eventsAt = default; // read again next time Home shows
             if (old.ShowWeather != chosen.ShowWeather) (_weatherAt, _weather) = (default, null);
+            UpdateRail();
             if (old.ConnectClaudeCode != chosen.ConnectClaudeCode)
             {
                 try { Agents.ConnectClaude(chosen.ConnectClaudeCode); }
@@ -883,7 +884,7 @@ public sealed partial class IslandWindow : Window
     }
 
     // Fully transparent window background so only the pill is drawn.
-    sealed class TransparentBackdrop : SystemBackdrop
+    internal sealed class TransparentBackdrop : SystemBackdrop
     {
         static Windows.UI.Composition.Compositor? _compositor;
 

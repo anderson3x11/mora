@@ -25,7 +25,16 @@ sealed class Agents(DispatcherQueue ui)
         public string Action = "";
         public string Prompt = "";                       // what the user asked, on one line
         public readonly List<(string Glyph, string Text)> Steps = []; // the latest tool steps, newest first
+        public readonly List<(string Text, string Status)> Plan = []; // Claude's checklist (TodoWrite): pending, in_progress, completed
+        public readonly HashSet<string> Files = [];      // files edited since the prompt
+        public double? Context;                          // share of the context window in use, from the transcript
+        public string Transcript = "";
         public DateTime Started = DateTime.Now;
+        public DateTime Updated = DateTime.Now;          // the last event
+
+        // The ring's fill: the plan done so far, else the context in use.
+        public double? Progress => Plan.Count > 0 ? (double)Plan.Count(p => p.Status == "completed") / Plan.Count : Context;
+        public string ProgressLabel => Plan.Count > 0 ? $"{Plan.Count(p => p.Status == "completed")}/{Plan.Count}" : Context is { } c ? $"{c * 100:0}%" : "";
     }
 
     public readonly Dictionary<string, Session> Sessions = []; // by session id
@@ -92,7 +101,7 @@ sealed class Agents(DispatcherQueue ui)
         JsonDocument doc;
         try { doc = JsonDocument.Parse(json); }
         catch (JsonException) { return; }
-        using var _ = doc;
+        using var parsed = doc;
         var r = doc.RootElement;
         string Str(JsonElement e, string key) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
         var id = Str(r, "session_id");
@@ -105,18 +114,29 @@ sealed class Agents(DispatcherQueue ui)
         }
         if (!Sessions.TryGetValue(id, out var s)) Sessions[id] = s = new();
         s.Name = Str(r, "session_title") is { Length: > 0 } title ? title : Path.GetFileName(Str(r, "cwd").TrimEnd('\\', '/'));
+        if (Str(r, "transcript_path") is { Length: > 0 } transcript) s.Transcript = transcript;
         switch (ev)
         {
             case "UserPromptSubmit":
                 (s.State, s.Action, s.Started) = (State.Working, "Thinking", DateTime.Now);
                 s.Prompt = string.Join(' ', Str(r, "prompt").Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries));
                 s.Steps.Clear();
+                s.Files.Clear();
                 break;
             case "PreToolUse":
                 var step = Describe(Str(r, "tool_name"), r.TryGetProperty("tool_input", out var input) ? input : default);
                 (s.State, s.Action) = (State.Working, step.Text);
                 s.Steps.Insert(0, step);
                 if (s.Steps.Count > 3) s.Steps.RemoveAt(3);
+                if (input.ValueKind == JsonValueKind.Object)
+                {
+                    if (Str(r, "tool_name") is "Edit" or "MultiEdit" or "Write" or "NotebookEdit" && Str(input, "file_path") is { Length: > 0 } edited) s.Files.Add(edited);
+                    if (input.TryGetProperty("todos", out var todos) && todos.ValueKind == JsonValueKind.Array)
+                    {
+                        s.Plan.Clear();
+                        foreach (var t in todos.EnumerateArray()) s.Plan.Add((Str(t, "content"), Str(t, "status")));
+                    }
+                }
                 break;
             case "PostToolUse" when s.State == State.NeedsYou: // allowed: back to work
                 s.State = State.Working;
@@ -130,7 +150,9 @@ sealed class Agents(DispatcherQueue ui)
             default:
                 return;
         }
+        s.Updated = DateTime.Now;
         Changed?.Invoke(s, ev);
+        if (ev is "UserPromptSubmit" or "PostToolUse" or "Stop") _ = ReadContext(s);
 
         (string Glyph, string Text) Describe(string tool, JsonElement i)
         {
@@ -143,9 +165,49 @@ sealed class Agents(DispatcherQueue ui)
                 "Grep" or "Glob" => ("\uE721", "Search the code"),
                 "WebFetch" or "WebSearch" => ("\uE774", "Search the web"),
                 "Agent" or "Task" => ("\uE99A", "Run a subagent"),
+                "TodoWrite" => ("\uE9D5", "Update the plan"),
                 _ => ("\uE71B", tool.StartsWith("mcp__") ? "Use a connector" : tool),
             };
         }
+    }
+
+    // How full the context is: the last reply's token count in the transcript (the input, cached or not, that the
+    // model saw), against a 200k window, or 1M once past it. Read off the UI thread, from the file's end only.
+    async Task ReadContext(Session s)
+    {
+        if (s.Transcript == "") return;
+        var path = s.Transcript;
+        if (await Task.Run(() => LastContext(path)) is not { } used || used == s.Context) return;
+        s.Context = used;
+        Changed?.Invoke(s, "Context");
+    }
+
+    static double? LastContext(string path)
+    {
+        try
+        {
+            using var f = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var length = (int)Math.Min(f.Length, 512 * 1024);
+            f.Seek(-length, SeekOrigin.End);
+            var tail = new byte[length];
+            f.ReadExactly(tail);
+            var lines = Encoding.UTF8.GetString(tail).Split('\n');
+            for (int i = lines.Length - 1; i >= 0; i--)
+            {
+                if (!lines[i].Contains("\"usage\"")) continue;
+                try
+                {
+                    using var doc = JsonDocument.Parse(lines[i]);
+                    if (!doc.RootElement.TryGetProperty("message", out var m) || m.ValueKind != JsonValueKind.Object || !m.TryGetProperty("usage", out var u)) continue;
+                    long N(string key) => u.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt64() : 0;
+                    long tokens = N("input_tokens") + N("cache_creation_input_tokens") + N("cache_read_input_tokens");
+                    return Math.Clamp(tokens / (tokens > 200_000 ? 1_000_000.0 : 200_000.0), 0, 1);
+                }
+                catch (JsonException) { } // the first line of the tail is usually cut
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        return null;
     }
 
     // ---------- Claude Code's hooks, in ~/.claude/settings.json ----------

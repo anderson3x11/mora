@@ -83,6 +83,7 @@ public sealed partial class IslandWindow
         }
         if (_settings.AskNewGames && !_settings.GameProfiles.ContainsKey(exe) && _asked.Add(exe)) _asking = exe;
         UpdateHotkey();
+        UpdateRail(); // off the screen while the game is on
         SetMode(Mode.Hidden);
         // Answered with the keyboard: games usually capture the mouse, so a click may never reach the island.
         if (_asking != null)
@@ -112,6 +113,7 @@ public sealed partial class IslandWindow
     void LeaveGame()
     {
         (_game, _gameWindow, _awaySince) = (null, 0, null);
+        UpdateRail();
         _asking = null; // unanswered: stays out for this run, asked again next time Mora starts
         UpdateHotkey();
         if (_held.Count == 0)
