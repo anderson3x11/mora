@@ -42,9 +42,10 @@ public sealed partial class SetupWindow : Window
         SetTitleBar(TitleBar);
         var bar = AppWindow.TitleBar;
         bar.ButtonBackgroundColor = bar.ButtonInactiveBackgroundColor = Colors.Transparent;
-        bar.ButtonForegroundColor = Colors.White;
-        bar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x9B, 0x9B, 0xA5);
-        bar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(255, 0x1C, 0x1C, 0x21);
+        bar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 0x1C, 0x1C, 0x1E);
+        bar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x8A, 0x8A, 0x8E);
+        bar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(0x14, 0, 0, 0);
+        TitleMark.Content = new Crab(1.5); // the app's mark
 
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         double scale = Native.GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
@@ -70,28 +71,26 @@ public sealed partial class SetupWindow : Window
         BackButton.Visibility = Visibility.Collapsed; // nothing to cancel: changes apply at once
         NextButton.Content = "Done";
         Nav.Children.Clear();
+        Nav.Children.Add(new TextBlock { Text = "Settings", FontSize = 11, Foreground = Brush("Muted"), Margin = new Thickness(12, 2, 0, 6) });
         foreach (var (tab, glyph, label) in new[] { (Tab.General, "", "General"), (Tab.Popups, "", "Pop-ups"), (Tab.Games, "", "Games"), (Tab.About, "", "About") })
         {
-            // macOS's sidebar: a white glyph on a colored rounded square, the current section highlighted in blue.
+            // A monochrome sidebar: an outline glyph and the name in ink; the current section a white pill with a hairline edge.
             bool current = tab == _tab;
-            var tile = new Border
-            {
-                Width = 22, Height = 22, CornerRadius = new CornerRadius(6),
-                Background = new SolidColorBrush(tab switch { Tab.Popups => Windows.UI.Color.FromArgb(255, 0xFF, 0x45, 0x3A), Tab.Games => Windows.UI.Color.FromArgb(255, 0x30, 0xD1, 0x58), Tab.About => Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF), _ => Windows.UI.Color.FromArgb(255, 0x8E, 0x8E, 0x93) }),
-                Child = new FontIcon { Glyph = glyph, FontSize = 12, Foreground = new SolidColorBrush(Colors.White) },
-            };
-            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-            content.Children.Add(tile);
-            content.Children.Add(new TextBlock { Text = label, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(Colors.White) });
+            var ink = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x1C, 0x1C, 0x1E));
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 11 };
+            content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 14, Foreground = ink });
+            content.Children.Add(new TextBlock { Text = label, FontSize = 13, FontWeight = current ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center, Foreground = ink });
             var item = new Button
             {
                 Content = content,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
-                Padding = new Thickness(8, 5, 8, 5),
-                CornerRadius = new CornerRadius(7),
-                BorderThickness = new Thickness(0),
-                Background = current ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF)) : new SolidColorBrush(Colors.Transparent),
+                Padding = new Thickness(12, 8, 12, 8),
+                CornerRadius = new CornerRadius(12),
+                BorderThickness = new Thickness(current ? 1 : 0),
+                BorderBrush = Brush("Raised"),
+                Background = current ? new SolidColorBrush(Colors.White) : new SolidColorBrush(Colors.Transparent),
+                UseSystemFocusVisuals = false, // the white pill already says which section is open
             };
             item.Click += (_, _) => { _tab = tab; Show(); };
             Nav.Children.Add(item);

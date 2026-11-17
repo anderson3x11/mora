@@ -71,8 +71,8 @@ return exit;
 
 static int Run(nint fg, Point outside, Func<int, int, Point> panel, double s, Host host)
 {
-    // Page dots, centered on the bottom line, 16 apart: Now, Today, Timers, Shelf, Clipboard (no Agents: not connected).
-    Point Tab(int i) => panel(308 + 16 * i, 143);
+    // Page icons, centered on the bottom line, 38 apart: Now, Today, Timers, Shelf, Clipboard (no Agents: not connected).
+    Point Tab(int i) => panel(264 + 38 * i, 143);
     Point mediaTab = Tab(0), timersTab = Tab(2), clipboardTab = Tab(4), pasteFirst = panel(630, 25), firstShelfRow = panel(100, 25);
     Click(outside);
     Thread.Sleep(300);

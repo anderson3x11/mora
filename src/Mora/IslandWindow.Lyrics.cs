@@ -16,6 +16,7 @@ public sealed partial class IslandWindow
 
     List<(TimeSpan At, string Text)>? _lyrics;
     string _lyricsKey = "";
+    string? _lyricsTip;
 
     void LoadLyrics()
     {
@@ -69,7 +70,12 @@ public sealed partial class IslandWindow
             LyricNow.Text = i < 0 ? "♪" : lines[i].Text is { Length: > 0 } t ? t : "♪";
             LyricNext.Text = i + 1 < lines.Count ? lines[i + 1].Text : "";
         }
+        // The button: for music, not videos (no lyrics on YouTube or Twitch); lit while the lyrics show.
+        LyricsButton.Visibility = _media.Site is "YouTube" or "Twitch" or "Kick" or "Netflix" ? Visibility.Collapsed : Visibility.Visible;
         LyricsIcon.Foreground = (Brush)((FrameworkElement)Content).Resources[_settings.ShowLyrics ? "Fg" : "Muted"];
+        LyricsButton.Background = _settings.ShowLyrics ? PageOn : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        var tip = _settings.ShowLyrics ? (lines is null ? "No synced lyrics for this song" : "Hide the lyrics") : "Show the lyrics";
+        if (tip != _lyricsTip) Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(LyricsButton, _lyricsTip = tip); // this runs 4 times a second
     }
 
     void Lyrics_Tapped(object sender, TappedRoutedEventArgs e)

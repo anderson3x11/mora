@@ -371,6 +371,11 @@ public sealed partial class IslandWindow : Window
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
         ShapeArt(ExpandedArt, ArtColumn, 88);
+        if (_media.Title != _shownTitle)
+        {
+            if (_shownTitle != null && _mode == Mode.Expanded && _tab == Tab.Media) NewTrackIn();
+            _shownTitle = _media.Title;
+        }
         SourceBadge.Text = _media.Source;
         SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed; // the arrows: tap for the next player
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SourceButton, _media.Players > 1 ? $"{_media.Players} players open: tap to switch" : null);
@@ -379,6 +384,36 @@ public sealed partial class IslandWindow : Window
         UpdateProgress();
         UpdateWave();
         UpdateProgressTimer();
+    }
+
+    string? _shownTitle;
+
+    // A new track while the panel shows it: the cover settles in from a little smaller, the words rise into place.
+    void NewTrackIn()
+    {
+        if (!_motion) return;
+        var sb = new Storyboard();
+        var art = new ScaleTransform { ScaleX = 0.9, ScaleY = 0.9 };
+        ExpandedArt.RenderTransform = art;
+        ExpandedArt.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
+        var settle = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+        Animate(sb, art, "ScaleX", 1, 520, settle);
+        Animate(sb, art, "ScaleY", 1, 520, settle);
+        foreach (var (text, delay) in new[] { (TitleText, 40), (ArtistText, 90) })
+        {
+            var rise = new TranslateTransform { Y = 6 };
+            text.RenderTransform = rise;
+            text.Opacity = 0;
+            var up = new DoubleAnimation { To = 0, Duration = TimeSpan.FromMilliseconds(420), BeginTime = TimeSpan.FromMilliseconds(delay), EasingFunction = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 } };
+            Storyboard.SetTarget(up, rise);
+            Storyboard.SetTargetProperty(up, "Y");
+            var show = new DoubleAnimation { To = 1, Duration = TimeSpan.FromMilliseconds(300), BeginTime = TimeSpan.FromMilliseconds(delay) };
+            Storyboard.SetTarget(show, text);
+            Storyboard.SetTargetProperty(show, "Opacity");
+            sb.Children.Add(up);
+            sb.Children.Add(show);
+        }
+        sb.Begin();
     }
 
     void SetArt(Microsoft.UI.Xaml.Controls.Border frame, UIElement fallback)
@@ -519,11 +554,58 @@ public sealed partial class IslandWindow : Window
         }
     }
 
-    void Tab_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    void Tab_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => TurnTo(Enum.Parse<Tab>((string)((FrameworkElement)sender).Tag));
+
+    // To another page: it slides in a little from the side it comes from and fades up, its icon pops.
+    void TurnTo(Tab next)
     {
-        _tab = Enum.Parse<Tab>((string)((FrameworkElement)sender).Tag);
+        if (next == _tab) return;
+        int from = (int)_tab;
+        _tab = next;
         ShowTab();
         UpdateBubble(); // the timer pill steps aside on the Timers tab
+        if (!_motion) return;
+        var page = PageOf(next);
+        var slide = new TranslateTransform { X = (int)next > from ? 22 : -22 };
+        page.RenderTransform = slide;
+        page.Opacity = 0;
+        var sb = new Storyboard();
+        Animate(sb, slide, "X", 0, 380, new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 });
+        Animate(sb, page, "Opacity", 1, 240, new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 3 });
+        if (Tabs.Children.Cast<FrameworkElement>().FirstOrDefault(t => (string)t.Tag == next.ToString()) is { } icon)
+        {
+            var pop = new ScaleTransform { ScaleX = 0.8, ScaleY = 0.8 };
+            icon.RenderTransform = pop;
+            var back = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.6 };
+            Animate(sb, pop, "ScaleX", 1, 420, back);
+            Animate(sb, pop, "ScaleY", 1, 420, back);
+        }
+        sb.Begin();
+    }
+
+    FrameworkElement PageOf(Tab tab) => tab switch
+    {
+        Tab.Media => MediaTab, Tab.Home => HomeTab, Tab.Timers => TimersTab, Tab.Agents => AgentsTab, Tab.Shelf => ShelfTab, _ => ClipboardTab,
+    };
+
+    // A press, like iOS: the button gives a little under the pointer and springs back on release.
+    void Press_Down(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) => Squeeze((UIElement)sender, 0.88, 90, null);
+
+    void Press_Up(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
+        Squeeze((UIElement)sender, 1, 380, new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.7 });
+
+    void Squeeze(UIElement target, double to, int ms, EasingFunctionBase? ease)
+    {
+        if (!_motion) return;
+        if (target.RenderTransform is not ScaleTransform scale)
+        {
+            target.RenderTransform = scale = new ScaleTransform();
+            target.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
+        }
+        var sb = new Storyboard();
+        Animate(sb, scale, "ScaleX", to, ms, ease);
+        Animate(sb, scale, "ScaleY", to, ms, ease);
+        sb.Begin();
     }
 
     void ShowTab()
@@ -542,11 +624,15 @@ public sealed partial class IslandWindow : Window
         PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
-        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>()) // the page dots: the current one white
-            ((Microsoft.UI.Xaml.Shapes.Ellipse)t.Children[0]).Fill = (string)t.Tag == _tab.ToString() ? (Brush)res["Fg"] : PageDot;
+        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>()) // the page icons: the current one white, on a faint disc
+        {
+            bool on = (string)t.Tag == _tab.ToString();
+            ((Microsoft.UI.Xaml.Controls.FontIcon)t.Children[0]).Foreground = on ? (Brush)res["Fg"] : PageDot;
+            t.Background = on ? PageOn : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        }
     }
 
-    static readonly SolidColorBrush PageDot = new(Windows.UI.Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
+    static readonly SolidColorBrush PageDot = new(Windows.UI.Color.FromArgb(0x70, 0xFF, 0xFF, 0xFF)), PageOn = new(Windows.UI.Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
 
     // The wheel (or a trackpad's two fingers) turns the pages, like the dots.
     void Panel_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
@@ -555,9 +641,7 @@ public sealed partial class IslandWindow : Window
         int at = pages.IndexOf(_tab), step = e.GetCurrentPoint(ExpandedLayer).Properties.MouseWheelDelta < 0 ? 1 : -1;
         int next = Math.Clamp(at + step, 0, pages.Count - 1);
         if (next == at) return;
-        _tab = pages[next];
-        ShowTab();
-        UpdateBubble();
+        TurnTo(pages[next]);
         e.Handled = true;
     }
 
@@ -801,13 +885,13 @@ public sealed partial class IslandWindow : Window
         sb.Begin();
     }
 
-    void Animate(Storyboard sb, DependencyObject target, string property, double to, int ms)
+    void Animate(Storyboard sb, DependencyObject target, string property, double to, int ms, EasingFunctionBase? ease = null)
     {
         var a = new DoubleAnimation
         {
             To = to,
             Duration = TimeSpan.FromMilliseconds(_motion ? ms : 10),
-            EasingFunction = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 },
+            EasingFunction = ease ?? new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 },
         };
         Storyboard.SetTarget(a, target);
         Storyboard.SetTargetProperty(a, property);
