@@ -139,18 +139,18 @@ public sealed partial class IslandWindow
             var zone = new Grid { Height = RowsHeight };
             zone.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle
             {
-                Stroke = (Brush)res["Line"], StrokeThickness = 1.5, StrokeDashArray = [4, 3], RadiusX = 12, RadiusY = 12,
+                Stroke = (Brush)res["Line"], StrokeThickness = 1.5, StrokeDashArray = [4, 3], RadiusX = 18, RadiusY = 18,
             });
             var text = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            text.Children.Add(new TextBlock { Text = "Drop files here to keep them for later", FontSize = 11, Foreground = (Brush)res["Fg"], HorizontalAlignment = HorizontalAlignment.Center });
-            text.Children.Add(new TextBlock { Text = "Then drag them out into any app", FontSize = 10.5, Foreground = (Brush)res["Muted"], HorizontalAlignment = HorizontalAlignment.Center });
+            text.Children.Add(new TextBlock { Text = "Drop files to keep them here", FontFamily = (FontFamily)res["Display"], FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = (Brush)res["Fg"], HorizontalAlignment = HorizontalAlignment.Center });
+            text.Children.Add(new TextBlock { Text = "Then drag them out into any app", FontSize = 13, Foreground = (Brush)res["Muted"], HorizontalAlignment = HorizontalAlignment.Center });
             zone.Children.Add(text);
             ShelfTab.Children.Add(zone);
             return;
         }
         foreach (var path in _shelf.Take(3)) // what fits the panel's fixed height
         {
-            var row = new Grid { Background = (Brush)res["Card"], BorderBrush = (Brush)res["CardLine"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(11, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9, CanDrag = true };
+            var row = new Grid { Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), BorderBrush = Hairline, BorderThickness = new Thickness(0, 0, 0, path == _shelf.Take(3).Last() ? 0 : 1), Padding = new Thickness(2, 0, 0, 0), Height = RowHeight, ColumnSpacing = 12, CanDrag = true };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -160,14 +160,14 @@ public sealed partial class IslandWindow
             });
             var name = new TextBlock
             {
-                Text = Path.GetFileName(path.TrimEnd('\\')), FontSize = 11, Foreground = (Brush)res["Fg"],
+                Text = Path.GetFileName(path.TrimEnd('\\')), FontSize = 13, Foreground = (Brush)res["Fg"],
                 TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1, VerticalAlignment = VerticalAlignment.Center,
             };
             Grid.SetColumn(name, 1);
             row.Children.Add(name);
             var remove = new Border
             {
-                Style = (Style)res["Chip"], Padding = new Thickness(8, 5, 8, 5), VerticalAlignment = VerticalAlignment.Center,
+                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), Padding = new Thickness(10, 6, 4, 6), VerticalAlignment = VerticalAlignment.Center,
                 Child = new FontIcon { Glyph = "", FontSize = 9, FontFamily = (FontFamily)res["Icons"], Foreground = (Brush)res["Fg"] },
             };
             remove.Tapped += (_, e) =>

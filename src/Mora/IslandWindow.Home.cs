@@ -6,7 +6,7 @@ using Windows.Devices.Geolocation;
 
 namespace Mora;
 
-// Home tab: a card each for the music, the agenda (with a Join button for the next call), a focus timer and the
+// Today: the agenda (with a Join button for the next call), a focus timer and the
 // weather. The agenda and the weather refresh when the tab shows, at most every few minutes.
 public sealed partial class IslandWindow
 {
@@ -15,20 +15,14 @@ public sealed partial class IslandWindow
     (int Temp, int High, int Low, int Code, bool Day)? _weather;
     string _weatherNote = "";
 
+    static readonly SolidColorBrush AppleBlue = new(Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF)); // links and actions, as Apple tints them
+    static readonly SolidColorBrush Hairline = new(Windows.UI.Color.FromArgb(255, 0x2C, 0x2C, 0x2E));
+
     void FillHome()
     {
         if (_media is null) return; // the theme shows the first tab before the media session exists
         var res = ((FrameworkElement)Content).Resources;
         Brush Res(string key) => (Brush)res[key];
-
-        // Music
-        HomeNothing.Visibility = _media.HasSession ? Visibility.Collapsed : Visibility.Visible;
-        HomeMusic.Visibility = _media.HasSession ? Visibility.Visible : Visibility.Collapsed;
-        HomeTitle.Text = _media.Title;
-        HomeArtist.Text = _media.Artist;
-        HomePlayIcon.Glyph = PlayIcon.Glyph;
-        SetArt(HomeArt, HomeArtIcon);
-        ShapeArt(HomeArt, HomeArtColumn, 46);
 
         // Agenda: the next two events, the one starting soon with its Join button.
         var now = DateTime.Now;
@@ -37,7 +31,7 @@ public sealed partial class IslandWindow
         HomeEvents.Children.Clear();
         var next = _events.Where(e => e.End > now).Take(2).ToList();
         if (next.Count == 0)
-            HomeEvents.Children.Add(new TextBlock { Text = "No events", FontSize = 11.5, Foreground = Res("Muted"), Margin = new Thickness(0, 3, 0, 0) });
+            HomeEvents.Children.Add(new TextBlock { Text = "No events", FontSize = 13, Foreground = Res("Muted") });
         for (int i = 0; i < next.Count; i++)
         {
             var e = next[i];
@@ -47,14 +41,14 @@ public sealed partial class IslandWindow
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.Children.Add(new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(i == 0 ? Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF) : Windows.UI.Color.FromArgb(255, 0xBF, 0x5A, 0xF2)) });
             var text = new StackPanel();
-            text.Children.Add(new TextBlock { Text = e.Title, FontSize = 11.5, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Res("Fg"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
-            text.Children.Add(new TextBlock { Text = When(e), FontSize = 10, Foreground = Res("Muted"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
+            text.Children.Add(new TextBlock { Text = e.Title, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Res("Fg"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
+            text.Children.Add(new TextBlock { Text = When(e), FontSize = 12, Foreground = Res("Muted"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
             Grid.SetColumn(text, 1);
             row.Children.Add(text);
             if (e.Link is { } link && e.Start - now < TimeSpan.FromMinutes(15)) // about to start, or under way
             {
-                var join = new Border { Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x3B, 0x8E, 0xF5)), CornerRadius = new CornerRadius(11), Padding = new Thickness(9, 3, 9, 3), VerticalAlignment = VerticalAlignment.Center,
-                    Child = new TextBlock { Text = "Join", FontSize = 10.5, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = new SolidColorBrush(Microsoft.UI.Colors.White) } };
+                var join = new Border { Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), Padding = new Thickness(6, 4, 0, 4), VerticalAlignment = VerticalAlignment.Center,
+                    Child = new TextBlock { Text = "Join", FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = AppleBlue } };
                 join.Tapped += (_, _) => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(link) { UseShellExecute = true });
                 Grid.SetColumn(join, 2);
                 row.Children.Add(join);

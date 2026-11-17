@@ -46,16 +46,17 @@ public sealed partial class IslandWindow
         {
             ClipboardTab.Children.Add(new TextBlock
             {
-                Text = "Copy some text or an image and it shows up here.", FontSize = 11.5, Foreground = (Brush)res["Muted"],
-                HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 40, 0, 0), // centered, like "Nothing playing"
+                Text = "Copy some text or an image and it shows up here", FontSize = 13, Foreground = (Brush)res["Muted"],
+                HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 52, 0, 0), // centered, like "Not playing"
             });
             return;
         }
         foreach (var item in c.Items.Take(3)) // what fits the panel's fixed height
         {
-            var paste = new Border { Style = (Style)res["Chip"], VerticalAlignment = VerticalAlignment.Center, Child = new TextBlock { Text = "Paste", Style = (Style)res["ChipText"] } };
+            var paste = new Border { Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), Padding = new Thickness(10, 6, 2, 6), VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock { Text = "Paste", FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = AppleBlue } };
             paste.Tapped += (_, _) => c.Paste(item);
-            var row = new Grid { Background = (Brush)res["Card"], BorderBrush = (Brush)res["CardLine"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(12, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9 };
+            var row = new Grid { BorderBrush = Hairline, BorderThickness = new Thickness(0, 0, 0, item == c.Items.Take(3).Last() ? 0 : 1), Padding = new Thickness(2, 0, 0, 0), Height = RowHeight, ColumnSpacing = 12 };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -73,7 +74,7 @@ public sealed partial class IslandWindow
             var label = new TextBlock
             {
                 Text = item.Text is { } text ? OneLine(text) : ImageName(item),
-                FontSize = 11,
+                FontSize = 13,
                 Foreground = (Brush)res["Fg"],
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 MaxLines = 1,

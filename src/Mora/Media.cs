@@ -23,6 +23,7 @@ sealed class Media(DispatcherQueue ui)
     public string Title { get; private set; } = "";
     public string Artist { get; private set; } = "";
     public BitmapImage? Art { get; private set; }
+    public Windows.UI.Color? Tint { get; private set; } // the artwork's color, for the waveform; null when it has none to speak of
     public string? Site { get; private set; }   // YouTube, Twitch... when it can be told
     public string Source { get; private set; } = ""; // badge: the site, else the app
     public bool Playing { get; private set; }
@@ -162,13 +163,15 @@ sealed class Media(DispatcherQueue ui)
                 _artKey = key;
                 (Site, Source) = MediaSource.Identify(s.SourceAppUserModelId, Title, Artist);
                 BitmapImage? art = null; // the old artwork stays up until the new one is decoded: no blank flash
+                Windows.UI.Color? tint = null;
                 if (props.Thumbnail != null)
                 {
                     art = new BitmapImage { DecodePixelHeight = 128 }; // by height: video thumbnails are wide
                     await art.SetSourceAsync(await props.Thumbnail.OpenReadAsync());
+                    tint = await TintOf(props.Thumbnail);
                     if (s != _session || seq != _propertiesSeq) return;
                 }
-                Art = art;
+                (Art, Tint) = (art, tint);
                 if (Source == "" || Site is null) _ = IdentifyLater(s, key);
             }
         }
@@ -194,6 +197,47 @@ sealed class Media(DispatcherQueue ui)
         if (s != _session || key != _artKey || key == _realKey) return;
         _realKey = key;
         TrackChanged?.Invoke();
+    }
+
+    // The artwork's color, as Apple tints the waveform: an average of a 12 x 12 version that favors the vivid pixels,
+    // then made bright enough for black. A gray or black and white cover has none: the bars stay white.
+    static async Task<Windows.UI.Color?> TintOf(Windows.Storage.Streams.IRandomAccessStreamReference thumbnail)
+    {
+        try
+        {
+            using var stream = await thumbnail.OpenReadAsync();
+            var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(stream);
+            var data = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Ignore,
+                new Windows.Graphics.Imaging.BitmapTransform { ScaledWidth = 12, ScaledHeight = 12 },
+                Windows.Graphics.Imaging.ExifOrientationMode.IgnoreExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
+            var px = data.DetachPixelData();
+            double r = 0, g = 0, b = 0, total = 0, vivid = 0;
+            for (int i = 0; i + 2 < px.Length; i += 4)
+            {
+                double B = px[i] / 255.0, G = px[i + 1] / 255.0, R = px[i + 2] / 255.0;
+                double max = Math.Max(R, Math.Max(G, B)), sat = max == 0 ? 0 : (max - Math.Min(R, Math.Min(G, B))) / max;
+                double weight = 0.02 + sat * sat * max;
+                (r, g, b, total, vivid) = (r + R * weight, g + G * weight, b + B * weight, total + weight, vivid + sat);
+            }
+            if (vivid / (px.Length / 4.0) < 0.12) return null;
+            var (h, s, v) = Hsv(r / total, g / total, b / total);
+            return FromHsv(h, Math.Clamp(s * 1.2, 0.45, 0.85), Math.Max(v, 0.92));
+        }
+        catch (Exception e) when (e is COMException or ArgumentException or InvalidOperationException) { return null; }
+    }
+
+    static (double H, double S, double V) Hsv(double r, double g, double b)
+    {
+        double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b)), d = max - min;
+        double h = d == 0 ? 0 : max == r ? (g - b) / d % 6 : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
+        return ((h * 60 + 360) % 360, max == 0 ? 0 : d / max, max);
+    }
+
+    static Windows.UI.Color FromHsv(double h, double s, double v)
+    {
+        double c = v * s, x = c * (1 - Math.Abs(h / 60 % 2 - 1)), m = v - c;
+        var (r, g, b) = (int)(h / 60) switch { 0 => (c, x, 0.0), 1 => (x, c, 0.0), 2 => (0.0, c, x), 3 => (0.0, x, c), 4 => (x, 0.0, c), _ => (c, 0.0, x) };
+        return Windows.UI.Color.FromArgb(255, (byte)((r + m) * 255), (byte)((g + m) * 255), (byte)((b + m) * 255));
     }
 
     // The browser window title can lag the media title by a moment after a tab switch: look once more.

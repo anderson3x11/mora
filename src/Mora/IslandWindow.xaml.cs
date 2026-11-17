@@ -26,7 +26,7 @@ public sealed partial class IslandWindow : Window
     enum Via { None, Hotkey, Click, Hover, Drag }
     record struct Geo(double W, double H, double R, double Y);
 
-    enum Tab { Home, Media, Timers, Shelf, Clipboard, Agents }
+    enum Tab { Media, Home, Timers, Agents, Shelf, Clipboard } // the order of the dots
 
     // The corners follow the height: round ends up to 26, tightened by the notch look.
     Geo GeoOf(Mode m)
@@ -39,7 +39,7 @@ public sealed partial class IslandWindow : Window
             Mode.Expanded => (680, 170), // one size for every tab: switching tabs never reshapes the island; wide rather than tall
             _ => (96, 24),
         };
-        double r = _theme.Radius(Math.Min(h / 2.0, 26));
+        double r = m == Mode.Expanded ? 30 : _theme.Radius(Math.Min(h / 2.0, 26)); // open, the wide corners of the expanded Dynamic Island
         // Hidden: back into the edge, aiming past zero so it is gone at once rather than creeping toward it.
         return m != Mode.Hidden ? new(w, h, r, 0) : new(150, -12, r, 0);
     }
@@ -330,9 +330,9 @@ public sealed partial class IslandWindow : Window
             await Task.Delay(170);
         }
         if (t != _token) return;
-        if (prev == Mode.Expanded && mode != Mode.Expanded && !_settings.ReopenLastTab && _tab != Tab.Home)
+        if (prev == Mode.Expanded && mode != Mode.Expanded && !_settings.ReopenLastTab && _tab != Tab.Media)
         {
-            _tab = Tab.Home; // swapped once the panel's content has faded out
+            _tab = Tab.Media; // swapped once the panel's content has faded out
             ShowTab();
         }
         if (mode == Mode.Compact) Fade(CompactLayer, true);
@@ -363,9 +363,14 @@ public sealed partial class IslandWindow : Window
         LoadLyrics(); // the title and artist lines, or the lyrics: UpdateProgress
         FillQuiet();
         PlayIcon.Glyph = _media.Playing ? "" : "";
+        var tint = _media.Tint is { } t ? new SolidColorBrush(t) : (Brush)((FrameworkElement)Content).Resources["Ink"]; // the waveforms in the cover's color
+        foreach (var panel in new[] { Wave, AlertWave, PanelWave })
+            foreach (var bar in panel.Children.OfType<Microsoft.UI.Xaml.Shapes.Rectangle>()) bar.Fill = tint;
+        PlayShape.Visibility = _media.Playing ? Visibility.Collapsed : Visibility.Visible;
+        PauseShape.Visibility = _media.Playing ? Visibility.Visible : Visibility.Collapsed;
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
-        ShapeArt(ExpandedArt, ArtColumn, 92);
+        ShapeArt(ExpandedArt, ArtColumn, 88);
         SourceBadge.Text = _media.Source;
         SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed; // the arrows: tap for the next player
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SourceButton, _media.Players > 1 ? $"{_media.Players} players open: tap to switch" : null);
@@ -434,7 +439,7 @@ public sealed partial class IslandWindow : Window
             foreach (var bar in panel.Children)
             {
                 var v = ElementCompositionPreview.GetElementVisual(bar);
-                v.CenterPoint = new Vector3(1.5f, 8, 0);
+                v.CenterPoint = new Vector3(1.5f, (float)((FrameworkElement)bar).Height / 2, 0);
                 v.Scale = new Vector3(1, BarRest, 1);
                 _wave.Add(v);
             }
@@ -523,7 +528,7 @@ public sealed partial class IslandWindow : Window
 
     void ShowTab()
     {
-        if (_tab == Tab.Agents && !_settings.ConnectClaudeCode) _tab = Tab.Home; // disconnected meanwhile
+        if (_tab == Tab.Agents && !_settings.ConnectClaudeCode) _tab = Tab.Media; // disconnected meanwhile
         HomeTab.Visibility = _tab == Tab.Home ? Visibility.Visible : Visibility.Collapsed;
         if (_tab == Tab.Home) FillHome();
         MediaTab.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
@@ -537,15 +542,23 @@ public sealed partial class IslandWindow : Window
         PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
-        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
-        {
-            bool on = (string)t.Tag == _tab.ToString();
-            t.Background = on ? (Brush)res["CardLine"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-            var fg = (Brush)res[on ? "Fg" : "Muted"];
-            var label = (Microsoft.UI.Xaml.Controls.StackPanel)t.Children[0];
-            ((Microsoft.UI.Xaml.Controls.FontIcon)label.Children[0]).Foreground = fg;
-            ((Microsoft.UI.Xaml.Controls.TextBlock)label.Children[1]).Foreground = fg;
-        }
+        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>()) // the page dots: the current one white
+            ((Microsoft.UI.Xaml.Shapes.Ellipse)t.Children[0]).Fill = (string)t.Tag == _tab.ToString() ? (Brush)res["Fg"] : PageDot;
+    }
+
+    static readonly SolidColorBrush PageDot = new(Windows.UI.Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
+
+    // The wheel (or a trackpad's two fingers) turns the pages, like the dots.
+    void Panel_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var pages = Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>().Where(t => t.Visibility == Visibility.Visible).Select(t => Enum.Parse<Tab>((string)t.Tag)).ToList();
+        int at = pages.IndexOf(_tab), step = e.GetCurrentPoint(ExpandedLayer).Properties.MouseWheelDelta < 0 ? 1 : -1;
+        int next = Math.Clamp(at + step, 0, pages.Count - 1);
+        if (next == at) return;
+        _tab = pages[next];
+        ShowTab();
+        UpdateBubble();
+        e.Handled = true;
     }
 
     void Source_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.NextPlayer();
@@ -664,12 +677,7 @@ public sealed partial class IslandWindow : Window
         var res = ((FrameworkElement)Content).Resources;
         foreach (var (key, color) in new[] { ("Fg", t.Fg), ("Muted", t.Muted), ("Line", t.Line), ("Raised", t.Raised), ("Ink", t.Ink), ("InkText", t.InkText) })
             ((SolidColorBrush)res[key]).Color = color;
-        foreach (var tab in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>()) // icon tabs, their names in tooltips
-        {
-            var label = (Microsoft.UI.Xaml.Controls.TextBlock)((Microsoft.UI.Xaml.Controls.StackPanel)tab.Children[0]).Children[1];
-            label.Visibility = Visibility.Collapsed;
-            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(tab, label.Text);
-        }
+
         foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill })
         {
             bar.Height = t.Track;
