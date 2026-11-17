@@ -12,11 +12,10 @@ public sealed partial class IslandWindow
 {
     Agents? _agents;
 
-    RailWindow? _rail;
     Microsoft.UI.Dispatching.DispatcherQueueTimer? _redraw;
 
-    // Agents send several events a second: the tab, the rail and the walking crab redraw once for a burst of them,
-    // at most every 250 ms, rather than once per event.
+    // Agents send several events a second: the tab, the live activity and the walking crab redraw once for a burst
+    // of them, at most every 250 ms, rather than once per event.
     void Redraw()
     {
         if (_redraw is null)
@@ -28,7 +27,7 @@ public sealed partial class IslandWindow
             {
                 if (_mode == Mode.Expanded && _tab == Tab.Agents) FillAgents();
                 UpdateRoam(); // the walking crab takes the agents' mood
-                UpdateRail();
+                EvaluateRest(); // the live activity comes, changes or goes
             };
         }
         if (!_redraw.IsRunning) _redraw.Start();
@@ -39,28 +38,74 @@ public sealed partial class IslandWindow
         _agents = new Agents(DispatcherQueue);
         _agents.Changed += OnAgent;
         _agents.Start();
-        var expire = DispatcherQueue.CreateTimer(); // finished sessions leave the rail after a while
-        expire.Interval = TimeSpan.FromSeconds(20);
-        expire.Tick += (_, _) => UpdateRail();
-        expire.Start();
     }
 
-    // The rail on the screen's edge: while sessions run, never over a fullscreen game.
-    void UpdateRail()
+    // The live activity: the session that matters most right now (waiting for the user first, then the latest at work).
+    Agents.Session? LiveAgent => !_settings.ConnectClaudeCode || !_settings.AgentsLive || _agents is null ? null
+        : _agents.Sessions.Values.Where(s => s.State != Agents.State.Done)
+            .OrderBy(s => s.State == Agents.State.NeedsYou ? 0 : 1).ThenByDescending(s => s.Updated).FirstOrDefault();
+
+    bool AgentPill => LiveAgent != null;
+    string _agentPillKey = "";
+
+    // The resting island while an agent works: its logo in the ring of its progress, the project, and how it goes.
+    void FillAgentPill()
     {
-        if (_agents is null || !_settings.ConnectClaudeCode || !_settings.AgentsRail || _game != null)
+        if (LiveAgent is not { } s) return;
+        int busy = _agents!.Sessions.Values.Count(x => x.State != Agents.State.Done);
+        var key = $"{s.Name}:{s.State}:{s.ProgressLabel}";
+        if (key != _agentPillKey) // the badge only when it changes: the ring keeps its pulse
         {
-            _rail?.Hide();
-            return;
+            _agentPillKey = key;
+            CompactAgentBadge.Content = AgentBadge(s, 24, 2.4);
         }
-        _rail ??= new RailWindow(Mascot, () =>
-        {
-            _tab = Tab.Agents;
-            SetMode(Mode.Expanded, Via.Click);
-            ShowTab();
-        }, () => OpenSetup(firstRun: false));
-        _rail.Show(_agents.Sessions.Values, _monitor != 0 ? _monitor : MonitorFromWindow(_hwnd, 1));
+        CompactAgentName.Text = busy > 1 ? $"{s.Name}  +{busy - 1}" : s.Name;
+        bool asks = s.State == Agents.State.NeedsYou;
+        CompactAgentState.Text = asks ? "Needs you" : Format(DateTime.Now - s.Started);
+        CompactAgentState.Foreground = asks ? new SolidColorBrush(MicOrange) : (Brush)((FrameworkElement)Content).Resources["Muted"];
+        CompactAgentState.FontFamily = (FontFamily)((FrameworkElement)Content).Resources[asks ? "Text" : "Mono"];
     }
+
+    // An agent's mark: its app's logo inside a ring that fills with its plan (or the context in use), white while it
+    // works, orange and breathing when it waits for the user, green once done. Without the app, a colored initial.
+    FrameworkElement AgentBadge(Agents.Session s, double size, double stroke)
+    {
+        var color = s.State switch { Agents.State.NeedsYou => new SolidColorBrush(MicOrange), Agents.State.Done => new SolidColorBrush(Green), _ => new SolidColorBrush(Microsoft.UI.Colors.White) };
+        var badge = new Grid { Width = size, Height = size, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        badge.Children.Add(new Microsoft.UI.Xaml.Shapes.Ellipse { Stroke = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x3A, 0x3A, 0x3C)), StrokeThickness = stroke });
+        bool asks = s.State == Agents.State.NeedsYou;
+        double fill = asks ? 1 : Math.Clamp(s.Progress ?? 0, 0, 1), units = Math.PI * (size - stroke) / stroke;
+        if (fill > 0)
+        {
+            var arc = new Microsoft.UI.Xaml.Shapes.Ellipse
+            {
+                Stroke = color, StrokeThickness = stroke, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeDashCap = PenLineCap.Round,
+                StrokeDashArray = fill >= 1 ? null : [Math.Max(0.01, fill * units - 1), units * 2],
+                RenderTransform = new RotateTransform { Angle = -90 }, RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5),
+            };
+            badge.Children.Add(arc);
+            if (asks && _motion) Crab.Pulse(arc);
+        }
+        double inner = size - stroke * 2 - Math.Max(3, size * 0.12) * 2;
+        badge.Children.Add(AgentLogo.For(s.Agent) is { } logo
+            ? new Border { Width = inner, Height = inner, CornerRadius = new CornerRadius(inner * 0.24), Child = new Image { Source = logo, Stretch = Stretch.UniformToFill } }
+            : new Border
+            {
+                Width = inner, Height = inner, CornerRadius = new CornerRadius(inner / 2), Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0xD9, 0x77, 0x57)),
+                Child = new TextBlock { Text = s.Agent[..1], FontSize = inner * 0.5, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            });
+        return badge;
+    }
+
+    // Under a ring: the plan or the context, else how long it has been working.
+    static string Label(Agents.Session s) => s.State switch
+    {
+        Agents.State.NeedsYou => "Your turn",
+        _ when s.ProgressLabel is { Length: > 0 } label => label,
+        Agents.State.Done => "Done",
+        _ => (DateTime.Now - s.Started).TotalMinutes is var m && m < 1 ? "Now" : $"{(int)m} min",
+    };
 
     void OnAgent(Agents.Session? s, string ev)
     {
@@ -69,10 +114,11 @@ public sealed partial class IslandWindow
         bool asks = ev == "Notification" && s.State == Agents.State.NeedsYou;
         bool done = ev == "Stop" && DateTime.Now - s.Started >= TimeSpan.FromSeconds(30); // quick answers are no news
         if (!(asks || done) || !FirstWordOnClaude()) return;
+        var logo = AgentLogo.For(s.Agent);
         if (asks)
-            Notify(new Alert(Pop.Agents, "", $"{s.Name} needs you", s.Action, MicOrange, Seconds: 6, Wide: true, Agent: s.State));
+            Notify(new Alert(Pop.Agents, "", $"{s.Name} needs you", s.Action, MicOrange, Seconds: 6, Wide: true, Art: logo));
         else
-            Notify(new Alert(Pop.Agents, "", $"{s.Name} is done", $"After {Elapsed(s)}", Green, Agent: s.State));
+            Notify(new Alert(Pop.Agents, "", $"{s.Name} is done", $"After {Elapsed(s)}", Green, Art: logo));
     }
 
     // The Claude app sends its own notification for the same moment (a question, the end of a task). Whichever of
@@ -177,8 +223,8 @@ public sealed partial class IslandWindow
             var (key, one) = sessions[k];
             var cell = new StackPanel { Spacing = 2, Padding = new Thickness(4), CornerRadius = new CornerRadius(12), VerticalAlignment = VerticalAlignment.Center,
                 Background = key == id ? Res("Raised") : new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
-            cell.Children.Add(RailWindow.RingOf(one, Mascot, 34, 3));
-            cell.Children.Add(new TextBlock { Text = RailWindow.Label(one), FontSize = 10, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center,
+            cell.Children.Add(AgentBadge(one, 36, 3));
+            cell.Children.Add(new TextBlock { Text = Label(one), FontSize = 10, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center,
                 Foreground = one.State == Agents.State.NeedsYou ? new SolidColorBrush(MicOrange) : Res("Muted"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
             cell.Tapped += (_, _) => { _picked = key; FillAgents(); };
             ToolTipService.SetToolTip(cell, one.Name);

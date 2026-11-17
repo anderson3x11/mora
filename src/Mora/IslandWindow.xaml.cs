@@ -33,7 +33,7 @@ public sealed partial class IslandWindow : Window
     {
         var (w, h) = m switch
         {
-            Mode.Compact => (MediaPill ? 214 : TimerPill ? 132 : ClockPillWidth, 32),
+            Mode.Compact => (AgentPill ? 236 : MediaPill ? 214 : TimerPill ? 132 : ClockPillWidth, 32),
             Mode.Alert => (_alert is { Wide: true } || _alert?.Action2Label != null ? 384 : 304, 50), // longer text or two answers
             Mode.Game => (288, 66),
             Mode.Expanded => (680, 170), // one size for every tab: switching tabs never reshapes the island; wide rather than tall
@@ -170,7 +170,7 @@ public sealed partial class IslandWindow : Window
             _settings.Save();
             if (old.CalendarLink != chosen.CalendarLink) _eventsAt = default; // read again next time Home shows
             if (old.ShowWeather != chosen.ShowWeather) (_weatherAt, _weather) = (default, null);
-            UpdateRail();
+            EvaluateRest(); // the agents' live activity may have been switched on or off
             if (old.ConnectClaudeCode != chosen.ConnectClaudeCode)
             {
                 try { Agents.ConnectClaude(chosen.ConnectClaudeCode); }
@@ -231,12 +231,12 @@ public sealed partial class IslandWindow : Window
         SetMode(Mode.Expanded, Via.Hotkey);
     }
 
-    // The resting pill, each part opt-in: music while media exists (paused included), a countdown while a
-    // timer runs, the time. Music with a countdown or the time splits into the pill and a round bubble beside it.
-    // Never over a game.
-    bool MediaPill => _settings.ShowCompactPill && _media is { HasSession: true };
+    // The resting pill: a coding agent at work takes it (a live activity); else each part is opt-in: music while
+    // media exists (paused included), a countdown while a timer runs, the time. Music with a countdown or the time
+    // splits into the pill and a round bubble beside it. Never over a game.
+    bool MediaPill => _settings.ShowCompactPill && _media is { HasSession: true } && !AgentPill;
     bool TimerPill => _settings.ShowTimerPill && _timer != null;
-    bool RestingPill => (MediaPill || TimerPill || ClockPill) && _game is null;
+    bool RestingPill => (AgentPill || MediaPill || TimerPill || ClockPill) && _game is null;
 
     // After media or a timer changed: show, hide or refill the resting pill.
     void EvaluateRest()
@@ -253,8 +253,10 @@ public sealed partial class IslandWindow : Window
 
     void FillCompact()
     {
+        CompactAgent.Visibility = AgentPill ? Visibility.Visible : Visibility.Collapsed;
         CompactMedia.Visibility = MediaPill ? Visibility.Visible : Visibility.Collapsed;
-        CompactTimer.Visibility = MediaPill ? Visibility.Collapsed : Visibility.Visible;
+        CompactTimer.Visibility = MediaPill || AgentPill ? Visibility.Collapsed : Visibility.Visible;
+        if (AgentPill) FillAgentPill();
         CompactLayer.Width = GeoOf(Mode.Compact).W;
         UpdateWave();
         FillClock(); // the time, when neither music nor a countdown has the pill
@@ -265,7 +267,7 @@ public sealed partial class IslandWindow : Window
         // Beside the resting pill: a round bubble with the countdown or the time, next to music. Beside the open
         // panel: a tall pill with the countdown, unless the Timers tab already shows it; else the time, if wanted.
         bool tall = _mode == Mode.Expanded;
-        bool timer = tall ? _timer != null && _tab != Tab.Timers : MediaPill && TimerPill;
+        bool timer = tall ? _timer != null && _tab != Tab.Timers : (MediaPill || AgentPill) && TimerPill;
         bool clock = !timer && (tall ? _settings.ClockBesidePanel : MediaPill && ClockPill);
         _bubble.T = (_mode == Mode.Compact || tall) && (timer || clock) ? 1 : 0;
         if (tall != _tallBubble || clock != _bubbleClock)
@@ -298,6 +300,7 @@ public sealed partial class IslandWindow : Window
     {
         if (mode == Mode.Expanded && _game != null) return; // never a panel over a game, whatever asked for it
         var prev = _mode;
+        if (mode == Mode.Expanded && prev == Mode.Compact && AgentPill && via is Via.Click or Via.Hover) _tab = Tab.Agents; // the live activity opens on its agents
         var t = ++_token;
         (_mode, _via) = (mode, via);
         GameKeys.CardOpen = mode == Mode.Game;
@@ -866,7 +869,6 @@ public sealed partial class IslandWindow : Window
         {
             _self._monitor = 0;
             _self.Place();
-            _self.UpdateRail();
         }
         if (msg == WM_DPICHANGED)
         {

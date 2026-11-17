@@ -45,7 +45,7 @@ public sealed partial class IslandWindow
     {
         var now = DateTime.Now;
         var res = ((FrameworkElement)Content).Resources;
-        if (!TimerPill && !MediaPill)
+        if (!TimerPill && !MediaPill && !AgentPill)
         {
             CompactTimerIcon.Visibility = Visibility.Collapsed;
             (CompactTimerText.FontFamily, CompactTimerText.HorizontalAlignment) = ((FontFamily)res["Text"], HorizontalAlignment.Center);
@@ -64,6 +64,7 @@ public sealed partial class IslandWindow
         GameClock.Text = now.ToString("t");
         if (_mode == Mode.Expanded && _tab == Tab.Agents) TickAgents(); // the elapsed time
         if (_mode == Mode.Expanded && _tab == Tab.Home) FillHome();     // the countdown, "in 12 min"
+        if (_mode == Mode.Compact && AgentPill) FillAgentPill();          // its elapsed time
     }
 
     // The clock face beside the open panel: hands, then the time and the day under it.

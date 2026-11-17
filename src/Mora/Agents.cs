@@ -21,6 +21,7 @@ sealed class Agents(DispatcherQueue ui)
     public sealed class Session
     {
         public string Name = "";
+        public string Agent = "Claude Code"; // which agent: its logo, its app
         public State State;
         public string Action = "";
         public string Prompt = "";                       // what the user asked, on one line
