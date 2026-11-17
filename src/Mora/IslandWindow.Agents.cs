@@ -222,7 +222,7 @@ public sealed partial class IslandWindow
         {
             var (key, one) = sessions[k];
             var cell = new StackPanel { Spacing = 2, Padding = new Thickness(4), CornerRadius = new CornerRadius(12), VerticalAlignment = VerticalAlignment.Center,
-                Background = key == id ? Res("Raised") : new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
+                Background = key == id ? Res("CardLine") : new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
             cell.Children.Add(AgentBadge(one, 36, 3));
             cell.Children.Add(new TextBlock { Text = Label(one), FontSize = 10, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center,
                 Foreground = one.State == Agents.State.NeedsYou ? new SolidColorBrush(MicOrange) : Res("Muted"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
@@ -286,7 +286,7 @@ public sealed partial class IslandWindow
         Grid.SetRow(footer, 3);
         card.Children.Add(footer);
 
-        var frame = new Border { Background = Res("Raised"), CornerRadius = new CornerRadius(14), Padding = new Thickness(12, 9, 12, 9), Child = card };
+        var frame = new Border { Style = (Style)res["Widget"], Child = card };
         Grid.SetColumn(frame, 1);
         layout.Children.Add(frame);
         AgentsTab.Children.Add(layout);

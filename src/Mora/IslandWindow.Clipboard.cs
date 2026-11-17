@@ -55,7 +55,7 @@ public sealed partial class IslandWindow
         {
             var paste = new Border { Style = (Style)res["Chip"], VerticalAlignment = VerticalAlignment.Center, Child = new TextBlock { Text = "Paste", Style = (Style)res["ChipText"] } };
             paste.Tapped += (_, _) => c.Paste(item);
-            var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9 };
+            var row = new Grid { Background = (Brush)res["Card"], BorderBrush = (Brush)res["CardLine"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(12, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9 };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

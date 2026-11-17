@@ -33,11 +33,11 @@ public sealed partial class IslandWindow
         // Agenda: the next two events, the one starting soon with its Join button.
         var now = DateTime.Now;
         HomeDay.Text = now.Day.ToString();
-        HomeWeekday.Text = Capitalized(now.ToString("dddd"));
+        HomeWeekday.Text = now.ToString("ddd").TrimEnd('.').ToUpper(System.Globalization.CultureInfo.CurrentCulture);
         HomeEvents.Children.Clear();
         var next = _events.Where(e => e.End > now).Take(2).ToList();
         if (next.Count == 0)
-            HomeEvents.Children.Add(new TextBlock { Text = "Nothing planned", FontSize = 11, Foreground = Res("Muted") });
+            HomeEvents.Children.Add(new TextBlock { Text = "No events", FontSize = 11.5, Foreground = Res("Muted"), Margin = new Thickness(0, 3, 0, 0) });
         for (int i = 0; i < next.Count; i++)
         {
             var e = next[i];
@@ -45,7 +45,7 @@ public sealed partial class IslandWindow
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.Children.Add(new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(i == 0 ? Windows.UI.Color.FromArgb(255, 0x3B, 0x8E, 0xF5) : _theme.Warm) });
+            row.Children.Add(new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(i == 0 ? Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF) : Windows.UI.Color.FromArgb(255, 0xBF, 0x5A, 0xF2)) });
             var text = new StackPanel();
             text.Children.Add(new TextBlock { Text = e.Title, FontSize = 11.5, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Res("Fg"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
             text.Children.Add(new TextBlock { Text = When(e), FontSize = 10, Foreground = Res("Muted"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
@@ -62,14 +62,20 @@ public sealed partial class IslandWindow
             HomeEvents.Children.Add(row);
         }
 
-        // Focus timer: idle it offers a 25 min round, running it counts down and stops.
+        // Focus: idle, the ring is empty and offers a 25 min round; running, it empties as time goes, orange (green on
+        // a break), and a tap stops it.
         var running = _timer;
-        HomeTimerLabel.Text = running is null ? "Focus" : running.Round > 0 ? (running.Break ? "Break" : $"Focus · {running.Round}") : running.Label;
-        HomeTimerLeft.Text = running is null ? Format(TimeSpan.FromSeconds(_focusWork)) : Format(TimeSpan.FromSeconds(Math.Ceiling((running.End - DateTime.UtcNow).TotalSeconds)));
-        HomeTimerLeft.Foreground = running is null ? Res("Fg") : new SolidColorBrush(running.Break ? _theme.Calm : _theme.Warm);
-        HomeTimerButton.Background = running is null ? Res("Ink") : Res("Line");
-        HomeTimerIcon.Glyph = running is null ? "" : ""; // play, stop
-        HomeTimerIcon.Foreground = running is null ? Res("InkText") : Res("Fg");
+        var left = running is null ? TimeSpan.FromSeconds(_focusWork) : TimeSpan.FromSeconds(Math.Max(0, Math.Ceiling((running.End - DateTime.UtcNow).TotalSeconds)));
+        HomeTimerLabel.Text = (running is null ? "Focus" : running.Round > 0 ? (running.Break ? "Break" : $"Focus {running.Round}") : "Timer").ToUpper(System.Globalization.CultureInfo.CurrentCulture);
+        HomeTimerLeft.Text = Format(left);
+        HomeTimerLeft.Foreground = Res("Fg");
+        var tint = new SolidColorBrush(running is { Break: true } ? _theme.Calm : _theme.Warm);
+        double share = running is { Seconds: > 0 } ? Math.Clamp(left.TotalSeconds / running.Seconds, 0, 1) : 0, units = Math.PI * (66 - 5) / 5;
+        HomeTimerArc.Stroke = tint;
+        HomeTimerArc.Visibility = share > 0 ? Visibility.Visible : Visibility.Collapsed;
+        HomeTimerArc.StrokeDashArray = share >= 1 ? null : [Math.Max(0.01, share * units - 1), units * 2];
+        HomeTimerIcon.Glyph = running is null ? "\uE768" : "\uE71A"; // play, stop
+        HomeTimerIcon.Foreground = running is null ? Res("Muted") : tint;
 
         // Weather
         HomeWeather.Visibility = _weather is null ? Visibility.Collapsed : Visibility.Visible;

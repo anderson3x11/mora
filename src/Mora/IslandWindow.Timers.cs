@@ -75,7 +75,7 @@ public sealed partial class IslandWindow
         var left = TimeSpan.FromSeconds(Math.Ceiling((t.End - DateTime.UtcNow).TotalSeconds));
         TimerLeft.Text = Format(left);
         var color = new SolidColorBrush(t.Break ? _theme.Calm : _theme.Warm);
-        TimerLeft.Foreground = TimerFill.Background = color;
+        TimerArc.Stroke = color;
         if (TimerPill) // otherwise the clock may have the resting pill
         {
             CompactTimerIcon.Glyph = "";
@@ -91,8 +91,10 @@ public sealed partial class IslandWindow
             BubbleText.Foreground = color;
         }
         var done = t.Seconds > 0 ? Math.Clamp(1 - left.TotalSeconds / t.Seconds, 0, 1) : 0;
-        TimerDone.Width = new GridLength(done, GridUnitType.Star);
-        TimerRest.Width = new GridLength(1 - done, GridUnitType.Star);
+        // The ring empties as time goes, like the Clock app's.
+        double share = 1 - done, units = Math.PI * (104 - 6) / 6;
+        TimerArc.Visibility = share > 0 ? Visibility.Visible : Visibility.Collapsed;
+        TimerArc.StrokeDashArray = share >= 1 ? null : [Math.Max(0.01, share * units - 1), units * 2];
     }
 
     void TimerStart_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) =>

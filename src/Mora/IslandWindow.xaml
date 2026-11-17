@@ -14,6 +14,37 @@
             <SolidColorBrush x:Key="Ink" Color="White" />
             <SolidColorBrush x:Key="InkText" Color="#08080A" />
             <FontFamily x:Key="Text">Segoe UI Variable Text,Segoe UI</FontFamily>
+            <FontFamily x:Key="Display">Segoe UI Variable Display,Segoe UI</FontFamily>
+            <!-- Widgets: a card a step above the black, with a hairline edge, like macOS widgets on a dark desktop -->
+            <SolidColorBrush x:Key="Card" Color="#141416" />
+            <SolidColorBrush x:Key="CardLine" Color="#1AFFFFFF" />
+            <Style x:Key="Widget" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource Card}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CardLine}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="20" />
+                <Setter Property="Padding" Value="13,11" />
+            </Style>
+            <!-- Capsule buttons, Apple's: a soft gray fill, the label firm -->
+            <Style x:Key="Capsule" TargetType="Border">
+                <Setter Property="Background" Value="#2C2C2E" />
+                <Setter Property="CornerRadius" Value="15" />
+                <Setter Property="Padding" Value="14,7" />
+            </Style>
+            <Style x:Key="CapsuleText" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource Text}" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{StaticResource Fg}" />
+            </Style>
+            <!-- Small caps labels, Apple's way of naming a widget or a section -->
+            <Style x:Key="Caps" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource Text}" />
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="CharacterSpacing" Value="60" />
+                <Setter Property="Foreground" Value="{StaticResource Muted}" />
+            </Style>
             <Style TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{StaticResource Text}" />
             </Style>
@@ -221,8 +252,8 @@
                     </StackPanel>
                     <!-- The crab's lane: the panel's bottom margin, under the content, never in the way of a click -->
                     <Canvas x:Name="MascotLane" Grid.Row="1" Height="17" VerticalAlignment="Bottom" Margin="0,0,0,-17" IsHitTestVisible="False" Visibility="Collapsed" />
-                    <!-- The tabs, grouped in a pill -->
-                    <Border x:Name="TabsPill" Background="{StaticResource Raised}" CornerRadius="11" Padding="2" HorizontalAlignment="Left">
+                    <!-- The tabs: plain icons, the current one lit -->
+                    <Border x:Name="TabsPill" HorizontalAlignment="Left" Margin="-4,0,0,0">
                     <StackPanel x:Name="Tabs" Orientation="Horizontal" Spacing="2">
                         <Grid Tag="Home" CornerRadius="9" Padding="8,0" Tapped="Tab_Tapped">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
@@ -264,23 +295,26 @@
                     </Border>
 
                     <Grid Grid.Row="1" Margin="0,10,0,0">
-                        <!-- Home: a card each for music, the agenda, a focus timer and the weather -->
+                        <!-- Home: four widgets, in the manner of macOS: music, the day's agenda, focus, weather -->
                         <Grid x:Name="HomeTab" Visibility="Collapsed" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.5*" />
-                                <ColumnDefinition Width="1.3*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="1.45*" />
+                                <ColumnDefinition Width="1.35*" />
+                                <ColumnDefinition Width="0.9*" />
+                                <ColumnDefinition Width="1*" />
                             </Grid.ColumnDefinitions>
-                            <Border Background="{StaticResource Raised}" CornerRadius="14" Padding="12,10">
+                            <Border Style="{StaticResource Widget}">
                                 <Grid>
-                                    <TextBlock x:Name="HomeNothing" Text="Nothing playing" FontSize="11.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <Grid x:Name="HomeMusic" RowSpacing="6">
+                                    <StackPanel x:Name="HomeNothing" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xEC4F;" FontSize="18" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
+                                        <TextBlock Text="Nothing playing" FontSize="11.5" Foreground="{StaticResource Muted}" />
+                                    </StackPanel>
+                                    <Grid x:Name="HomeMusic">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <Grid ColumnSpacing="10">
+                                        <Grid ColumnSpacing="10" VerticalAlignment="Top">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition x:Name="HomeArtColumn" Width="46" />
                                                 <ColumnDefinition Width="*" />
@@ -288,59 +322,75 @@
                                             <Border x:Name="HomeArt" Height="46" CornerRadius="10" Background="{StaticResource Line}" VerticalAlignment="Center">
                                                 <FontIcon x:Name="HomeArtIcon" Glyph="&#xEC4F;" FontSize="18" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                                             </Border>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock x:Name="HomeTitle" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                                <TextBlock x:Name="HomeArtist" FontSize="10.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                                <TextBlock x:Name="HomeTitle" FontFamily="{StaticResource Display}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                                <TextBlock x:Name="HomeArtist" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                                             </StackPanel>
                                         </Grid>
-                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6">
-                                            <Grid Width="30" Height="30" CornerRadius="15" Background="{StaticResource Line}" Tapped="Previous_Tapped">
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+                                            <Grid Width="28" Height="28" CornerRadius="14" Background="Transparent" Tapped="Previous_Tapped" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
                                                 <FontIcon Glyph="&#xE892;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                                             </Grid>
                                             <Grid Width="30" Height="30" CornerRadius="15" Background="{StaticResource Ink}" Tapped="Play_Tapped">
-                                                <FontIcon x:Name="HomePlayIcon" Glyph="&#xE768;" FontSize="13" FontFamily="{StaticResource Icons}" Foreground="{StaticResource InkText}" />
+                                                <FontIcon x:Name="HomePlayIcon" Glyph="&#xE768;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource InkText}" />
                                             </Grid>
-                                            <Grid Width="30" Height="30" CornerRadius="15" Background="{StaticResource Line}" Tapped="Next_Tapped">
+                                            <Grid Width="28" Height="28" CornerRadius="14" Background="Transparent" Tapped="Next_Tapped" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
                                                 <FontIcon Glyph="&#xE893;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
                                             </Grid>
                                         </StackPanel>
                                     </Grid>
                                 </Grid>
                             </Border>
-                            <Border Grid.Column="1" Background="{StaticResource Raised}" CornerRadius="14" Padding="12,9">
-                                <StackPanel Spacing="5">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <TextBlock x:Name="HomeDay" FontSize="19" FontWeight="SemiBold" Foreground="#3B8EF5" />
-                                        <TextBlock x:Name="HomeWeekday" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Fg}" VerticalAlignment="Center" />
+                            <!-- The day like Apple's Calendar widget: the weekday in red, the date large, then what comes -->
+                            <Border Grid.Column="1" Style="{StaticResource Widget}">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="HomeWeekday" Style="{StaticResource Caps}" Foreground="#FF453A" />
+                                        <TextBlock x:Name="HomeDay" FontFamily="{StaticResource Display}" FontSize="32" FontWeight="Light" Foreground="{StaticResource Fg}" Margin="0,-3,0,0" />
                                     </StackPanel>
-                                    <StackPanel x:Name="HomeEvents" Spacing="5" />
-                                </StackPanel>
+                                    <StackPanel x:Name="HomeEvents" Grid.Column="1" Spacing="7" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                </Grid>
                             </Border>
-                            <Border Grid.Column="2" Background="{StaticResource Raised}" CornerRadius="14" Padding="10,9">
-                                <Grid>
+                            <!-- Focus: a ring like the Clock app's timer; the whole card starts or stops it -->
+                            <Border Grid.Column="2" Style="{StaticResource Widget}" Tapped="HomeTimer_Tapped">
+                                <Grid RowSpacing="6">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock x:Name="HomeTimerLabel" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock x:Name="HomeTimerLeft" Grid.Row="1" FontFamily="{StaticResource Mono}" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <Grid x:Name="HomeTimerButton" Grid.Row="2" Width="30" Height="30" CornerRadius="15" HorizontalAlignment="Center" Tapped="HomeTimer_Tapped">
-                                        <FontIcon x:Name="HomeTimerIcon" Glyph="&#xE768;" FontSize="12" FontFamily="{StaticResource Icons}" />
+                                    <TextBlock x:Name="HomeTimerLabel" Style="{StaticResource Caps}" TextTrimming="CharacterEllipsis" />
+                                    <Grid Grid.Row="1" Width="66" Height="66" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Ellipse Stroke="{StaticResource Line}" StrokeThickness="5" />
+                                        <Ellipse x:Name="HomeTimerArc" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                                            <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
+                                        </Ellipse>
+                                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                                            <TextBlock x:Name="HomeTimerLeft" FontFamily="{StaticResource Display}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                            <FontIcon x:Name="HomeTimerIcon" Glyph="&#xE768;" FontSize="9" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
+                                        </StackPanel>
                                     </Grid>
                                 </Grid>
                             </Border>
-                            <Border Grid.Column="3" Background="{StaticResource Raised}" CornerRadius="14" Padding="12,9">
+                            <!-- Weather like Apple's: the temperature large and light, the sky, the day's high and low -->
+                            <Border Grid.Column="3" Style="{StaticResource Widget}">
                                 <Grid>
                                     <TextBlock x:Name="HomeWeatherNone" FontSize="11" Foreground="{StaticResource Muted}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <StackPanel x:Name="HomeWeather" Spacing="1">
-                                        <Grid>
-                                            <TextBlock x:Name="HomeTemp" FontSize="30" FontWeight="SemiBold" Foreground="{StaticResource Fg}" />
-                                            <FontIcon x:Name="HomeSky" FontSize="20" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        </Grid>
-                                        <TextBlock x:Name="HomeSkyText" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Fg}" />
-                                        <TextBlock x:Name="HomeHighLow" FontSize="10.5" Foreground="{StaticResource Muted}" />
-                                    </StackPanel>
+                                    <Grid x:Name="HomeWeather">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock x:Name="HomeTemp" FontFamily="{StaticResource Display}" FontSize="34" FontWeight="Light" Foreground="{StaticResource Fg}" Margin="0,-6,0,0" />
+                                        <FontIcon x:Name="HomeSky" FontSize="16" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                        <StackPanel Grid.Row="1" Spacing="1">
+                                            <TextBlock x:Name="HomeSkyText" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource Fg}" />
+                                            <TextBlock x:Name="HomeHighLow" FontSize="11" Foreground="{StaticResource Muted}" />
+                                        </StackPanel>
+                                    </Grid>
                                 </Grid>
                             </Border>
                         </Grid>
@@ -355,7 +405,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <!-- Synced lyrics, beside the player: the line being sung, and the next one -->
-                                <Border x:Name="LyricsCard" Grid.Column="1" Width="250" Background="{StaticResource Raised}" CornerRadius="14" Padding="14,0" Visibility="Collapsed">
+                                <Border x:Name="LyricsCard" Grid.Column="1" Width="250" Style="{StaticResource Widget}" Padding="16,0" Visibility="Collapsed">
                                     <StackPanel VerticalAlignment="Center" Spacing="4">
                                         <TextBlock x:Name="LyricNow" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
                                         <TextBlock x:Name="LyricNext" FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
@@ -421,38 +471,48 @@
                             </Grid>
                         </Grid>
 
-                        <!-- Timers -->
-                        <!-- Timers: centered in the panel's fixed height; a running timer shows a big countdown and how far along it is -->
+                        <!-- Timers, like the Clock app: durations in capsules; running, a ring that empties around the countdown -->
                         <Grid x:Name="TimersTab" Visibility="Collapsed">
-                            <StackPanel x:Name="TimerIdle" Spacing="14" VerticalAlignment="Center">
-                                <TextBlock Text="Start a timer, or focus in 25 min rounds with breaks." Foreground="{StaticResource Muted}" FontSize="12" />
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Border Style="{StaticResource Chip}" Padding="16,8" CornerRadius="15" Tag="60" Tapped="TimerStart_Tapped"><TextBlock Text="1 min" Style="{StaticResource ChipText}" FontSize="12" /></Border>
-                                    <Border Style="{StaticResource Chip}" Padding="16,8" CornerRadius="15" Tag="300" Tapped="TimerStart_Tapped"><TextBlock Text="5 min" Style="{StaticResource ChipText}" FontSize="12" /></Border>
-                                    <Border Style="{StaticResource Chip}" Padding="16,8" CornerRadius="15" Tapped="FocusStart_Tapped"><TextBlock Text="Focus session" Style="{StaticResource ChipText}" FontSize="12" /></Border>
+                            <Grid x:Name="TimerIdle" ColumnSpacing="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock Text="TIMER" Style="{StaticResource Caps}" />
+                                    <TextBlock Text="Pick a length, or focus in rounds" FontSize="12" Foreground="{StaticResource Muted}" />
                                 </StackPanel>
-                            </StackPanel>
-                            <Grid x:Name="TimerRunning" Visibility="Collapsed" VerticalAlignment="Center" RowSpacing="10">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <StackPanel>
-                                    <TextBlock x:Name="TimerLabel" Foreground="{StaticResource Muted}" FontSize="11.5" />
-                                    <TextBlock x:Name="TimerLeft" FontFamily="{StaticResource Mono}" FontSize="40" Foreground="#FFB454" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource Capsule}" Tag="60" Tapped="TimerStart_Tapped"><TextBlock Text="1 min" Style="{StaticResource CapsuleText}" /></Border>
+                                    <Border Style="{StaticResource Capsule}" Tag="300" Tapped="TimerStart_Tapped"><TextBlock Text="5 min" Style="{StaticResource CapsuleText}" /></Border>
+                                    <Border Style="{StaticResource Capsule}" Tag="900" Tapped="TimerStart_Tapped"><TextBlock Text="15 min" Style="{StaticResource CapsuleText}" /></Border>
+                                    <Border Style="{StaticResource Capsule}" Tapped="FocusStart_Tapped">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xF5B0;" FontSize="12" FontFamily="{StaticResource Icons}" Foreground="#FF9F0A" />
+                                            <TextBlock Text="Focus" Style="{StaticResource CapsuleText}" Foreground="#FF9F0A" />
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <Border Style="{StaticResource Chip}" Padding="14,7" CornerRadius="14" Tapped="TimerAdd_Tapped"><TextBlock Text="+1 min" Style="{StaticResource ChipText}" FontSize="11.5" /></Border>
-                                    <Border Style="{StaticResource Chip}" Padding="14,7" CornerRadius="14" Tapped="TimerCancel_Tapped"><TextBlock Text="Cancel" Style="{StaticResource ChipText}" FontSize="11.5" /></Border>
-                                </StackPanel>
-                                <Grid Grid.Row="1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition x:Name="TimerDone" Width="0*" />
-                                        <ColumnDefinition x:Name="TimerRest" Width="1*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border x:Name="TimerBack" Grid.ColumnSpan="2" Height="5" CornerRadius="2.5" Background="{StaticResource Line}" />
-                                    <Border x:Name="TimerFill" Height="5" CornerRadius="2.5" Background="#FFB454" />
+                            </Grid>
+                            <Grid x:Name="TimerRunning" Visibility="Collapsed" ColumnSpacing="22" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Width="104" Height="104">
+                                    <Ellipse Stroke="{StaticResource Line}" StrokeThickness="6" />
+                                    <Ellipse x:Name="TimerArc" StrokeThickness="6" Stroke="#FF9F0A" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <TextBlock x:Name="TimerLeft" FontFamily="{StaticResource Display}" FontSize="24" FontWeight="Light" Foreground="{StaticResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Grid>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="12">
+                                    <TextBlock x:Name="TimerLabel" FontFamily="{StaticResource Display}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Fg}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border Style="{StaticResource Capsule}" Tapped="TimerAdd_Tapped"><TextBlock Text="+1 min" Style="{StaticResource CapsuleText}" /></Border>
+                                        <Border Style="{StaticResource Capsule}" Tapped="TimerCancel_Tapped"><TextBlock Text="Cancel" Style="{StaticResource CapsuleText}" Foreground="#FF453A" /></Border>
+                                    </StackPanel>
+                                </StackPanel>
                             </Grid>
                         </Grid>
 

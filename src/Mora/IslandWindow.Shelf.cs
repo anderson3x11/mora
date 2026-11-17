@@ -150,7 +150,7 @@ public sealed partial class IslandWindow
         }
         foreach (var path in _shelf.Take(3)) // what fits the panel's fixed height
         {
-            var row = new Grid { Background = (Brush)res["Raised"], CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9, CanDrag = true };
+            var row = new Grid { Background = (Brush)res["Card"], BorderBrush = (Brush)res["CardLine"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(11, 0, 5, 0), Height = RowHeight, ColumnSpacing = 9, CanDrag = true };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

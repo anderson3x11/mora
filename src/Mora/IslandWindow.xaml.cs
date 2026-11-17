@@ -300,7 +300,7 @@ public sealed partial class IslandWindow : Window
     {
         if (mode == Mode.Expanded && _game != null) return; // never a panel over a game, whatever asked for it
         var prev = _mode;
-        if (mode == Mode.Expanded && prev == Mode.Compact && AgentPill && via is Via.Click or Via.Hover) _tab = Tab.Agents; // the live activity opens on its agents
+        if (mode == Mode.Expanded && prev == Mode.Compact && AgentPill && via == Via.Hover) _tab = Tab.Agents; // the live activity opens on its agents
         var t = ++_token;
         (_mode, _via) = (mode, via);
         GameKeys.CardOpen = mode == Mode.Game;
@@ -507,7 +507,11 @@ public sealed partial class IslandWindow : Window
     void Pill_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
     {
         if (_mode == Mode.Game) ArmGameCard(); // any click on the card counts as interaction
-        else if (_mode is Mode.Compact or Mode.Alert && _game is null) SetMode(Mode.Expanded, Via.Click);
+        else if (_mode is Mode.Compact or Mode.Alert && _game is null)
+        {
+            if (_mode == Mode.Compact && AgentPill) _tab = Tab.Agents; // the live activity opens on its agents
+            SetMode(Mode.Expanded, Via.Click);
+        }
     }
 
     void Tab_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
@@ -536,7 +540,7 @@ public sealed partial class IslandWindow : Window
         foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
         {
             bool on = (string)t.Tag == _tab.ToString();
-            t.Background = on ? (Brush)res["Line"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent); // inside the Raised pill
+            t.Background = on ? (Brush)res["CardLine"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             var fg = (Brush)res[on ? "Fg" : "Muted"];
             var label = (Microsoft.UI.Xaml.Controls.StackPanel)t.Children[0];
             ((Microsoft.UI.Xaml.Controls.FontIcon)label.Children[0]).Foreground = fg;
@@ -666,7 +670,7 @@ public sealed partial class IslandWindow : Window
             label.Visibility = Visibility.Collapsed;
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(tab, label.Text);
         }
-        foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill, TimerBack, TimerFill })
+        foreach (var bar in new Microsoft.UI.Xaml.Controls.Border[] { SeekBack, SeekFill, AlertBarTrack, AlertBarFill })
         {
             bar.Height = t.Track;
             bar.CornerRadius = new CornerRadius(t.Track / 2);
