@@ -10,6 +10,7 @@ namespace Mora;
 //   track "<title>" "<artist>": a track change, with the current artwork
 //   open <tab>, close: the panel on a tab (Home, Media, Agents...), for screenshots
 //   agent "<title>" "<text>": a coding agent asking for the user, with the mascot
+//   settings: the settings window
 //   settings-chaos <n>: n random changes of the settings, applied like the settings window does
 public sealed partial class IslandWindow
 {
@@ -59,6 +60,9 @@ public sealed partial class IslandWindow
                 break;
             case "settings-chaos" when a.Length >= 2 && int.TryParse(a[1], out var times):
                 SettingsChaos(times);
+                break;
+            case "settings":
+                OpenSetup(firstRun: false);
                 break;
             case "close":
                 Settle();
