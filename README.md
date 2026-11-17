@@ -4,33 +4,26 @@
 
 <p align="center">The island at the top of your screen. A Dynamic Island for Windows 10 and 11.</p>
 
-<p align="center"><img src="docs/screenshots/notch-panel.png" alt="Mora's panel in the Notch theme, playing Stairway to Heaven"></p>
+<p align="center"><img src="docs/screenshots/notch-panel.png" alt="Mora's panel, playing Stairway to Heaven"></p>
 
-A small pill at the top of the screen shows what is happening right now (music, timers, downloads, devices), opens into a panel of quick controls with a shortcut (Alt + the key above Tab by default, configurable), and gets out of the way. It never takes your keyboard: every key you press keeps going to the app you are in, even while the island opens.
+An island grown out of the top of the screen, like a MacBook notch, shows what is happening right now (music, timers, downloads, devices, your coding agents), opens into a panel of quick controls with a shortcut (Alt + the key above Tab by default, configurable), and gets out of the way. It never takes your keyboard: every key you press keeps going to the app you are in, even while the island opens.
 
 Its name comes from the Malagasy "mora mora": easy, gently.
 
 ## Features
 
-- **Music** from any app that reports to Windows (Spotify, browsers, players): artwork shaped by the source, title, progress, controls, and a waveform that follows what actually plays. Track changes pop up for a few seconds.
-- **Timers and focus sessions**: plain countdowns, or 25 minute rounds with breaks. A countdown pill sits beside the island while one runs.
+- **Home**: your music, the agenda (Windows' calendars or a calendar link, with a Join button for the next call), a focus timer and the weather, side by side.
+- **Music** from any app that reports to Windows (Spotify, browsers, players): a large cover, title, progress, controls, synced lyrics beside them, and a waveform that follows what actually plays. Follows the player that plays; with several open, one tap switches between them. Track changes pop up for a few seconds.
+- **Coding agents**: Claude Code connects in one switch. A rail grown out of the screen's right edge shows a ring per session (its plan as it gets done, or its context in use), orange when one needs you; the Agents tab shows each one in detail. Mora's crab mascot follows their mood.
+- **Timers and focus sessions**: plain countdowns, or 25 minute rounds with breaks, with a sound when one ends.
+- **Clock**: a small clock face beside the open panel, the time and date in the panel and on the resting pill, in your format.
 - **Shelf**: drop files on the island (or drag them toward the top of the screen) to keep them, then drag them out into any app.
 - **Clipboard history** of text and images, kept in memory only, pasted back into the app you are in.
+- **Notifications** from the apps you pick (Discord, Claude...) shown in the island instead of Windows' corner, and **Do not disturb** from the moon in the panel.
 - **Alerts**: finished downloads, headphones connected (with their battery), low battery and charging, microphone or camera in use.
-- **Games**: stays out of the way in fullscreen games, with a profile per game for what may show, and an optional music card you control with the arrow keys.
-- **Three themes**, each a whole look rather than a palette.
+- **Games**: stays out of the way in fullscreen games, borderless included, even while you glance at another screen; a profile per game for what may show, an optional music card you control with the arrow keys, and one summary when the game really ends.
 
-## Themes
-
-| Island | Notch | Fluent |
-|---|---|---|
-| A black pill floating just below the edge, round ends, a springy entrance. | Grows out of the top edge like a MacBook notch, with curved shoulders, Apple's colors and motion. | A Windows 11 card: follows light or dark mode and your accent color, settles without bouncing. |
-| ![Island panel](docs/screenshots/island-panel.png) | ![Notch panel](docs/screenshots/notch-panel.png) | ![Fluent panel](docs/screenshots/fluent-panel.png) |
-| ![Island track change](docs/screenshots/island-alert.png) | ![Notch track change](docs/screenshots/notch-alert.png) | ![Fluent track change](docs/screenshots/fluent-alert.png) |
-| ![Island resting pill with a timer](docs/screenshots/island-compact.png) | ![Notch resting pill with a timer](docs/screenshots/notch-compact.png) | ![Fluent resting pill with a timer](docs/screenshots/fluent-compact.png) |
-| ![Island panel with the timer pill](docs/screenshots/island-timer.png) | ![Notch panel with the timer pill](docs/screenshots/notch-timer.png) | ![Fluent panel with the timer pill](docs/screenshots/fluent-timer.png) |
-
-From top to bottom: the panel, a track change, the resting pill with a running timer beside it, and the panel with the timer pill.
+<p align="center"><img src="docs/screenshots/notch-alert.png" alt="A track change"> <img src="docs/screenshots/notch-timer.png" alt="The panel with the timer pill"></p>
 
 ## Install
 
@@ -78,7 +71,12 @@ The script runs it against the Debug build with settings of its own (`MORA_DATA`
 powershell -ExecutionPolicy Bypass -File tests/run-keystroke-test.ps1
 ```
 
-Add `-Theme Notch` or `-Theme Fluent` to run it with another theme.
+Two more, run the same way, with settings of their own:
+
+- `tests/run-game-mode-test.ps1`: a borderless fullscreen "game" on the main screen while you glance at the other one. Mora must stay quiet the whole time and summarise once, when the game ends (also when it stays minimized for 20 seconds). Takes the mouse for about 45 seconds.
+- `tests/run-stress-test.ps1`: two players playing at once, floods of alerts, the panel on every tab, focus rounds, 30 coding agent sessions and 600 events, 150 settings changes, a 1 MB copy. After each phase Mora must still run, with an empty error log and memory that stops growing. No mouse or keyboard, about 5 minutes.
+
+And `dotnet run --project tests/CalendarTest` checks the calendar link reading (time zones, repeats, exceptions, meeting links).
 
 ## Simulating events
 
@@ -88,7 +86,7 @@ For events a machine cannot produce (no Bluetooth headset, no battery), a second
 Mora.exe --simulate headphones "Headphones (WH-1000XM4)" 72
 ```
 
-Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21% to 20%), `focus 8 6` (a focus session with 8 s rounds and 6 s breaks) and `track "Title" "Artist"` (a track change, with its animation).
+Also `charging 46` (plugged in at 46%), `battery 21 20` (charge dropping from 21% to 20%), `focus 8 6` (a focus session with 8 s rounds and 6 s breaks), `track "Title" "Artist"` (a track change, with its animation), `open Agents` and `close` (the panel on a tab), `agent "Title" "Text"` (an agent asking for you) and `settings-chaos 50` (random settings changes, as the stress test does).
 
 ## How it is built
 
@@ -96,12 +94,12 @@ C# and WinUI 3 (Windows App SDK, unpackaged), .NET 10. The product brief and the
 
 | Area | Notes |
 |---|---|
-| Island window | Never activates (`WS_EX_NOACTIVATE`, `MA_NOACTIVATE`), click-through outside the pill (window region follows the shape), follows the monitor of the active window |
-| Motion | Damped springs at display rate (open 340/27, close 520/46), interruptible, content fades before the shape shrinks, reduced motion respected |
-| Panel | Media (system media sessions: Spotify, browsers, players), Timers (plain countdowns, and focus sessions: 25 min rounds with 5 min breaks, 15 min every 4th), Shelf (also opens when a file is dragged toward the top center), Clipboard (text and images, pasted back into the app you are in) |
+| Island window | Never activates (`WS_EX_NOACTIVATE`, `MA_NOACTIVATE`), click-through outside the island (window region follows the shape), follows the monitor of the active window or stays on the main one, finds its place again when screens change |
+| Look and motion | The MacBook notch: grown out of the top edge with curved shoulders, pure black, Apple's system colors. Damped springs at display rate (open 380/24, close 560/44), interruptible, content fades before the shape shrinks, reduced motion respected |
+| Panel | 680 x 170, the same for every tab: Home (music, agenda, focus, weather), Media (system media sessions, synced lyrics from LRCLIB), Timers (plain countdowns, and focus sessions: 25 min rounds with 5 min breaks, 15 min every 4th), Shelf (also opens when a file is dragged toward the top center), Clipboard (text and images, pasted back into the app you are in), Agents |
 | Alerts | Track change, download finished, audio output switch, volume (opt-in), low battery and charging, timer done, clipboard copy. 3 s, held while hovered, queued while the panel is open |
 | Games | Fullscreen games only (Windows' Game Bar list, game launcher libraries, exclusive fullscreen, or any app given a profile), a profile for any game and one per game: whether the shortcut opens a music card (arrows switch tracks and set the volume) and which pop-ups may show over the game. The rest is summarised on exit |
-| Themes | Island (a black pill floating below the edge), Notch (grows out of the top edge with curved shoulders, Apple's colors and motion, icon tabs), Fluent (a Windows 11 card following light or dark mode and the accent color, no bounce). Picked in Settings, General |
+| Coding agents | Claude Code's hooks post each step to `127.0.0.1:47115` with `curl` in the background (installed and removed from Settings, nothing else in its settings file touched). The rail is a second never-activating window on the right edge, hidden during games. Agent redraws are batched (at most every 250 ms) and one timer animates every crab |
 | Setup and settings | First-run setup in 4 steps, settings window from the tray, `%LOCALAPPDATA%\Mora\settings.json` |
 | Cost | Idle CPU 0, about 90 MB private memory (WinUI 3 baseline), about 3% of one core while the resting pill animates its waveform |
 
