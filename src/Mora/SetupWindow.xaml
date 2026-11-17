@@ -2,46 +2,47 @@
     x:Class="Mora.SetupWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Island colors whatever the system theme: black surfaces, white text, the icon's teal as accent. -->
-    <Grid x:Name="Root" RequestedTheme="Dark" Background="#0B0B0E">
+    <!-- macOS System Settings in dark: a dark window, a sidebar of colored icons, grouped boxes, Apple's blue as accent. -->
+    <Grid x:Name="Root" RequestedTheme="Dark" Background="#1E1E1E">
         <Grid.Resources>
             <ResourceDictionary>
                 <ResourceDictionary.ThemeDictionaries>
                     <ResourceDictionary x:Key="Dark">
-                        <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#36CDBB" />
-                        <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#E636CDBB" />
-                        <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#CC36CDBB" />
-                        <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#08080A" />
-                        <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#36CDBB" />
-                        <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#4FD8C8" />
-                        <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#2BB3A3" />
-                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#08080A" />
-                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#08080A" />
-                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#08080A" />
-                        <SolidColorBrush x:Key="AccentButtonBackground" Color="#36CDBB" />
-                        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#4FD8C8" />
-                        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#2BB3A3" />
-                        <SolidColorBrush x:Key="AccentButtonForeground" Color="#08080A" />
-                        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#08080A" />
-                        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#08080A" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#36CDBB" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#4FD8C8" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#2BB3A3" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#36CDBB" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#4FD8C8" />
-                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#2BB3A3" />
-                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#08080A" />
-                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#08080A" />
-                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#08080A" />
-                        <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#36CDBB" />
-                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#4FD8C8" />
-                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#2BB3A3" />
+                        <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#0A84FF" />
+                        <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#E60A84FF" />
+                        <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#CC0A84FF" />
+                        <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#0A84FF" />
+                        <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#3D9BFF" />
+                        <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#0670DD" />
+                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="AccentButtonBackground" Color="#0A84FF" />
+                        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#3D9BFF" />
+                        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#0670DD" />
+                        <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#0A84FF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#3D9BFF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#0670DD" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#0A84FF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#3D9BFF" />
+                        <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#0670DD" />
+                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#FFFFFF" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#0A84FF" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#3D9BFF" />
+                        <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#0670DD" />
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
-                <SolidColorBrush x:Key="Card" Color="#141418" />
-                <SolidColorBrush x:Key="Raised" Color="#1C1C21" />
-                <SolidColorBrush x:Key="Muted" Color="#9B9BA5" />
-                <SolidColorBrush x:Key="Accent" Color="#36CDBB" />
+                <SolidColorBrush x:Key="Card" Color="#2A2A2C" />
+                <SolidColorBrush x:Key="Raised" Color="#1AFFFFFF" />
+                <SolidColorBrush x:Key="Muted" Color="#98989D" />
+                <SolidColorBrush x:Key="Sidebar" Color="#252527" />
+                <SolidColorBrush x:Key="Accent" Color="#0A84FF" />
             </ResourceDictionary>
         </Grid.Resources>
         <Grid.RowDefinitions>
@@ -66,9 +67,9 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <StackPanel x:Name="Nav" Width="196" Padding="12,4,8,12" Spacing="2" />
+            <Border Background="{StaticResource Sidebar}" BorderBrush="{StaticResource Raised}" BorderThickness="0,0,1,0"><StackPanel x:Name="Nav" Width="200" Padding="10,8,10,12" Spacing="2" /></Border>
             <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="Page" Padding="20,4,32,24" Spacing="12" MaxWidth="600" HorizontalAlignment="Left" />
+                <StackPanel x:Name="Page" Padding="28,8,32,28" Spacing="10" MaxWidth="620" HorizontalAlignment="Left" />
             </ScrollViewer>
         </Grid>
 

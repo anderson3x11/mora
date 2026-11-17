@@ -88,7 +88,7 @@ public sealed partial class IslandWindow
         }
         double inner = size - stroke * 2 - Math.Max(3, size * 0.12) * 2;
         badge.Children.Add(AgentLogo.For(s.Agent) is { } logo
-            ? new Border { Width = inner, Height = inner, CornerRadius = new CornerRadius(inner * 0.24), Child = new Image { Source = logo, Stretch = Stretch.UniformToFill } }
+            ? new Border { Width = inner, Height = inner, CornerRadius = new CornerRadius(AgentLogo.IsFile(s.Agent) ? 0 : inner * 0.24), Child = new Image { Source = logo, Stretch = AgentLogo.IsFile(s.Agent) ? Stretch.Uniform : Stretch.UniformToFill } }
             : new Border
             {
                 Width = inner, Height = inner, CornerRadius = new CornerRadius(inner / 2), Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0xD9, 0x77, 0x57)),

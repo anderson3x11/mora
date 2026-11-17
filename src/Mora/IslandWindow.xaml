@@ -229,8 +229,8 @@
                         <RowDefinition Height="22" />
                     </Grid.RowDefinitions>
 
-                    <!-- The crab's lane: along the bottom line, left of the dots, never in the way of a click -->
-                    <Canvas x:Name="MascotLane" Grid.Row="1" Height="17" Width="190" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="150,0,0,0" IsHitTestVisible="False" Visibility="Collapsed" />
+                    <!-- The crab's lane: along the bottom line, between the time and the dots, never in the way of a click -->
+                    <Canvas x:Name="MascotLane" Grid.Row="1" Height="17" Width="110" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="138,0,0,0" IsHitTestVisible="False" Visibility="Collapsed" />
 
                     <!-- The bottom line: the time and the privacy dots, the page dots, Do not disturb and Settings -->
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" VerticalAlignment="Center">

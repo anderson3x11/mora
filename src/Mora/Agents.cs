@@ -113,7 +113,13 @@ sealed class Agents(DispatcherQueue ui)
             if (Sessions.Remove(id)) Changed?.Invoke(null, ev);
             return;
         }
-        if (!Sessions.TryGetValue(id, out var s)) Sessions[id] = s = new();
+        // A session starts with a step that says how it is: a prompt, a tool, a question, an end. A tool finishing, or an
+        // event Mora does not read, never makes one up (it would show as working, with nothing to say).
+        if (!Sessions.TryGetValue(id, out var s))
+        {
+            if (ev is not ("UserPromptSubmit" or "PreToolUse" or "Notification" or "Stop")) return;
+            Sessions[id] = s = new();
+        }
         s.Name = Str(r, "session_title") is { Length: > 0 } title ? title : Path.GetFileName(Str(r, "cwd").TrimEnd('\\', '/'));
         if (Str(r, "transcript_path") is { Length: > 0 } transcript) s.Transcript = transcript;
         switch (ev)

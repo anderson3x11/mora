@@ -72,19 +72,26 @@ public sealed partial class SetupWindow : Window
         Nav.Children.Clear();
         foreach (var (tab, glyph, label) in new[] { (Tab.General, "", "General"), (Tab.Popups, "", "Pop-ups"), (Tab.Games, "", "Games"), (Tab.About, "", "About") })
         {
-            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-            content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 15 });
-            content.Children.Add(new TextBlock { Text = label, FontSize = 13 });
+            // macOS's sidebar: a white glyph on a colored rounded square, the current section highlighted in blue.
+            bool current = tab == _tab;
+            var tile = new Border
+            {
+                Width = 22, Height = 22, CornerRadius = new CornerRadius(6),
+                Background = new SolidColorBrush(tab switch { Tab.Popups => Windows.UI.Color.FromArgb(255, 0xFF, 0x45, 0x3A), Tab.Games => Windows.UI.Color.FromArgb(255, 0x30, 0xD1, 0x58), Tab.About => Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF), _ => Windows.UI.Color.FromArgb(255, 0x8E, 0x8E, 0x93) }),
+                Child = new FontIcon { Glyph = glyph, FontSize = 12, Foreground = new SolidColorBrush(Colors.White) },
+            };
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+            content.Children.Add(tile);
+            content.Children.Add(new TextBlock { Text = label, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(Colors.White) });
             var item = new Button
             {
                 Content = content,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
-                Padding = new Thickness(14, 9, 14, 9),
-                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(8, 5, 8, 5),
+                CornerRadius = new CornerRadius(7),
                 BorderThickness = new Thickness(0),
-                Background = tab == _tab ? Brush("Raised") : new SolidColorBrush(Colors.Transparent),
-                Foreground = tab == _tab ? new SolidColorBrush(Colors.White) : Brush("Muted"),
+                Background = current ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x0A, 0x84, 0xFF)) : new SolidColorBrush(Colors.Transparent),
             };
             item.Click += (_, _) => { _tab = tab; Show(); };
             Nav.Children.Add(item);
@@ -100,7 +107,7 @@ public sealed partial class SetupWindow : Window
                     Row("Start Mora when Windows starts", "It waits in the tray, next to the clock.", Toggle(() => _working.StartWithWindows, v => _working.StartWithWindows = v)),
                     ScreenRow(),
                     Row("Keep a small pill on screen while music plays", "Off by default: without a notch, it can cover browser tabs.", Toggle(() => _working.ShowCompactPill, v => _working.ShowCompactPill = v)),
-                    Row("Open the panel on the last tab used", "Off: it always opens on Home. A file dragged in still opens the Shelf.", Toggle(() => _working.ReopenLastTab, v => _working.ReopenLastTab = v)),
+                    Row("Open the panel on the last tab used", "Off: it always opens on what is playing. A file dragged in still opens the Shelf.", Toggle(() => _working.ReopenLastTab, v => _working.ReopenLastTab = v)),
                     Row("Show a small countdown while a timer runs", "With the music pill on too, it splits into a round bubble beside it.", Toggle(() => _working.ShowTimerPill, v => _working.ShowTimerPill = v)),
                     Row("Open the island", "Click, then press the shortcut you want. It works from any app.", ShortcutPicker())));
                 Page.Children.Add(Subheading("Clock", "The time and date on the island. The resting pill is off by default: without a notch, it can cover browser tabs."));
@@ -362,18 +369,19 @@ public sealed partial class SetupWindow : Window
             if (i > 0) stack.Children.Add(new Border { Height = 1, Background = Brush("Raised") });
             stack.Children.Add(rows[i]);
         }
-        return new Border { Background = Brush("Card"), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 2, 14, 2), Child = stack };
+        // A grouped box, as in System Settings: a step lighter than the window, a hairline edge, hairlines between rows.
+        return new Border { Background = Brush("Card"), BorderBrush = Brush("Raised"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(14, 0, 12, 0), Child = stack };
     }
 
     Grid Row(string title, string? description, FrameworkElement? control)
     {
-        var row = new Grid { Padding = new Thickness(0, 12, 0, 12), ColumnSpacing = 16 };
+        var row = new Grid { Padding = new Thickness(0, 10, 0, 10), ColumnSpacing = 16, MinHeight = 44 };
         row.ColumnDefinitions.Add(new ColumnDefinition());
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(new TextBlock { Text = title, TextWrapping = TextWrapping.Wrap });
+        text.Children.Add(new TextBlock { Text = title, FontSize = 13, TextWrapping = TextWrapping.Wrap });
         if (description != null)
-            text.Children.Add(new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
+            text.Children.Add(new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 11.5, Margin = new Thickness(0, 1, 0, 0) });
         row.Children.Add(text);
         if (control != null)
         {
@@ -463,15 +471,15 @@ public sealed partial class SetupWindow : Window
 
     void Heading(string title, string subtitle)
     {
-        Page.Children.Add(new TextBlock { Text = title, FontSize = 26, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) });
-        Page.Children.Add(new TextBlock { Text = subtitle, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), Margin = new Thickness(0, -6, 0, 6) });
+        Page.Children.Add(new TextBlock { Text = title, FontFamily = new FontFamily("Segoe UI Variable Display,Segoe UI"), FontSize = 22, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+        Page.Children.Add(new TextBlock { Text = subtitle, FontSize = 13, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), Margin = new Thickness(0, -6, 0, 8) });
     }
 
     StackPanel Subheading(string title, string subtitle)
     {
-        var p = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
-        p.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        p.Children.Add(new TextBlock { Text = subtitle, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 12.5 });
+        var p = new StackPanel { Margin = new Thickness(2, 14, 0, -2) };
+        p.Children.Add(new TextBlock { Text = title, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        p.Children.Add(new TextBlock { Text = subtitle, TextWrapping = TextWrapping.Wrap, Foreground = Brush("Muted"), FontSize = 11.5 });
         return p;
     }
 

@@ -5,8 +5,9 @@ using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Mora;
 
-// An agent's logo: the icon of its app as installed (the Claude app, Codex), drawn by Windows from the Start menu's
-// apps folder, so it is the real, current one. Without the app installed, null: callers show a colored initial.
+// An agent's logo: a PNG the user put in Mora's "logos" folder (claude.png, codex.png), shown as it is; else the icon
+// of its app as installed (the Claude app, Codex), drawn by Windows from the Start menu's apps folder, the same as its
+// shortcut. Without either, null: callers show a colored initial.
 static class AgentLogo
 {
     // Apps by agent: their Store package family and app id, the same on every PC.
@@ -17,12 +18,24 @@ static class AgentLogo
     };
 
     static readonly Dictionary<string, ImageSource?> Cache = [];
+    static readonly HashSet<string> FromFile = [];
+
+    public static readonly string Folder = Path.Combine(Path.GetDirectoryName(Settings.FilePath)!, "logos");
+
+    // The user's own PNG: shown whole, transparency included, rather than clipped into an app tile.
+    public static bool IsFile(string agent) => FromFile.Contains(agent);
 
     // UI thread only (it builds a bitmap).
     public static ImageSource? For(string agent)
     {
         if (Cache.TryGetValue(agent, out var cached)) return cached;
         ImageSource? logo = null;
+        var png = Path.Combine(Folder, agent.Split(' ')[0].ToLowerInvariant() + ".png"); // "Claude Code" → claude.png
+        if (File.Exists(png))
+        {
+            FromFile.Add(agent);
+            return Cache[agent] = new BitmapImage(new Uri(png)) { DecodePixelHeight = 96 };
+        }
         if (Apps.TryGetValue(agent, out var app))
             try { logo = Load("shell:AppsFolder\\" + app, 64); }
             catch (Exception e) when (e is COMException or ArgumentException or FileNotFoundException) { } // not installed

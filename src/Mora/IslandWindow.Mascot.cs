@@ -151,7 +151,7 @@ public sealed partial class IslandWindow
         _agents?.Sessions.Values.Any(s => s.State == Agents.State.NeedsYou) == true ? Agents.State.NeedsYou
         : _agents?.Sessions.Values.Any(s => s.State == Agents.State.Working) == true ? Agents.State.Working : Agents.State.Done;
 
-    // Every 40 ms. Kept clear of the island's rounded bottom corners.
+    // Every 40 ms.
     void Roam()
     {
         if (_walker is null) return;
@@ -187,7 +187,7 @@ public sealed partial class IslandWindow
             return;
         }
 
-        double min = 24, max = MascotLane.ActualWidth - 24 - _walker.Width;
+        double min = 0, max = MascotLane.ActualWidth - _walker.Width; // the lane itself stays clear of the time and the dots
         _walkX += _walkDir * (mood == Agents.State.Working ? 1.2 : 0.7);
         if (_walkX <= min || _walkX >= max)
         {
