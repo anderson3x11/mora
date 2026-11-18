@@ -69,11 +69,18 @@ public sealed partial class IslandWindow
             LyricNow.Text = i < 0 ? "♪" : lines[i].Text is { Length: > 0 } t ? t : "♪";
             LyricNext.Text = i + 1 < lines.Count ? lines[i + 1].Text : "";
         }
-        // The button: for music, not videos (no lyrics on YouTube or Twitch); lit while the lyrics show.
-        LyricsButton.Visibility = _media.Site is "YouTube" or "Twitch" or "Kick" or "Netflix" ? Visibility.Collapsed : Visibility.Visible;
+        // The button, on the right where the lyrics show: for music players only (a video's sound has no synced
+        // lyrics), lit while the lyrics show.
+        LyricsButton.Visibility = IsMusic ? Visibility.Visible : Visibility.Collapsed;
         LyricsIcon.Foreground = (Brush)((FrameworkElement)Content).Resources[_settings.ShowLyrics ? "Fg" : "Muted"];
         LyricsButton.Background = _settings.ShowLyrics ? PageOn : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
     }
+
+    // A music player: a music app on the PC, or a music site in the browser.
+    bool IsMusic => _media.Site is "YouTube Music" or "SoundCloud" or "Deezer" or "Spotify" or "Bandcamp"
+        || MusicApps.Any(a => _media.Source.Contains(a, StringComparison.OrdinalIgnoreCase));
+
+    static readonly string[] MusicApps = ["Spotify", "Deezer", "Music", "TIDAL", "Amazon", "iTunes", "foobar", "MusicBee", "AIMP", "Qobuz", "Winamp", "VLC"];
 
     void Lyrics_Tapped(object sender, TappedRoutedEventArgs e)
     {
