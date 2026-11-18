@@ -4,7 +4,7 @@
 
 <p align="center">The island at the top of your screen. A Dynamic Island for Windows 10 and 11.</p>
 
-<p align="center"><img src="docs/screenshots/notch-panel.png" alt="Mora's panel, playing Stairway to Heaven"></p>
+<p align="center"><img src="docs/screenshots/notch-panel.png" alt="Mora's panel, playing music"></p>
 
 An island grown out of the top of the screen, like a MacBook notch, shows what is happening right now (music, timers, downloads, devices, your coding agents), opens into a panel of quick controls with a shortcut (Alt + the key above Tab by default, configurable), and gets out of the way. It never takes your keyboard: every key you press keeps going to the app you are in, even while the island opens.
 
@@ -23,7 +23,7 @@ Its name comes from the Malagasy "mora mora": easy, gently.
 - **Alerts**: finished downloads, headphones connected (with their battery), low battery and charging, microphone or camera in use.
 - **Games**: stays out of the way in fullscreen games, borderless included, even while you glance at another screen; a profile per game for what may show, an optional music card you control with the arrow keys, and one summary when the game really ends.
 
-<p align="center"><img src="docs/screenshots/notch-alert.png" alt="A track change"> <img src="docs/screenshots/notch-timer.png" alt="The panel with the timer pill"></p>
+<p align="center"><img src="docs/screenshots/notch-alert.png" alt="A track change"> <img src="docs/screenshots/notch-agents.png" alt="Claude Code working, on the Agents page"></p>
 
 ## Install
 
