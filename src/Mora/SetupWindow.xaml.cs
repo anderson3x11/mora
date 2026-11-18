@@ -113,7 +113,6 @@ public sealed partial class SetupWindow : Window
                 Page.Children.Add(Card(
                     Row("On the resting pill", "Shows the time at the top of the screen. Next to music, it moves into the round bubble.", Toggle(() => _working.ShowClockPill, v => _working.ShowClockPill = v)),
                     Row("Beside the open panel", "A tall pill with the time and the day, when no timer runs.", Toggle(() => _working.ClockBesidePanel, v => _working.ClockBesidePanel = v)),
-                    Row("In the panel", "At the top right, next to what is playing.", Toggle(() => _working.ClockInPanel, v => _working.ClockInPanel = v)),
                     Row("On the game music card", "The time, without leaving the game.", Toggle(() => _working.ClockInGameCard, v => _working.ClockInGameCard = v))));
                 Page.Children.Add(ClockFormatCard());
                 Page.Children.Add(Subheading("Home", "The first tab: your music, the agenda, a focus timer and the weather."));
@@ -126,7 +125,7 @@ public sealed partial class SetupWindow : Window
                     Row("Show working agents on the island", "Like a live activity: the agent's logo in a ring of its progress, and how it is going. Orange when it needs you. Never during games.",
                         Toggle(() => _working.AgentsLive, v => _working.AgentsLive = v)),
                     Row("Let the crab wander", "Mora's mascot walks along the bottom of the open panel, under everything. It bobs while an agent works and waves when one needs you.",
-                        Toggle(() => _working.MascotRoams, v => _working.MascotRoams = v))));
+                        Toggle(() => _working.MascotWalks, v => _working.MascotWalks = v))));
                 break;
             case Tab.Popups:
                 Heading("Pop-ups", "What may open the island on its own. Each one leaves after 3 seconds, and none show during fullscreen games.");

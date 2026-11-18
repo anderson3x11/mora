@@ -372,14 +372,15 @@ public sealed partial class IslandWindow : Window
         PauseShape.Visibility = _media.Playing ? Visibility.Visible : Visibility.Collapsed;
         SetArt(CompactArt, CompactArtIcon);
         SetArt(ExpandedArt, ExpandedArtIcon);
-        ShapeArt(ExpandedArt, ArtColumn, 88);
+        ShapeArt(ExpandedArt, ArtColumn, 52);
         if (_media.Title != _shownTitle)
         {
             if (_shownTitle != null && _mode == Mode.Expanded && _tab == Tab.Media) NewTrackIn();
             _shownTitle = _media.Title;
         }
         SourceBadge.Text = _media.Source;
-        SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed; // the arrows: tap for the next player
+        // The player's name only with several open, where a tap switches to the next one.
+        SourceButton.Visibility = SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed;
         FillGameCard();
         if (_tab == Tab.Home) FillHome();
         UpdateProgress();
@@ -621,8 +622,6 @@ public sealed partial class IslandWindow : Window
         AgentsTabButton.Visibility = _settings.ConnectClaudeCode ? Visibility.Visible : Visibility.Collapsed;
         AgentsTab.Visibility = _tab == Tab.Agents ? Visibility.Visible : Visibility.Collapsed;
         if (_tab == Tab.Agents) FillAgents();
-        SourceButton.Visibility = _tab == Tab.Media ? Visibility.Visible : Visibility.Collapsed;
-        PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
         // The page icons: the current one white under the thumb, which slides there; the others gray.
@@ -675,6 +674,20 @@ public sealed partial class IslandWindow : Window
 
     void Source_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
         SourceButton.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+
+    // The page capsule rests dim and brightens while the pointer is on the panel; the moon and the gear only show
+    // on hover of their corner (the moon stays while Do not disturb is on).
+    void Panel_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) => FadeTo(TabCapsule, 1);
+    void Panel_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) => FadeTo(TabCapsule, 0.55);
+    void Corner_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) => FadeTo(CornerButtons, 1);
+    void Corner_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) => FadeTo(CornerButtons, _settings.DoNotDisturb ? 1 : 0);
+
+    void FadeTo(UIElement e, double to)
+    {
+        var sb = new Storyboard();
+        Animate(sb, e, "Opacity", to, 220);
+        sb.Begin();
+    }
 
     void Settings_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => OpenSetup(firstRun: false);
 

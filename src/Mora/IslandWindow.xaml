@@ -220,7 +220,7 @@
                      (or the mouse wheel) turn the pages; the time, the moon and the gear sit quietly on the same line. -->
                 <Grid x:Name="ExpandedLayer" Width="680" Height="170" Padding="24,16,24,7" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0" Background="Transparent"
-                      PointerWheelChanged="Panel_PointerWheelChanged">
+                      PointerWheelChanged="Panel_PointerWheelChanged" PointerEntered="Panel_PointerEntered" PointerExited="Panel_PointerExited">
                     <Grid.RenderTransform>
                         <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
                     </Grid.RenderTransform>
@@ -232,13 +232,12 @@
                     <!-- The crab's lane: along the bottom line, between the page icons and the moon, never in the way of a click -->
                     <Canvas x:Name="MascotLane" Grid.Row="1" Height="17" Width="118" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,66,0" IsHitTestVisible="False" Visibility="Collapsed" />
 
-                    <!-- The bottom line: the time and the privacy dots, the page dots, Do not disturb and Settings -->
+                    <!-- The bottom line: only the page capsule, centered; the privacy dots while in use; the moon and the gear show on hover of their corner -->
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <TextBlock x:Name="PanelClock" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Visibility="Collapsed" />
                         <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" />
                     </StackPanel>
                     <!-- The pages, as an iOS segmented control: a dark capsule, the current page under a lighter thumb that slides -->
-                    <Border Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#141416" CornerRadius="14" Padding="2">
+                    <Border x:Name="TabCapsule" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#141416" CornerRadius="14" Padding="2" Opacity="0.55">
                     <Grid>
                     <Border x:Name="TabThumb" Width="34" Height="24" CornerRadius="12" Background="#2E2E31" HorizontalAlignment="Left">
                         <Border.RenderTransform><TranslateTransform x:Name="TabThumbMove" /></Border.RenderTransform>
@@ -253,7 +252,8 @@
                     </StackPanel>
                     </Grid>
                     </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-6,0">
+                    <StackPanel x:Name="CornerButtons" Grid.Row="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,0,-6,0" Padding="40,0,0,0" Background="Transparent" Opacity="0"
+                                PointerEntered="Corner_PointerEntered" PointerExited="Corner_PointerExited">
                         <Grid Width="24" Height="22" CornerRadius="11" Background="Transparent" Tapped="Quiet_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
                             <FontIcon x:Name="QuietIcon" Glyph="&#xE708;" FontSize="11" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
                         </Grid>
@@ -270,92 +270,87 @@
                                 <FontIcon Glyph="&#xEC4F;" FontSize="22" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
                                 <TextBlock Text="Not playing" FontSize="13" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
                             </StackPanel>
-                            <Grid x:Name="MediaPane" Visibility="Collapsed">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition x:Name="ArtColumn" Width="88" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Border x:Name="ExpandedArt" Height="88" CornerRadius="18" Background="{StaticResource Line}" VerticalAlignment="Center">
-                                    <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="26" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
-                                </Border>
-                                <Grid Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                    <Grid ColumnSpacing="12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock x:Name="TitleText" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                            <TextBlock x:Name="ArtistText" FontSize="14" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Right">
-                                            <!-- The player followed; with several open, a tap switches to the next -->
-                                            <Border x:Name="SourceButton" CornerRadius="8" Padding="6,1" HorizontalAlignment="Right" Background="Transparent" Tapped="Source_Tapped"
-                                                    PointerEntered="Source_PointerEntered" PointerExited="Source_PointerExited">
-                                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <TextBlock x:Name="SourceBadge" Style="{StaticResource Caps}" />
-                                                    <FontIcon x:Name="SourceSwitch" Glyph="&#xE8AB;" FontSize="9" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" Visibility="Collapsed" />
-                                                </StackPanel>
-                                            </Border>
-                                            <StackPanel x:Name="PanelWave" Orientation="Horizontal" Spacing="2.5" Height="18" HorizontalAlignment="Right" Margin="0,0,6,0">
-                                                <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
-                                                <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
-                                                <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
-                                                <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Grid>
-                                    <Grid x:Name="ProgressRow" Grid.Row="1" Margin="0,12,0,0" ColumnSpacing="10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="34" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="34" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="PositionText" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
-                                        <Grid x:Name="SeekTrack" Grid.Column="1" Height="16" Background="Transparent" Tapped="Seek_Tapped">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition x:Name="SeekDone" Width="0*" />
-                                                <ColumnDefinition x:Name="SeekLeft" Width="1*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Border x:Name="SeekBack" Grid.ColumnSpan="2" Height="4" CornerRadius="2" Background="#3A3A3C" />
-                                            <Border x:Name="SeekFill" Height="4" CornerRadius="2" Background="{StaticResource Ink}" />
-                                        </Grid>
-                                        <TextBlock x:Name="DurationText" Grid.Column="2" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                                    </Grid>
-                                    <Grid Grid.Row="2" Margin="0,6,0,0">
-                                        <Grid x:Name="LyricsButton" Width="30" Height="30" CornerRadius="15" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                              Tapped="Lyrics_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up">
-                                            <FontIcon x:Name="LyricsIcon" Glyph="&#xE8BD;" FontSize="13" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
-                                        </Grid>
-                                        <!-- Solid controls, drawn: back, play or pause, forward -->
-                                        <StackPanel Orientation="Horizontal" Spacing="26" HorizontalAlignment="Center">
-                                            <Grid Width="44" Height="36" CornerRadius="18" Background="Transparent" Tapped="Previous_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                                <Path Fill="{StaticResource Fg}" Width="26" Height="15" Stretch="Uniform" Data="M 13,1.2 C 13,0.3 12,-0.3 11.2,0.2 L 0.8,6.7 C 0.1,7.2 0.1,8.2 0.8,8.7 L 11.2,15.2 C 12,15.7 13,15.1 13,14.2 Z M 26,1.2 C 26,0.3 25,-0.3 24.2,0.2 L 13.8,6.7 C 13.1,7.2 13.1,8.2 13.8,8.7 L 24.2,15.2 C 25,15.7 26,15.1 26,14.2 Z" />
-                                            </Grid>
-                                            <Grid Width="44" Height="36" CornerRadius="18" Background="Transparent" Tapped="Play_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                                <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" Visibility="Collapsed" FontFamily="{StaticResource Icons}" />
-                                                <Path x:Name="PlayShape" Fill="{StaticResource Fg}" Width="19" Height="22" Stretch="Uniform" Margin="3,0,0,0" Data="M 0,1.6 C 0,0.4 1.3,-0.4 2.3,0.2 L 18.2,9.6 C 19.2,10.2 19.2,11.8 18.2,12.4 L 2.3,21.8 C 1.3,22.4 0,21.6 0,20.4 Z" />
-                                                <Path x:Name="PauseShape" Fill="{StaticResource Fg}" Width="17" Height="21" Stretch="Uniform" Visibility="Collapsed" Data="M 1.6,0 H 5 C 5.9,0 6.6,0.7 6.6,1.6 V 19.4 C 6.6,20.3 5.9,21 5,21 H 1.6 C 0.7,21 0,20.3 0,19.4 V 1.6 C 0,0.7 0.7,0 1.6,0 Z M 12,0 H 15.4 C 16.3,0 17,0.7 17,1.6 V 19.4 C 17,20.3 16.3,21 15.4,21 H 12 C 11.1,21 10.4,20.3 10.4,19.4 V 1.6 C 10.4,0.7 11.1,0 12,0 Z" />
-                                            </Grid>
-                                            <Grid Width="44" Height="36" CornerRadius="18" Background="Transparent" Tapped="Next_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                                                <Path Fill="{StaticResource Fg}" Width="26" Height="15" Stretch="Uniform" Data="M 0,1.2 C 0,0.3 1,-0.3 1.8,0.2 L 12.2,6.7 C 12.9,7.2 12.9,8.2 12.2,8.7 L 1.8,15.2 C 1,15.7 0,15.1 0,14.2 Z M 13,1.2 C 13,0.3 14,-0.3 14.8,0.2 L 25.2,6.7 C 25.9,7.2 25.9,8.2 25.2,8.7 L 14.8,15.2 C 14,15.7 13,15.1 13,14.2 Z" />
-                                            </Grid>
-                                        </StackPanel>
-                                    </Grid>
-                                </Grid>
-                                <!-- Synced lyrics, beside: the line being sung, and the next one, past a hairline -->
-                                <Grid x:Name="LyricsCard" Grid.Column="2" Width="230" Margin="20,0,0,0" Visibility="Collapsed">
-                                    <Rectangle Width="1" Fill="#2C2C2E" HorizontalAlignment="Left" Margin="0,8" />
-                                    <StackPanel VerticalAlignment="Center" Spacing="6" Margin="20,0,0,0">
-                                        <TextBlock x:Name="LyricNow" FontFamily="{StaticResource Display}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock x:Name="LyricNext" FontSize="13" Foreground="{StaticResource Muted}" TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                            <!-- As the expanded Dynamic Island: the cover, the title and the waveform on one line, then the scrubber
+                                 across, then the controls on the panel's axis (the same as the page capsule below them) -->
+                            <Grid x:Name="MediaPane" Visibility="Collapsed" VerticalAlignment="Center">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid ColumnSpacing="14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition x:Name="ArtColumn" Width="52" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="ExpandedArt" Height="52" CornerRadius="12" Background="{StaticResource Line}" VerticalAlignment="Center">
+                                        <FontIcon x:Name="ExpandedArtIcon" Glyph="&#xEC4F;" FontSize="20" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Fg}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock x:Name="TitleText" FontFamily="{StaticResource Display}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                        <TextBlock x:Name="ArtistText" FontSize="13" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                                     </StackPanel>
+                                    <!-- Synced lyrics, when asked for: the line being sung over the next one -->
+                                    <StackPanel x:Name="LyricsCard" Grid.Column="2" Width="250" VerticalAlignment="Center" Spacing="2" Visibility="Collapsed">
+                                        <TextBlock x:Name="LyricNow" FontFamily="{StaticResource Display}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource Fg}" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                        <TextBlock x:Name="LyricNext" FontSize="12" Foreground="{StaticResource Muted}" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <!-- The player followed: only with several open, where a tap switches to the next -->
+                                        <Border x:Name="SourceButton" CornerRadius="8" Padding="6,1" HorizontalAlignment="Right" Background="Transparent" Tapped="Source_Tapped"
+                                                PointerEntered="Source_PointerEntered" PointerExited="Source_PointerExited" Visibility="Collapsed">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock x:Name="SourceBadge" Style="{StaticResource Caps}" />
+                                                <FontIcon x:Name="SourceSwitch" Glyph="&#xE8AB;" FontSize="9" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" Visibility="Collapsed" />
+                                            </StackPanel>
+                                        </Border>
+                                        <StackPanel x:Name="PanelWave" Orientation="Horizontal" Spacing="2.5" Height="18" HorizontalAlignment="Right">
+                                            <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                            <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                            <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                            <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Ink}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                                <Grid x:Name="ProgressRow" Grid.Row="1" Margin="0,10,0,0" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="36" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="PositionText" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                    <Grid x:Name="SeekTrack" Grid.Column="1" Height="16" Background="Transparent" Tapped="Seek_Tapped">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition x:Name="SeekDone" Width="0*" />
+                                            <ColumnDefinition x:Name="SeekLeft" Width="1*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border x:Name="SeekBack" Grid.ColumnSpan="2" Height="4" CornerRadius="2" Background="#3A3A3C" />
+                                        <Border x:Name="SeekFill" Height="4" CornerRadius="2" Background="{StaticResource Ink}" />
+                                    </Grid>
+                                    <TextBlock x:Name="DurationText" Grid.Column="2" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                </Grid>
+                                <Grid Grid.Row="2" Margin="0,4,0,0">
+                                    <!-- Solid controls, drawn, centered on the panel: back, play or pause, forward -->
+                                    <StackPanel Orientation="Horizontal" Spacing="26" HorizontalAlignment="Center">
+                                        <Grid Width="44" Height="34" CornerRadius="17" Background="Transparent" Tapped="Previous_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                            <Path Fill="{StaticResource Fg}" Width="24" Height="14" Stretch="Uniform" Data="M 13,1.2 C 13,0.3 12,-0.3 11.2,0.2 L 0.8,6.7 C 0.1,7.2 0.1,8.2 0.8,8.7 L 11.2,15.2 C 12,15.7 13,15.1 13,14.2 Z M 26,1.2 C 26,0.3 25,-0.3 24.2,0.2 L 13.8,6.7 C 13.1,7.2 13.1,8.2 13.8,8.7 L 24.2,15.2 C 25,15.7 26,15.1 26,14.2 Z" />
+                                        </Grid>
+                                        <Grid Width="44" Height="34" CornerRadius="17" Background="Transparent" Tapped="Play_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                            <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" Visibility="Collapsed" FontFamily="{StaticResource Icons}" />
+                                            <Path x:Name="PlayShape" Fill="{StaticResource Fg}" Width="18" Height="21" Stretch="Uniform" Margin="3,0,0,0" Data="M 0,1.6 C 0,0.4 1.3,-0.4 2.3,0.2 L 18.2,9.6 C 19.2,10.2 19.2,11.8 18.2,12.4 L 2.3,21.8 C 1.3,22.4 0,21.6 0,20.4 Z" />
+                                            <Path x:Name="PauseShape" Fill="{StaticResource Fg}" Width="16" Height="20" Stretch="Uniform" Visibility="Collapsed" Data="M 1.6,0 H 5 C 5.9,0 6.6,0.7 6.6,1.6 V 19.4 C 6.6,20.3 5.9,21 5,21 H 1.6 C 0.7,21 0,20.3 0,19.4 V 1.6 C 0,0.7 0.7,0 1.6,0 Z M 12,0 H 15.4 C 16.3,0 17,0.7 17,1.6 V 19.4 C 17,20.3 16.3,21 15.4,21 H 12 C 11.1,21 10.4,20.3 10.4,19.4 V 1.6 C 10.4,0.7 11.1,0 12,0 Z" />
+                                        </Grid>
+                                        <Grid Width="44" Height="34" CornerRadius="17" Background="Transparent" Tapped="Next_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
+                                            <Path Fill="{StaticResource Fg}" Width="24" Height="14" Stretch="Uniform" Data="M 0,1.2 C 0,0.3 1,-0.3 1.8,0.2 L 12.2,6.7 C 12.9,7.2 12.9,8.2 12.2,8.7 L 1.8,15.2 C 1,15.7 0,15.1 0,14.2 Z M 13,1.2 C 13,0.3 14,-0.3 14.8,0.2 L 25.2,6.7 C 25.9,7.2 25.9,8.2 25.2,8.7 L 14.8,15.2 C 14,15.7 13,15.1 13,14.2 Z" />
+                                        </Grid>
+                                    </StackPanel>
+                                    <!-- Lyrics, at the end of the line: only when the song has some -->
+                                    <Grid x:Name="LyricsButton" Width="30" Height="30" CornerRadius="15" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Tapped="Lyrics_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" Visibility="Collapsed">
+                                        <FontIcon x:Name="LyricsIcon" Glyph="&#xE8BD;" FontSize="13" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
+                                    </Grid>
                                 </Grid>
                             </Grid>
                         </Grid>

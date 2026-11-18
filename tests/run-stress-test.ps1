@@ -9,7 +9,7 @@ $root = Split-Path $PSScriptRoot
 $data = Join-Path $env:TEMP 'mora-stress-test'
 New-Item -ItemType Directory -Force $data | Out-Null
 Remove-Item (Join-Path $data '*') -Force -ErrorAction SilentlyContinue
-'{ "StartWithWindows": false, "PopVolume": false, "ConnectClaudeCode": true, "AgentsRail": true, "MascotRoams": true, "ShowLyrics": false, "ShowWeather": false }' |
+'{ "StartWithWindows": false, "PopVolume": false, "ConnectClaudeCode": true, "AgentsRail": true, "MascotWalks": true, "ShowLyrics": false, "ShowWeather": false }' |
     Set-Content (Join-Path $data 'settings.json') -Encoding utf8
 for ($i = 0; $i -lt 8; $i++) { Get-Process Mora -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 400 }
 

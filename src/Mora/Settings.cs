@@ -46,7 +46,7 @@ sealed class Settings
     public bool PopPrivacy { get; set; } = true; // an app starts using the microphone or camera
     public bool PopAgents { get; set; } = true;  // a coding agent needs you, or finished a long task
     public bool ConnectClaudeCode { get; set; }   // Mora's hooks are in Claude Code's settings
-    public bool MascotRoams { get; set; } = true; // the crab walks along the open panel's bottom edge
+    public bool MascotWalks { get; set; } // the crab walks along the open panel's bottom edge; off by default (a new name, so older saved choices don't apply)
     public bool AgentsLive { get; set; } = true;  // a working agent takes the resting island, like a live activity
     public bool PlaySounds { get; set; } = true; // a ring for timers, a note for app notifications
     public int SoundVolume { get; set; } = 90;   // 0 to 100, of each sound's loudest without clipping
@@ -66,7 +66,6 @@ sealed class Settings
     // The clock: where it shows, and how.
     public bool ShowClockPill { get; set; }         // a resting pill with the time, off like the music pill
     public bool ClockBesidePanel { get; set; } = true;
-    public bool ClockInPanel { get; set; } = true;
     public bool ClockInGameCard { get; set; } = true;
     public ClockStyle ClockFormat { get; set; } = ClockStyle.TimeAndDate;
     public List<string> SeenGames { get; set; } = [];

@@ -124,7 +124,7 @@ public sealed partial class IslandWindow
 
     void UpdateRoam()
     {
-        bool on = _settings.MascotRoams && _mode == Mode.Expanded;
+        bool on = _settings.MascotWalks && _mode == Mode.Expanded;
         MascotLane.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         if (!on)
         {

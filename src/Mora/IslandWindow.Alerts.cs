@@ -144,8 +144,11 @@ public sealed partial class IslandWindow
         if (!_settings.DoNotDisturb && _game is null && _held.Count > 0) ShowHeld("during Do not disturb");
     }
 
-    void FillQuiet() => QuietIcon.Foreground = _settings.DoNotDisturb
-        ? new SolidColorBrush(QuietIndigo) : (Brush)((FrameworkElement)Content).Resources["Muted"];
+    void FillQuiet()
+    {
+        QuietIcon.Foreground = _settings.DoNotDisturb ? new SolidColorBrush(QuietIndigo) : (Brush)((FrameworkElement)Content).Resources["Muted"];
+        if (_settings.DoNotDisturb && CornerButtons.Opacity < 1) FadeTo(CornerButtons, 1); // the moon stays in sight while it is on
+    }
 
     // force: Mora's own questions and summaries, shown whatever the pop-up settings or a running game.
     void Notify(Alert a, bool force = false)

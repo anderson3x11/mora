@@ -8,8 +8,8 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Mora;
 
-// Synced lyrics from LRCLIB (free, no key), asked for only while the lyrics button is on. A card beside the
-// player shows the line being sung, and the next one under it.
+// Synced lyrics from LRCLIB (free, no key), asked for music players only (or any player while they show). The button
+// appears only when the song has some; on, a card beside the title shows the line being sung over the next one.
 public sealed partial class IslandWindow
 {
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8), DefaultRequestHeaders = { { "User-Agent", "Mora (https://github.com/anderson3x11/mora)" } } };
@@ -20,7 +20,7 @@ public sealed partial class IslandWindow
     void LoadLyrics()
     {
         var key = _media.Title + "\n" + _media.Artist;
-        if (!_settings.ShowLyrics || key == _lyricsKey) return;
+        if (!(_settings.ShowLyrics || IsMusic) || key == _lyricsKey) return;
         _lyricsKey = key;
         _lyrics = null;
         if (_media.Title != "" && _media.Artist != "") _ = FetchLyrics(key, _media.Title, _media.Artist, _media.Duration);
@@ -69,9 +69,8 @@ public sealed partial class IslandWindow
             LyricNow.Text = i < 0 ? "♪" : lines[i].Text is { Length: > 0 } t ? t : "♪";
             LyricNext.Text = i + 1 < lines.Count ? lines[i + 1].Text : "";
         }
-        // The button, on the right where the lyrics show: for music players only (a video's sound has no synced
-        // lyrics), lit while the lyrics show.
-        LyricsButton.Visibility = IsMusic ? Visibility.Visible : Visibility.Collapsed;
+        // The button, at the end of the controls: only when the song has synced lyrics, lit while they show.
+        LyricsButton.Visibility = _lyrics is null ? Visibility.Collapsed : Visibility.Visible;
         LyricsIcon.Foreground = (Brush)((FrameworkElement)Content).Resources[_settings.ShowLyrics ? "Fg" : "Muted"];
         LyricsButton.Background = _settings.ShowLyrics ? PageOn : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
     }
