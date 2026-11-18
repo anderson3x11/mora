@@ -218,7 +218,7 @@
 
                 <!-- The open island, after Apple's: one page at a time straight on the black, no boxes. Dots at the bottom
                      (or the mouse wheel) turn the pages; the time, the moon and the gear sit quietly on the same line. -->
-                <Grid x:Name="ExpandedLayer" Width="680" Height="170" Padding="24,16,24,8" Opacity="0"
+                <Grid x:Name="ExpandedLayer" Width="680" Height="170" Padding="24,16,24,7" Opacity="0"
                       HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.5,0" Background="Transparent"
                       PointerWheelChanged="Panel_PointerWheelChanged">
                     <Grid.RenderTransform>
@@ -226,7 +226,7 @@
                     </Grid.RenderTransform>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="22" />
+                        <RowDefinition Height="30" />
                     </Grid.RowDefinitions>
 
                     <!-- The crab's lane: along the bottom line, between the page icons and the moon, never in the way of a click -->
@@ -237,21 +237,27 @@
                         <TextBlock x:Name="PanelClock" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Visibility="Collapsed" />
                         <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" />
                     </StackPanel>
-                    <StackPanel x:Name="Tabs" Grid.Row="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Grid Tag="Media" Width="34" Height="24" CornerRadius="12" RenderTransformOrigin="0.5,0.5" Background="Transparent" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><ToolTipService.ToolTip>Now playing</ToolTipService.ToolTip><FontIcon Glyph="&#xEC4F;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
-                        <Grid Tag="Home" Width="34" Height="24" CornerRadius="12" RenderTransformOrigin="0.5,0.5" Background="Transparent" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><ToolTipService.ToolTip>Today</ToolTipService.ToolTip><FontIcon Glyph="&#xE787;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
-                        <Grid Tag="Timers" Width="34" Height="24" CornerRadius="12" RenderTransformOrigin="0.5,0.5" Background="Transparent" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><ToolTipService.ToolTip>Timers</ToolTipService.ToolTip><FontIcon Glyph="&#xE916;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
-                        <Grid x:Name="AgentsTabButton" Tag="Agents" Width="34" Height="24" CornerRadius="12" RenderTransformOrigin="0.5,0.5" Background="Transparent" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" Visibility="Collapsed"><ToolTipService.ToolTip>Agents</ToolTipService.ToolTip><FontIcon Glyph="&#xE99A;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
-                        <Grid Tag="Shelf" Width="34" Height="24" CornerRadius="12" RenderTransformOrigin="0.5,0.5" Background="Transparent" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><ToolTipService.ToolTip><TextBlock x:Name="ShelfTabText" Text="Shelf" /></ToolTipService.ToolTip><FontIcon Glyph="&#xE7B8;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
-                        <Grid Tag="Clipboard" Width="34" Height="24" CornerRadius="12" RenderTransformOrigin="0.5,0.5" Background="Transparent" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><ToolTipService.ToolTip>Clipboard</ToolTipService.ToolTip><FontIcon Glyph="&#xE77F;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
+                    <!-- The pages, as an iOS segmented control: a dark capsule, the current page under a lighter thumb that slides -->
+                    <Border Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#141416" CornerRadius="14" Padding="2">
+                    <Grid>
+                    <Border x:Name="TabThumb" Width="34" Height="24" CornerRadius="12" Background="#2E2E31" HorizontalAlignment="Left">
+                        <Border.RenderTransform><TranslateTransform x:Name="TabThumbMove" /></Border.RenderTransform>
+                    </Border>
+                    <StackPanel x:Name="Tabs" Orientation="Horizontal">
+                        <Grid Tag="Media" Width="34" Height="24" RenderTransformOrigin="0.5,0.5" Background="Transparent" PointerEntered="TabIcon_PointerEntered" PointerExited="TabIcon_PointerExited" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><FontIcon Glyph="&#xEC4F;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
+                        <Grid Tag="Home" Width="34" Height="24" RenderTransformOrigin="0.5,0.5" Background="Transparent" PointerEntered="TabIcon_PointerEntered" PointerExited="TabIcon_PointerExited" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><FontIcon Glyph="&#xE787;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
+                        <Grid Tag="Timers" Width="34" Height="24" RenderTransformOrigin="0.5,0.5" Background="Transparent" PointerEntered="TabIcon_PointerEntered" PointerExited="TabIcon_PointerExited" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><FontIcon Glyph="&#xE916;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
+                        <Grid x:Name="AgentsTabButton" Tag="Agents" Width="34" Height="24" RenderTransformOrigin="0.5,0.5" Background="Transparent" PointerEntered="TabIcon_PointerEntered" PointerExited="TabIcon_PointerExited" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" Visibility="Collapsed"><FontIcon Glyph="&#xE99A;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
+                        <Grid Tag="Shelf" Width="34" Height="24" RenderTransformOrigin="0.5,0.5" Background="Transparent" PointerEntered="TabIcon_PointerEntered" PointerExited="TabIcon_PointerExited" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><FontIcon Glyph="&#xE7B8;" FontSize="13" FontFamily="{StaticResource Icons}" /><TextBlock x:Name="ShelfTabText" Visibility="Collapsed" /></Grid>
+                        <Grid Tag="Clipboard" Width="34" Height="24" RenderTransformOrigin="0.5,0.5" Background="Transparent" PointerEntered="TabIcon_PointerEntered" PointerExited="TabIcon_PointerExited" Tapped="Tab_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up"><FontIcon Glyph="&#xE77F;" FontSize="13" FontFamily="{StaticResource Icons}" /></Grid>
                     </StackPanel>
+                    </Grid>
+                    </Border>
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-6,0">
                         <Grid Width="24" Height="22" CornerRadius="11" Background="Transparent" Tapped="Quiet_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                            <ToolTipService.ToolTip>Do not disturb</ToolTipService.ToolTip>
                             <FontIcon x:Name="QuietIcon" Glyph="&#xE708;" FontSize="11" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
                         </Grid>
                         <Grid Width="24" Height="22" CornerRadius="11" Background="Transparent" Tapped="Settings_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up" PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited">
-                            <ToolTipService.ToolTip>Settings</ToolTipService.ToolTip>
                             <FontIcon Glyph="&#xE713;" FontSize="11" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
                         </Grid>
                     </StackPanel>
@@ -325,7 +331,6 @@
                                     <Grid Grid.Row="2" Margin="0,6,0,0">
                                         <Grid x:Name="LyricsButton" Width="30" Height="30" CornerRadius="15" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Center"
                                               Tapped="Lyrics_Tapped" PointerPressed="Press_Down" PointerReleased="Press_Up" PointerCaptureLost="Press_Up" PointerCanceled="Press_Up">
-                                            <ToolTipService.ToolTip>Synced lyrics</ToolTipService.ToolTip>
                                             <FontIcon x:Name="LyricsIcon" Glyph="&#xE8BD;" FontSize="13" FontFamily="{StaticResource Icons}" Foreground="{StaticResource Muted}" />
                                         </Grid>
                                         <!-- Solid controls, drawn: back, play or pause, forward -->
@@ -433,9 +438,9 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Grid Width="112" Height="112">
-                                    <Ellipse Stroke="#2C2C2E" StrokeThickness="7" />
-                                    <Ellipse x:Name="TimerArc" StrokeThickness="7" Stroke="#FF9F0A" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                                <Grid Width="104" Height="104">
+                                    <Ellipse Stroke="#2C2C2E" StrokeThickness="6" />
+                                    <Ellipse x:Name="TimerArc" StrokeThickness="6" Stroke="#FF9F0A" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
                                         <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
                                     </Ellipse>
                                     <TextBlock x:Name="TimerLeft" FontFamily="{StaticResource Display}" FontSize="26" FontWeight="Light" Foreground="{StaticResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" />

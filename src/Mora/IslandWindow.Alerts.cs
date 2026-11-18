@@ -102,7 +102,6 @@ public sealed partial class IslandWindow
                 Fill = new SolidColorBrush(group.Key == PrivacyWatch.Device.Microphone ? MicOrange : CameraGreen),
             };
             var what = group.Key == PrivacyWatch.Device.Microphone ? "microphone" : "camera";
-            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(dot, $"Using the {what}: {string.Join(", ", group.Select(u => u.App))}");
             PrivacyDots.Children.Add(dot);
         }
     }

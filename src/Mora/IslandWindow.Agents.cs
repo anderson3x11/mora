@@ -213,7 +213,7 @@ public sealed partial class IslandWindow
         }
         var (id, s) = sessions.FirstOrDefault(p => p.Key == _picked) is { Key: not null } picked ? picked : sessions[0];
 
-        var layout = new Grid { ColumnSpacing = 22, Height = 126 };
+        var layout = new Grid { ColumnSpacing = 22, Height = 117 };
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1) });
         layout.ColumnDefinitions.Add(new ColumnDefinition());
@@ -227,7 +227,6 @@ public sealed partial class IslandWindow
             cell.Children.Add(new TextBlock { Text = Label(one), FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center,
                 Foreground = asks ? new SolidColorBrush(MicOrange) : Res("Fg"), TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1 });
             cell.Tapped += (_, _) => { _picked = key; FillAgents(); };
-            ToolTipService.SetToolTip(cell, one.Name);
             rings.Children.Add(cell);
         }
         layout.Children.Add(rings);

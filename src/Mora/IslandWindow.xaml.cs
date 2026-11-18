@@ -380,7 +380,6 @@ public sealed partial class IslandWindow : Window
         }
         SourceBadge.Text = _media.Source;
         SourceSwitch.Visibility = _media.Players > 1 ? Visibility.Visible : Visibility.Collapsed; // the arrows: tap for the next player
-        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SourceButton, _media.Players > 1 ? $"{_media.Players} players open: tap to switch" : null);
         FillGameCard();
         if (_tab == Tab.Home) FillHome();
         UpdateProgress();
@@ -626,12 +625,19 @@ public sealed partial class IslandWindow : Window
         PanelClock.Visibility = _settings.ClockInPanel ? Visibility.Visible : Visibility.Collapsed;
         UpdateWave(); // the panel's waveform only lives on the Media tab
         var res = ((FrameworkElement)Content).Resources;
-        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>()) // the page icons: the current one white, on a faint disc
+        // The page icons: the current one white under the thumb, which slides there; the others gray.
+        int index = 0, at = 0;
+        foreach (var t in Tabs.Children.Cast<Microsoft.UI.Xaml.Controls.Grid>())
         {
             bool on = (string)t.Tag == _tab.ToString();
             ((Microsoft.UI.Xaml.Controls.FontIcon)t.Children[0]).Foreground = on ? (Brush)res["Fg"] : PageDot;
-            t.Background = on ? PageOn : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            if (on) at = index;
+            if (t.Visibility == Visibility.Visible) index++;
         }
+        double x = at * 34;
+        var slide = new Storyboard();
+        Animate(slide, TabThumbMove, "X", x, 420, new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.22 });
+        slide.Begin();
     }
 
     static readonly SolidColorBrush PageDot = new(Windows.UI.Color.FromArgb(0x70, 0xFF, 0xFF, 0xFF)), PageOn = new(Windows.UI.Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
@@ -646,6 +652,19 @@ public sealed partial class IslandWindow : Window
         TurnTo(pages[next]);
         e.Handled = true;
     }
+
+    // Hovering a page icon lights it a little; the thumb stays on the current page.
+    void TabIcon_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Microsoft.UI.Xaml.Controls.Grid g && (string)g.Tag != _tab.ToString()) ((Microsoft.UI.Xaml.Controls.FontIcon)g.Children[0]).Foreground = PageHover;
+    }
+
+    void TabIcon_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Microsoft.UI.Xaml.Controls.Grid g && (string)g.Tag != _tab.ToString()) ((Microsoft.UI.Xaml.Controls.FontIcon)g.Children[0]).Foreground = PageDot;
+    }
+
+    static readonly SolidColorBrush PageHover = new(Windows.UI.Color.FromArgb(0xD0, 0xFF, 0xFF, 0xFF));
 
     void Source_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _media.NextPlayer();
 
